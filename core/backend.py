@@ -83,7 +83,7 @@ class SelfbotManager(RelationshipMixin, GuildMixin, MessagesMixin):
             return False, "Selfbot não conectou a tempo. Verifique se o token é válido."
 
         log.info("Selfbot autenticado: user_id=%s, username=%s", user_id, sp.username)
-        return True, f"✅ Autenticado como **{sp.username}**"
+        return True, f"Autenticado como **{sp.username}**"
 
     async def disconnect(self, user_id: int) -> tuple[bool, str]:
         """
@@ -102,7 +102,7 @@ class SelfbotManager(RelationshipMixin, GuildMixin, MessagesMixin):
         self.user_guild_whitelists.pop(user_id, None)
 
         log.info("Selfbot desconectado: user_id=%s, username=%s", user_id, username)
-        return True, f"✅ Desconectado com sucesso."
+        return True, f"Desconectado com sucesso."
 
     def is_authenticated(self, user_id: int) -> bool:
         """Verifica se o user tem um selfbot autenticado e vivo."""

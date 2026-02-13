@@ -25,7 +25,7 @@ class ControlBot(commands.Bot):
         self.add_view(PersistentControlView(self.manager))
 
     async def on_ready(self):
-        print(f'🤖 Bot de Controle {self.user} Online!')
+        print(f'Bot de Controle {self.user} Online!')
         
         # 1. CANAL SOBRE - Components V2
         if ID_CANAL_SOBRE:
@@ -36,9 +36,9 @@ class ControlBot(commands.Bot):
                         await message.delete()
                 
                 await channel_sobre.send(view=SobreView())
-                print(f"✅ Sobre (Components V2) enviado para o canal {ID_CANAL_SOBRE}")
+                print(f"Sobre enviado para o canal {ID_CANAL_SOBRE}")
             else:
-                print(f"⚠️ Aviso: Canal SOBRE {ID_CANAL_SOBRE} não encontrado.")
+                print(f"Canal SOBRE {ID_CANAL_SOBRE} não encontrado.")
 
         # 2. CANAL PAINEL - Utilizando Components V2 (Sem Embed)
         if ID_CANAL_PAINEL:
@@ -53,7 +53,7 @@ class ControlBot(commands.Bot):
                 await channel_painel.send(
                     view=PersistentControlView(self.manager)
                 )
-                print(f"✅ Painel (Components V2) enviado para o canal {ID_CANAL_PAINEL}")
+                print(f"Painel enviado para o canal {ID_CANAL_PAINEL}")
             else:
-                print(f"⚠️ Aviso: Canal PAINEL {ID_CANAL_PAINEL} não encontrado.")
+                print(f"Canal PAINEL {ID_CANAL_PAINEL} não encontrado.")
 

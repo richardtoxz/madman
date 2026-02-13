@@ -2,41 +2,101 @@ import discord
 from discord import ui
 
 from utils.helpers import PainelView
+from views.handlers import (
+    handle_authenticate, handle_disconnect,
+    handle_clean_dm, handle_clean_all_dms, handle_clean_guild, handle_close_dms,
+    handle_mute_servers, handle_leave_servers,
+    handle_pending_requests, handle_clean_friends, handle_unblock_all,
+)
 
 
-
-from views.account_management import AccountManagementView
-from views.relationship_management import RelationshipManagementView
-from views.guild_management import GuildManagementView
-from views.message_cleanup_view import MessageCleanupView
+HANDLER_MAP = {
+    "auth": handle_authenticate,
+    "clean_dm": handle_clean_dm,
+    "clean_all_dms": handle_clean_all_dms,
+    "clean_guild": handle_clean_guild,
+    "close_dms": handle_close_dms,
+    "mute_servers": handle_mute_servers,
+    "leave_servers": handle_leave_servers,
+    "pending": handle_pending_requests,
+    "clean_friends": handle_clean_friends,
+    "unblock": handle_unblock_all,
+    "disconnect": handle_disconnect,
+}
 
 
 class ControlSelect(ui.Select):
     def __init__(self, manager):
         options = [
+            # ─── SESSÃO ───
             discord.SelectOption(
-                label="Gerenciar Conta",
-                description="Autenticar/Desconectar selfbot.",
-                emoji="<:account:1471252343386280068>",
-                value="account"
+                label="Autenticar",
+                description="Conectar sua conta via token.",
+                emoji="<:account:1472004352028704913>",
+                value="auth"
+            ),
+            # ─── LIMPEZA ───
+            discord.SelectOption(
+                label="Limpar DM/Canal",
+                description="Deletar suas mensagens em uma DM ou canal específico.",
+                emoji="<:clean:1472004349432434800>",
+                value="clean_dm"
             ),
             discord.SelectOption(
-                label="Gerenciar Relações",
-                description="Amigos, bloqueios e pedidos pendentes.",
-                emoji="<:friends:1471247997307191326>",
-                value="rel"
+                label="Limpar Todas DMs Abertas",
+                description="Deletar suas mensagens em todas as DMs abertas.",
+                emoji="<:cleanall:1472006170624659580>",
+                value="clean_all_dms"
             ),
             discord.SelectOption(
-                label="Gerenciar Servidores",
-                description="Sair de servidores e silenciar notificações.",
-                emoji="<:guild:1471252315678834788>",
-                value="guild"
+                label="Limpar Guild",
+                description="Deletar suas mensagens em todo um servidor.",
+                emoji="<:guild:1472004351039111228>",
+                value="clean_guild"
             ),
             discord.SelectOption(
-                label="Limpar Mensagens",
-                description="Purge de DMs, Canais e Data Package.",
-                emoji="<:clean:1471255175795834961>",
-                value="clear"
+                label="Fechar DMs/Groups",
+                description="Fechar todas as DMs abertas ou sair de Groups.",
+                emoji="<:closedms:1472007525556818211>",
+                value="close_dms"
+            ),
+            # ─── AÇÕES ───
+            discord.SelectOption(
+                label="Silenciar Servidores",
+                description="Silenciar notificações de todos os servidores.",
+                emoji="<:mute:1472007043538747552>",
+                value="mute_servers"
+            ),
+            discord.SelectOption(
+                label="Sair de Servidores",
+                description="Sair de todos os servidores.",
+                emoji="<:guild:1472004351039111228>",
+                value="leave_servers"
+            ),
+            discord.SelectOption(
+                label="Pedidos Pendentes",
+                description="Ver e gerenciar pedidos de amizade pendentes.",
+                emoji="<:friendrequest:1472008284461465824>",
+                value="pending"
+            ),
+            discord.SelectOption(
+                label="Limpar Amigos",
+                description="Remover todos os amigos.",
+                emoji="<:removefriends:1472006635265462407>",
+                value="clean_friends"
+            ),
+            discord.SelectOption(
+                label="Desbloquear Todos",
+                description="Desbloquear todos os usuários bloqueados.",
+                emoji="<:unblock:1472007776992628839>",
+                value="unblock"
+            ),
+            # ─── SESSÃO ───
+            discord.SelectOption(
+                label="Desconectar",
+                description="Desconectar o selfbot.",
+                emoji="<:unplug:1472005164989812908>",
+                value="disconnect"
             ),
         ]
         super().__init__(
@@ -50,52 +110,10 @@ class ControlSelect(ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         value = self.values[0]
-        
-        # O usuário solicitou não resetar o select (não chamar edit_message com a view)
-        # await interaction.response.edit_message(view=self.view)
-        
-        # Deferimos a resposta para garantir que não expire (opcional, mas seguro)
-        await interaction.response.defer(ephemeral=False)
+        handler = HANDLER_MAP.get(value)
 
-        if value == "account":
-            view = AccountManagementView(self.manager, interaction.user.id)
-            view._update_buttons()
-            await interaction.followup.send(
-                embed=view._get_status_embed(interaction),
-                view=view,
-                ephemeral=False
-            )
-
-        elif value == "rel":
-            view = RelationshipManagementView(self.manager, interaction.user.id)
-            await view.refresh_stats()
-            await interaction.followup.send(
-                embed=view._get_embed(interaction),
-                view=view,
-                ephemeral=False
-            )
-
-        elif value == "guild":
-            view = GuildManagementView(self.manager, interaction.user.id)
-            await view.refresh_stats()
-            await interaction.followup.send(
-                embed=view._get_embed(interaction),
-                view=view,
-                ephemeral=False
-            )
-
-        elif value == "clear":
-            if interaction.user.id not in self.manager.active_processes:
-                return await interaction.followup.send(
-                    "❌ Você não está conectado! Selecione **Gerenciar Conta** -> **Autenticar** primeiro.",
-                    ephemeral=False
-                )
-            view = MessageCleanupView(self.manager, interaction.user.id)
-            await interaction.followup.send(
-                embed=view._get_embed(),
-                view=view,
-                ephemeral=False
-            )
+        if handler:
+            await handler(interaction, self.manager, interaction.user.id)
 
 
 class PersistentControlView(PainelView):
