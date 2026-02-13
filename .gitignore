@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Virtual Environment
+venv/
+.venv/
+
+# Vendored Dependencies (installed by setup_envs.py)
+selfbot_runner/lib/
+control_bot/lib/
+
+# IDE
+.vscode/
+.idea/
+.agent/
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+*.token
+config_local.py
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Scrapy
+.scrapy/
