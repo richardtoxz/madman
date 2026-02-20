@@ -39,7 +39,7 @@ async def cleanup_stealth_messages(user: discord.User, bot_id: int):
     except Exception as e:
         logger.error(f"Erro na limpeza proativa de DMs stealth: {e}")
 
-async def send_stealth_dm(interaction: discord.Interaction, title: str, description: str, color: int = 0x2b2d31, delay: int = 600):
+async def send_stealth_dm(interaction: discord.Interaction, title: str, description: str, color: int = 0x2b2d31, delay: int = 120):
     """
     Envia uma mensagem de confirmação para a DM do usuário que se auto-destrói após o delay.
     Usa timestamps dinâmicos do Discord para um contador em tempo real.

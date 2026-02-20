@@ -4,6 +4,7 @@ __pycache__/
 *.pyo
 *.pyd
 .Python
+.agent/
 
 # Virtual Environment
 venv/
@@ -16,7 +17,6 @@ control_bot/lib/
 # IDE
 .vscode/
 .idea/
-.agent/
 
 # Environment & Secrets
 .env

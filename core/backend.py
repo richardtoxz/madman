@@ -15,11 +15,13 @@ from core.process import SelfbotProcess
 from core.manager_relationships import RelationshipMixin
 from core.manager_guilds import GuildMixin
 from core.manager_messages import MessagesMixin
+from core.manager_voice import VoiceMixin
+from core.manager_protection import ProtectionMixin
 
 log = logging.getLogger(__name__)
 
 
-class SelfbotManager(RelationshipMixin, GuildMixin, MessagesMixin):
+class SelfbotManager(RelationshipMixin, GuildMixin, MessagesMixin, VoiceMixin, ProtectionMixin):
     """Orquestra processos selfbot e delega operações para mixins."""
 
     def __init__(self):
@@ -197,7 +199,7 @@ class SelfbotManager(RelationshipMixin, GuildMixin, MessagesMixin):
                     try:
                         total = int(text.split(":")[1])
                         if update_callback:
-                            await update_callback(0, total, "STARTING", "")
+                            await update_callback(0, total, "WAITING_START", "")
                     except Exception:
                         pass
 
@@ -208,7 +210,7 @@ class SelfbotManager(RelationshipMixin, GuildMixin, MessagesMixin):
                             curr, total = int(parts[1]), int(parts[2])
                             name = parts[3] if len(parts) >= 4 else ""
                             if update_callback:
-                                await update_callback(curr, total, "REMOVING", name)
+                                await update_callback(curr, total, "CLEANING", name)
                         except Exception:
                             pass
 

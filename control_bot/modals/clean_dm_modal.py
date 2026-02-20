@@ -15,7 +15,15 @@ class CleanDMModal(ui.Modal, title='Limpar Mensagens (DM/Canal)'):
         self.manager = manager
 
     async def on_submit(self, interaction: discord.Interaction):
-        target_id_val = int(self.target_id.value)
+        raw_id = self.target_id.value.strip()
+        
+        if not raw_id.isdigit():
+            return await interaction.response.send_message("❌ ID do Usuário ou Canal deve ser apenas números!", ephemeral=True)
+            
+        if not (17 <= len(raw_id) <= 21):
+            return await interaction.response.send_message("❌ ID inválido! O tamanho deve ser entre 17 e 21 dígitos.", ephemeral=True)
+
+        target_id_val = int(raw_id)
         user_id = interaction.user.id
 
         embed = discord.Embed(title="🧹 Central de Limpeza Madman", color=0x2b2d31)

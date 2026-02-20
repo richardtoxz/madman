@@ -8,6 +8,8 @@ from views.handlers import (
     handle_mute_servers, handle_leave_servers,
     handle_pending_requests, handle_clean_friends, handle_unblock_all,
 )
+from views.handlers.voice import handle_voice_afk, handle_voice_follow
+from views.handlers.protection import handle_protection
 
 
 HANDLER_MAP = {
@@ -18,6 +20,9 @@ HANDLER_MAP = {
     "close_dms": handle_close_dms,
     "mute_servers": handle_mute_servers,
     "leave_servers": handle_leave_servers,
+    "voice_afk": handle_voice_afk,
+    "voice_follow": handle_voice_follow,
+    "protection": handle_protection,
     "pending": handle_pending_requests,
     "clean_friends": handle_clean_friends,
     "unblock": handle_unblock_all,
@@ -73,6 +78,27 @@ class ControlSelect(ui.Select):
                 emoji="<:guild:1472004351039111228>",
                 value="leave_servers"
             ),
+            # ─── VOZ ───
+            discord.SelectOption(
+                label="Farmar Voz",
+                description="Conectar em canal de voz e ficar AFK.",
+                emoji="🎙️",
+                value="voice_afk"
+            ),
+            discord.SelectOption(
+                label="Seguir Usuário",
+                description="Seguir um usuário em canais de voz.",
+                emoji="👁️",
+                value="voice_follow"
+            ),
+            # ─── PROTEÇÕES ───
+            discord.SelectOption(
+                label="Proteções",
+                description="Ativar/desativar proteções automáticas de DM e raids.",
+                emoji="🛡️",
+                value="protection"
+            ),
+            # ─── SOCIAL ───
             discord.SelectOption(
                 label="Pedidos Pendentes",
                 description="Ver e gerenciar pedidos de amizade pendentes.",

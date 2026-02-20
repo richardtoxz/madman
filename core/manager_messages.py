@@ -273,78 +273,12 @@ class MessagesMixin:
 
         return results
 
-    # ── Data Package ─────────────────────────────────────────
-
-    async def delete_from_data_package(self, user_id: int, entries: list, update_callback=None):
-        p = self._get_proc(user_id)
-        if not p:
-            return "❌ Não conectado"
-
-        payload = json.dumps(entries)
-        prefixes = ["MSG_DATAPACK_"]
-        last_result = "Iniciando..."
-
-        async for text in p.send_and_stream(f"MSG_DATAPACK:{payload}", prefixes, timeout=3600):
-            if text.startswith("TIMEOUT:"):
-                last_result = "ERRO: Timeout"
-                break
-
-            if text.startswith("MSG_DATAPACK_START:"):
-                total = int(text.split(":")[1])
-                if update_callback:
-                    await update_callback(0, total, "DATAPACK_START", "")
-
-            elif text.startswith("MSG_DATAPACK_PROGRESS:"):
-                parts = text.split(":")
-                if len(parts) >= 3:
-                    curr, total = int(parts[1]), int(parts[2])
-                    if update_callback:
-                        await update_callback(curr, total, "CLEANING", None)
-
-            elif text.startswith("MSG_DATAPACK_RATELIMIT:"):
-                if update_callback:
-                    await update_callback(None, None, "RATE_LIMITED", text)
-
-            elif text.startswith("MSG_DATAPACK_RESULT:"):
-                last_result = text.replace("MSG_DATAPACK_RESULT:", "")
-                break
-
-        return last_result
-
-    # ── DM: Listar ───────────────────────────────────────────
-
-    async def list_dms(self, user_id: int):
-        p = self._get_proc(user_id)
-        return (await p.send_and_wait_json("DM_LIST", "DM_LIST_RESULT:", timeout=15.0)) or [] if p else []
-
-    # ── DM: Fechar 1 ─────────────────────────────────────────
-
-    async def close_dm(self, user_id: int, channel_id: int):
-        p = self._get_proc(user_id)
-        if not p:
-            raise Exception("Não conectado")
-        raw = await p.send_and_wait(f"DM_CLOSE:{channel_id}", "DM_CLOSE_RESULT:")
-        if raw and raw.startswith("OK"):
-            return True
-        raise Exception(raw or "Sem resposta")
-
     # ── DM: Fechar todas ─────────────────────────────────────
 
     async def close_all_dms(self, user_id: int, update_callback=None):
         return await self._run_bulk_stream(
             user_id, "DM_CLOSE_ALL", ["DM_CLOSE_ALL_"], update_callback, timeout=300
         )
-
-    # ── Group DM: Sair de 1 ──────────────────────────────────
-
-    async def leave_group_dm(self, user_id: int, channel_id: int):
-        p = self._get_proc(user_id)
-        if not p:
-            raise Exception("Não conectado")
-        raw = await p.send_and_wait(f"GROUP_DM_LEAVE:{channel_id}", "GROUP_DM_LEAVE_RESULT:")
-        if raw and raw.startswith("OK"):
-            return True
-        raise Exception(raw or "Sem resposta")
 
     # ── Group DM: Sair de todos ──────────────────────────────
 

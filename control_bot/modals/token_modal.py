@@ -40,6 +40,34 @@ class AuthenticateModal(ui.Modal, title='Autenticar Selfbot'):
 
         if success:
             await interaction.followup.send(msg, ephemeral=True)
+            
+            # Registrar listener para eventos de proteção
+            # Queremos receber notificações de bloqueio/fechamento
+            async def on_protection_event(text: str):
+                # PROTECTION:BLOCKED:author_name:author_id:motivo
+                # PROTECTION:CLOSED:author_name:author_id:motivo
+                parts = text.split(":")
+                if len(parts) >= 5:
+                    event_type = parts[1] # BLOCKED ou CLOSED
+                    author_name = parts[2]
+                    author_id = parts[3]
+                    reason = parts[4]
+                    
+                    from utils.stealth_dm import send_stealth_dm
+                    title = "🛡️ Proteção Ativada"
+                    desc = (
+                        f"Ação: **{event_type}**\n"
+                        f"Usuário: `{author_name}`\n"
+                        f"ID: `{author_id}`\n"
+                        f"Motivo: {reason}"
+                    )
+                    # Envia DM com auto-destruição de 120s (2 min)
+                    await send_stealth_dm(interaction, title, desc, delay=120)
+
+            # Inscreve para ambos os tipos de eventos de proteção
+            self.manager.subscribe_events(self.user_id, "PROTECTION:BLOCKED:", on_protection_event)
+            self.manager.subscribe_events(self.user_id, "PROTECTION:CLOSED:", on_protection_event)
+
             # Atualiza a view principal se callback fornecido
             if self.on_complete:
                 await self.on_complete(interaction)

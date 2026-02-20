@@ -30,6 +30,9 @@ from command_router import register_handlers, dispatch
 from relationship_manager import RelationshipManager
 from guild_manager import GuildManager
 from message_manager import MessageManager
+from voice_manager import VoiceManager
+from protection_manager import ProtectionManager
+from presence_manager import PresenceManager
 
 
 class MySelfbot(discord.Client):
@@ -38,6 +41,9 @@ class MySelfbot(discord.Client):
         self.msg_manager = None
         self.rel_manager = None
         self.guild_manager = None
+        self.voice_manager = None
+        self.protection_manager = None
+        self.presence_manager = None
         self._exact_handlers = {}
         self._prefix_handlers = {}
 
@@ -47,11 +53,18 @@ class MySelfbot(discord.Client):
         self.msg_manager = MessageManager(self, control_flags)
         self.rel_manager = RelationshipManager(self)
         self.guild_manager = GuildManager(self)
+        self.voice_manager = VoiceManager(self)
+        self.protection_manager = ProtectionManager(self)
+        self.presence_manager = PresenceManager(self)
 
         self._exact_handlers, self._prefix_handlers = register_handlers(self)
         asyncio.create_task(self._listen_stdin())
+        asyncio.create_task(self.presence_manager.set_main())
 
     async def on_relationship_add(self, relationship):
+        if self.protection_manager:
+            await self.protection_manager.on_relationship_add(relationship)
+
         type_names = {
             discord.RelationshipType.friend: "FRIEND",
             discord.RelationshipType.blocked: "BLOCKED",
@@ -92,6 +105,14 @@ class MySelfbot(discord.Client):
         if before.name != after.name:
             print(f"EVENT:GUILD_UPDATE:{after.id}:name:{after.name}", flush=True)
 
+    async def on_voice_state_update(self, member, before, after):
+        if self.voice_manager:
+            await self.voice_manager.on_voice_state_update(member, before, after)
+
+    async def on_message(self, message):
+        if self.protection_manager:
+            await self.protection_manager.on_message(message)
+
     async def _listen_stdin(self):
         """Escuta comandos do processo pai via stdin e despacha para handlers."""
         loop = asyncio.get_event_loop()
@@ -111,6 +132,9 @@ class MySelfbot(discord.Client):
             await coro
         except Exception as e:
             print(f"ERROR:Execucao falhou: {e}", flush=True)
+        finally:
+            if self.presence_manager:
+                await self.presence_manager.set_main()
 
 
 # ============================================================

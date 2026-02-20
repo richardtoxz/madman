@@ -142,8 +142,17 @@ def register_handlers(bot):
 
     async def handle_guild_mute_all(bot, cmd):
         wl = [int(i.strip()) for i in cmd.upper().split(":")[1].split(",") if i.strip().isdigit()]
+        if bot.presence_manager:
+            await bot.presence_manager.set_task("Silenciando servidores")
         bot.guild_manager.cancelled = False
         asyncio.create_task(bot._safe_exec(bot.guild_manager.mute_all_guilds(wl)))
+
+    async def handle_guild_leave_all(bot, cmd):
+        wl = [int(i.strip()) for i in cmd.upper().split(":")[1].split(",") if i.strip().isdigit()]
+        if bot.presence_manager:
+            await bot.presence_manager.set_task("Saindo de servidores")
+        bot.guild_manager.cancelled = False
+        asyncio.create_task(bot._safe_exec(bot.guild_manager.leave_all_guilds(wl)))
 
     exact["GUILD_STATS"] = handle_guild_stats
     prefix["GUILD_LEAVE_ALL:"] = handle_guild_leave_all
@@ -152,24 +161,25 @@ def register_handlers(bot):
     # ─── MENSAGENS ────────────────────────────────────────────
     async def handle_target(bot, cmd):
         tid = int(cmd.upper().split(":")[1])
-        bot.msg_manager.cancelled = False
-        bot.msg_manager.paused = False
+        if bot.presence_manager:
+            await bot.presence_manager.set_task("Limpando mensagens")
         asyncio.create_task(bot._safe_exec(bot.msg_manager.clean_channel(tid)))
 
     async def handle_msg_clean_channel(bot, cmd):
         cid = int(cmd.upper().split(":")[1])
-        bot.msg_manager.cancelled = False
-        bot.msg_manager.paused = False
+        if bot.presence_manager:
+            await bot.presence_manager.set_task("Limpando canal de texto")
         asyncio.create_task(bot._safe_exec(bot.msg_manager.clean_channel(cid)))
 
     async def handle_msg_clean_all_dms(bot, cmd):
-        bot.msg_manager.cancelled = False
+        if bot.presence_manager:
+            await bot.presence_manager.set_task("Limpando todas as DMs")
         asyncio.create_task(bot._safe_exec(bot.msg_manager.clean_all_dms()))
 
     async def handle_msg_clean_guild(bot, cmd):
         gid = int(cmd.upper().split(":")[1])
-        bot.msg_manager.cancelled = False
-        bot.msg_manager.paused = False
+        if bot.presence_manager:
+            await bot.presence_manager.set_task("Limpando servidor")
         asyncio.create_task(bot._safe_exec(bot.msg_manager.clean_guild(gid)))
 
     async def handle_msg_count(bot, cmd):
@@ -224,6 +234,80 @@ def register_handlers(bot):
     exact["DM_LIST"] = handle_dm_list
     prefix["GROUP_DM_LEAVE:"] = handle_group_dm_leave
     exact["GROUP_DM_LEAVE_ALL"] = handle_group_dm_leave_all
+
+    # ─── VOICE ────────────────────────────────────────────────
+    async def handle_voice_join(bot, cmd):
+        cid = int(cmd.split(":")[1].strip())
+        if bot.presence_manager:
+            await bot.presence_manager.set_task("Em canal de voz")
+        asyncio.create_task(bot._safe_exec(bot.voice_manager.join_voice(cid)))
+
+    async def handle_voice_leave(bot, cmd):
+        asyncio.create_task(bot._safe_exec(bot.voice_manager.leave_voice()))
+
+    async def handle_voice_follow(bot, cmd):
+        uid = int(cmd.split(":")[1].strip())
+        if bot.presence_manager:
+            await bot.presence_manager.set_task("Seguindo usuario")
+        asyncio.create_task(bot._safe_exec(bot.voice_manager.start_follow(uid)))
+
+    async def handle_voice_unfollow(bot, cmd):
+        asyncio.create_task(bot._safe_exec(bot.voice_manager.stop_follow()))
+
+    async def handle_voice_status(bot, cmd):
+        vm = bot.voice_manager
+        if vm.is_following:
+            print(f"VOICE_STATUS:FOLLOWING:{vm.follow_target_id}:{vm.current_channel_id}", flush=True)
+        elif vm.is_in_voice:
+            print(f"VOICE_STATUS:JOINED:{vm.current_channel_id}", flush=True)
+        else:
+            print("VOICE_STATUS:IDLE", flush=True)
+
+    prefix["VOICE_JOIN:"] = handle_voice_join
+    exact["VOICE_LEAVE"] = handle_voice_leave
+    prefix["VOICE_FOLLOW:"] = handle_voice_follow
+    exact["VOICE_UNFOLLOW"] = handle_voice_unfollow
+    exact["VOICE_STATUS"] = handle_voice_status
+
+    async def handle_protection_enable(bot, cmd):
+        if bot.presence_manager:
+            await bot.presence_manager.set_protection(True)
+        bot.protection_manager.enable()
+
+    async def handle_protection_disable(bot, cmd):
+        if bot.presence_manager:
+            await bot.presence_manager.set_protection(False)
+        bot.protection_manager.disable()
+
+    async def handle_protection_status(bot, cmd):
+        bot.protection_manager.get_status()
+
+    exact["PROTECTION_ENABLE"] = handle_protection_enable
+    exact["PROTECTION_DISABLE"] = handle_protection_disable
+    exact["PROTECTION_STATUS"] = handle_protection_status
+
+    # ─── PRESENCE ─────────────────────────────────────────────
+    async def handle_presence_main(bot, cmd):
+        if bot.presence_manager:
+            await bot.presence_manager.set_main()
+
+    async def handle_presence_task(bot, cmd):
+        # PRESENCE_TASK:nome:detalhe
+        if bot.presence_manager:
+            parts = cmd.split(":", 2)
+            name = parts[1] if len(parts) > 1 else "Tarefa"
+            detail = parts[2] if len(parts) > 2 else None
+            await bot.presence_manager.set_task(name, detail)
+
+    async def handle_presence_update(bot, cmd):
+        # PRESENCE_UPDATE:novo detalhe
+        if bot.presence_manager:
+            detail = cmd.split(":", 1)[1] if ":" in cmd else ""
+            await bot.presence_manager.update_detail(detail)
+
+    exact["PRESENCE_MAIN"] = handle_presence_main
+    prefix["PRESENCE_TASK:"] = handle_presence_task
+    prefix["PRESENCE_UPDATE:"] = handle_presence_update
 
     return exact, prefix
 
