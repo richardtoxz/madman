@@ -25,20 +25,6 @@ async def safe_bulk_execute(
     progress_print_prefix="BULK",
     config=None,
 ):
-    """
-    Executa uma operação em lote com rate-limiting adaptativo.
-
-    Args:
-        items: Lista de itens a processar.
-        operation: Coroutine que recebe um item. Pode retornar "SKIPPED".
-        get_name: Callable que retorna o nome de exibição do item.
-        cancelled_check: Callable que retorna True se a operação foi cancelada.
-        progress_print_prefix: Prefixo para as mensagens de progresso no stdout.
-        config: Instância de BulkConfig (usa padrão se None).
-
-    Returns:
-        Result namedtuple com estatísticas da execução.
-    """
     if config is None:
         config = BulkConfig()
 
@@ -105,10 +91,8 @@ async def safe_bulk_execute(
                     current_backoff = min(current_backoff * config.BACKOFF_MULTIPLIER, config.MAX_BACKOFF)
                     continue
                 elif e.status == 403:
-                    failed += 1
                     break
                 else:
-                    failed += 1
                     await asyncio.sleep(5)
                     break
             except Exception as e:
@@ -117,23 +101,32 @@ async def safe_bulk_execute(
                     abort_reason = "Discord exigiu CAPTCHA."
                     print(f"{progress_print_prefix}_ABORT_CAPTCHA", flush=True)
                     break
-                failed += 1
                 await asyncio.sleep(5)
                 break
 
         if aborted:
             break
 
-        if item_success:
+        if item_success is True:
             success += 1
-            log_prefix = "SKIPPED" if item_success == "SKIPPED" else "PROGRESS"
-            print(f"{progress_print_prefix}_{log_prefix}:{success}:{total}:{name}", flush=True)
+            print(f"{progress_print_prefix}_PROGRESS:{success}:{total}:{name}", flush=True)
+        elif item_success == "SKIPPED":
+            success += 1
+            print(f"{progress_print_prefix}_SKIPPED:{success}:{total}:{name}", flush=True)
+        else:
+            failed += 1
+            print(f"{progress_print_prefix}_FAILED:{failed}:{total}:{name}", flush=True)
 
+        # Delay inter-item — obrigatório para o rate limiting funcionar
         if i < total - 1 and not aborted and item_success != "SKIPPED":
-            delay = random.uniform(config.MIN_DELAY, config.MAX_DELAY)
-            if random.random() < config.LONG_PAUSE_CHANCE:
-                delay += random.uniform(config.LONG_PAUSE_MIN, config.LONG_PAUSE_MAX)
-            await asyncio.sleep(delay)
+            if item_success is True:
+                delay = random.uniform(config.MIN_DELAY, config.MAX_DELAY)
+                if random.random() < config.LONG_PAUSE_CHANCE:
+                    delay += random.uniform(config.LONG_PAUSE_MIN, config.LONG_PAUSE_MAX)
+                await asyncio.sleep(delay)
+            # item falhou: o sleep(5) interno já serve de pausa, não adiciona mais
+
+
 
     duration = time.time() - start_time
     status = "ABORTADO" if aborted else "COMPLETADO"

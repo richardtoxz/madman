@@ -11,40 +11,8 @@ import discord
 from collections import deque
 
 
-# ── Regex patterns (compilados uma vez) ──────────────────────
+from config import ProtectionConfig
 
-SCAM_PATTERNS = [
-    re.compile(r'd[i1l!]sc[o0]rd[\-\.]?(?:app|gift|nitro)', re.IGNORECASE),
-    re.compile(r'st[e3][a4]m\s*c[o0]mmun[i1]ty', re.IGNORECASE),
-    re.compile(r'(?:free|claim).{0,20}n[i1]tr[o0]', re.IGNORECASE),
-    re.compile(r'(?:cs|tf2|dota).{0,15}(?:trade|skin|item)', re.IGNORECASE),
-    re.compile(r'(?:epicgames|roblox).{0,10}(?:free|gift|promo)', re.IGNORECASE),
-]
-
-INVITE_PATTERNS = [
-    re.compile(r'discord\.gg/', re.IGNORECASE),
-    re.compile(r'discord\.com/invite/', re.IGNORECASE),
-    re.compile(r'discord\.com/events/', re.IGNORECASE),
-]
-
-SUSPICIOUS_TLDS = ('.xyz', '.tk', '.ml', '.ga', '.cf', '.gq', '.top', '.buzz')
-
-SAFE_DOMAINS = {
-    'tenor.com', 'media.tenor.com', 'c.tenor.com',
-    'giphy.com', 'media.giphy.com', 'i.giphy.com',
-    'cdn.discordapp.com', 'media.discordapp.net', 'media.discordapp.com',
-    'images-ext-1.discordapp.net', 'images-ext-2.discordapp.net',
-    'imgur.com', 'i.imgur.com',
-    'youtube.com', 'www.youtube.com', 'youtu.be',
-    'twitch.tv', 'www.twitch.tv', 'clips.twitch.tv',
-    'twitter.com', 'x.com', 'pbs.twimg.com',
-    'reddit.com', 'www.reddit.com', 'i.redd.it',
-    'spotify.com', 'open.spotify.com',
-    'github.com', 'raw.githubusercontent.com',
-    'google.com', 'www.google.com',
-}
-
-MEDIA_EXTENSIONS = ('.gif', '.png', '.jpg', '.jpeg', '.webp', '.mp4', '.webm', '.mov')
 
 # Regex para extrair URL completa e também o domínio separadamente
 URL_PATTERN = re.compile(
@@ -57,6 +25,7 @@ class ProtectionManager:
     def __init__(self, client):
         self.client = client
         self.enabled = False
+        self.config = ProtectionConfig()
 
         # Stats
         self.stats = {
@@ -68,8 +37,8 @@ class ProtectionManager:
         }
 
         # Anti-raid tracking (sliding windows)
-        self._dm_authors = deque(maxlen=50)       # (timestamp, author_id)
-        self._fr_timestamps = deque(maxlen=30)    # timestamp
+        self._dm_authors = deque(maxlen=self.config.DM_FLOOD_MAXLEN)       # (timestamp, author_id)
+        self._fr_timestamps = deque(maxlen=self.config.FR_FLOOD_MAXLEN)    # timestamp
 
     def enable(self):
         self.enabled = True
@@ -85,20 +54,18 @@ class ProtectionManager:
 
     # ── Helpers ───────────────────────────────────────────────
 
-    @staticmethod
-    def _is_safe_domain(domain: str) -> bool:
+    def _is_safe_domain(self, domain: str) -> bool:
         """Verifica se o domínio é seguro (whitelist)."""
         domain_lower = domain.lower()
-        for safe in SAFE_DOMAINS:
+        for safe in self.config.SAFE_DOMAINS:
             if domain_lower == safe or domain_lower.endswith(f'.{safe}'):
                 return True
         return False
 
-    @staticmethod
-    def _is_media_url(url: str) -> bool:
+    def _is_media_url(self, url: str) -> bool:
         """Verifica se a URL termina em uma extensão de mídia conhecida."""
         path = url.split('?')[0].split('#')[0].lower()
-        return path.endswith(MEDIA_EXTENSIONS)
+        return any(path.endswith(ext) for ext in self.config.MEDIA_EXTENSIONS)
 
     @staticmethod
     def _extract_component_urls(message: discord.Message) -> list[str]:
@@ -142,7 +109,7 @@ class ProtectionManager:
 
         # 1. Scam patterns — phishing (opera no texto mascarado)
         # Isso evita que cdn.discordapp.com de match em 'discordapp' (pattern de scam)
-        for pattern in SCAM_PATTERNS:
+        for pattern in self.config.SCAM_PATTERNS:
             if pattern.search(masked_text):
                 return "SCAM"
 
@@ -150,12 +117,12 @@ class ProtectionManager:
         for full_url, domain in all_matches:
             if self._is_safe_domain(domain):
                 continue
-            for tld in SUSPICIOUS_TLDS:
+            for tld in self.config.SUSPICIOUS_TLDS:
                 if domain.lower().endswith(tld):
                     return "SCAM"
 
         # 3. Convites de servidor no texto (usa o texto original)
-        for pattern in INVITE_PATTERNS:
+        for pattern in self.config.INVITE_PATTERNS:
             if pattern.search(text):
                 return "SPAM"
 
@@ -185,13 +152,13 @@ class ProtectionManager:
         # Anti-raid: DM flood check
         now = time.time()
         self._dm_authors.append((now, author.id))
-        unique_recent = len({
-            aid for ts, aid in self._dm_authors
-            if now - ts < 300
-        })
-        if unique_recent > 10:
+        window = self.config.DM_FLOOD_WINDOW
+        relevant = [t for t, aid in self._dm_authors if now - t < window]
+        
+        unique_authors = {aid for t, aid in relevant}
+        if len(unique_authors) >= self.config.DM_FLOOD_MAX_UNIQUE:
             self.stats["dm_floods"] += 1
-            print(f"PROTECTION:DM_FLOOD:{unique_recent}", flush=True)
+            print(f"PROTECTION:DM_FLOOD:{len(unique_authors)}", flush=True)
 
         # Link Shield: classifica conteúdo (texto) e botões (separados)
         button_urls = self._extract_component_urls(message)
@@ -235,12 +202,13 @@ class ProtectionManager:
         now = time.time()
         self._fr_timestamps.append(now)
 
-        recent_count = sum(1 for ts in self._fr_timestamps if now - ts < 600)
-        if recent_count > 5:
+        window = self.config.FR_FLOOD_WINDOW
+        relevant = [t for t in self._fr_timestamps if now - t < window]
+        if len(relevant) >= self.config.FR_FLOOD_MAX_COUNT:
             self.stats["fr_floods"] += 1
             self.stats["fr_rejected"] += 1
             print(
-                f"PROTECTION:FR_FLOOD:{recent_count}:rejeitando {relationship.user}",
+                f"PROTECTION:FR_FLOOD:{len(relevant)}:rejeitando {relationship.user}",
                 flush=True
             )
             try:

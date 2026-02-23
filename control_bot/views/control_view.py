@@ -10,6 +10,7 @@ from views.handlers import (
 )
 from views.handlers.voice import handle_voice_afk, handle_voice_follow
 from views.handlers.protection import handle_protection
+from views.handlers.tracker import handle_tracker
 
 
 HANDLER_MAP = {
@@ -23,6 +24,7 @@ HANDLER_MAP = {
     "voice_afk": handle_voice_afk,
     "voice_follow": handle_voice_follow,
     "protection": handle_protection,
+    "tracker": handle_tracker,
     "pending": handle_pending_requests,
     "clean_friends": handle_clean_friends,
     "unblock": handle_unblock_all,
@@ -82,21 +84,27 @@ class ControlSelect(ui.Select):
             discord.SelectOption(
                 label="Farmar Voz",
                 description="Conectar em canal de voz e ficar AFK.",
-                emoji="🎙️",
+                emoji="<:mic:1475141243943256115>",
                 value="voice_afk"
             ),
             discord.SelectOption(
                 label="Seguir Usuário",
                 description="Seguir um usuário em canais de voz.",
-                emoji="👁️",
+                emoji="<:follow:1475141242009551023>",
                 value="voice_follow"
             ),
             # ─── PROTEÇÕES ───
             discord.SelectOption(
                 label="Proteções",
                 description="Ativar/desativar proteções automáticas de DM e raids.",
-                emoji="🛡️",
+                emoji="<:protection:1475141240420044901>",
                 value="protection"
+            ),
+            discord.SelectOption(
+                label="Tracker",
+                description="Configurar e iniciar rastreio de um usuário.",
+                emoji="<:eye:1475141238943650014>",
+                value="tracker"
             ),
             # ─── SOCIAL ───
             discord.SelectOption(

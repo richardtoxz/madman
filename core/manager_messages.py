@@ -202,22 +202,6 @@ class MessagesMixin:
 
         return last_result
 
-    # ── Deletar por ID ───────────────────────────────────────
-
-    async def delete_message_by_id(self, user_id: int, channel_id: int, message_id: int):
-        p = self._get_proc(user_id)
-        if not p:
-            return False, "Não conectado"
-        raw = await p.send_and_wait(
-            f"MSG_DELETE_ID:{channel_id}:{message_id}", "MSG_DELETE_ID_RESULT:", timeout=10.0
-        )
-        if raw and raw.startswith("OK"):
-            return True, "Mensagem deletada"
-        elif raw and raw.startswith("NOT_FOUND"):
-            return True, "Mensagem já não existe"
-        elif raw and raw.startswith("FORBIDDEN"):
-            return False, "Sem permissão"
-        return False, raw or "Sem resposta"
 
     # ── Contar msgs ──────────────────────────────────────────
 

@@ -23,7 +23,7 @@ class SobreView(ui.LayoutView):
         self.add_item(ui.Container(
             # Título
             ui.TextDisplay("# Madman "),
-            ui.TextDisplay("O **Madman** é uma ferramenta de automação para o discord, com foco em praticidade, controle e segurança."),
+            ui.TextDisplay("O **Madman** é o seu painel definitivo de automação para o Discord. Com uma interface **intuitiva**, ele oferece ferramentas avançadas de **gestão, limpeza e segurança** — tudo a um clique de distância, projetado para maximizar sua produtividade e proteger sua conta."),
 
             ui.Separator(spacing=discord.SeparatorSpacing.small),
 
@@ -31,19 +31,23 @@ class SobreView(ui.LayoutView):
             ui.TextDisplay("### Módulos do Sistema"),
             ui.TextDisplay(
                 "> <:account:1471252343386280068> **Autenticação de Conta**\n"
-                "> *Autenticação segura de conta via token.*"
+                " *Autenticação segura da conta.*"
             ),
             ui.TextDisplay(
                 "> <:friends:1471247997307191326> **Relações Sociais**\n"
-                "> *Limpeza de amigos, gestão de bloqueios e pedidos pendentes.*"
+                " *Limpeza de amigos, gestão de bloqueios e pedidos pendentes.*"
             ),
             ui.TextDisplay(
                 "> <:guild:1471252315678834788> **Servidores**\n"
-                "> *Silenciar servidores e sair de servidores.*"
+                " *Silenciar servidores e sair de servidores.*"
             ),
             ui.TextDisplay(
                 "> <:clean:1471255175795834961> **Privacidade & Limpeza**\n"
-                "> *Limpeza de mensagens em (DMs/Canais) e remoção via Data Package.*"
+                " *Limpeza de mensagens em (DMs/Canais).*"
+            ),
+            ui.TextDisplay(
+                "> <:protection:1475141240420044901> **Proteções**\n"
+                " *Proteções contra DMs e raids indesejadas.*"
             ),
 
             ui.Separator(spacing=discord.SeparatorSpacing.small),

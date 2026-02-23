@@ -6,13 +6,13 @@ import discord
 import datetime
 
 
-APP_ID = 1466853141508260093
-ASSET_LOGO = "madman_logo"
+from config import PresenceConfig
 
 
 class PresenceManager:
     def __init__(self, client: discord.Client):
         self.client = client
+        self.config = PresenceConfig()
         self._login_time = discord.utils.utcnow()
         self._task_name: str | None = None
         self._task_detail: str | None = None
@@ -30,9 +30,9 @@ class PresenceManager:
         
         self._resolving = True
         try:
-            print(f"PRESENCE:Resolvendo assets para APP_ID {APP_ID}...", flush=True)
+            print(f"PRESENCE:Resolvendo assets para APP_ID {self.config.APP_ID}...", flush=True)
             # Acessa o endpoint via o cliente
-            assets_data = await self.client.http.get_app_assets(APP_ID)
+            assets_data = await self.client.http.get_app_assets(self.config.APP_ID)
             for asset in assets_data:
                 self._assets_map[asset['name']] = str(asset['id'])
             print(f"PRESENCE:Assets resolvidos: {list(self._assets_map.keys())}", flush=True)
@@ -47,14 +47,14 @@ class PresenceManager:
 
     def _build_main_activity(self) -> discord.Activity:
         """Atividade padrão: logado e aguardando."""
-        asset_id = self._get_asset_id(ASSET_LOGO)
+        asset_id = self._get_asset_id(self.config.ASSET_LOGO)
         state_text = "ayo.so/toxz"
         if self._protection_enabled:
             state_text += " | Protecao Ativa"
             
         return discord.Activity(
             type=discord.ActivityType.playing,
-            application_id=APP_ID,
+            application_id=self.config.APP_ID,
             name="Madman",
             details="Madman Services",
             state=state_text,
@@ -69,10 +69,10 @@ class PresenceManager:
 
     def _build_task_activity(self) -> discord.Activity:
         """Atividade de tarefa em execução."""
-        asset_id = self._get_asset_id(ASSET_LOGO)
+        asset_id = self._get_asset_id(self.config.ASSET_LOGO)
         return discord.Activity(
             type=discord.ActivityType.playing,
-            application_id=APP_ID,
+            application_id=self.config.APP_ID,
             name="Madman",
             details=self._task_name or "Madman Services",
             state=self._task_detail or "👻",

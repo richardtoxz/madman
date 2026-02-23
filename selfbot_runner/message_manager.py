@@ -10,18 +10,7 @@ import json
 from typing import Optional, List, Dict, Tuple
 
 
-class MessageDeleteConfig:
-    """Delay adaptativo para deletar mensagens."""
-    BASE_DELAY = 0.6
-    MIN_DELAY = 0.45
-    MAX_DELAY = 5.0
-    BACKOFF_MULTIPLIER = 2.0
-    COOLDOWN_STEP = 0.05
-    COOLDOWN_AFTER = 10
-    MAX_429_CONSECUTIVE = 6
-    BATCH_SIZE = 50
-    BATCH_PAUSE_MIN = 3.0
-    BATCH_PAUSE_MAX = 6.0
+from config import MessageConfig
 
 
 class MessageManager:
@@ -36,7 +25,7 @@ class MessageManager:
         self.cancelled = False
         self.paused = False
         self._current_task = None
-        self.config = MessageDeleteConfig()
+        self.config = MessageConfig()
 
     async def _reboot_state(self):
         """Cancela qualquer operação em andamento e limpa as flags de controle."""
@@ -344,23 +333,6 @@ class MessageManager:
         status_final = "CANCELADO" if self.cancelled else ("ABORTADO" if stats["abortado"] else "COMPLETADO")
         print(f"RESULT:{status_final}:Deletadas {stats['deletadas']} total.", flush=True)
 
-    # =============================================
-    # 4. DELETE POR ID
-    # =============================================
-    async def delete_message_by_id(self, channel_id: int, message_id: int):
-        try:
-            channel = self.client.get_channel(channel_id)
-            if not channel:
-                channel = await self.client.fetch_channel(channel_id)
-            partial = channel.get_partial_message(message_id)
-            await partial.delete()
-            print(f"MSG_DELETE_ID_RESULT:OK:{channel_id}:{message_id}", flush=True)
-        except discord.NotFound:
-            print(f"MSG_DELETE_ID_RESULT:NOT_FOUND:{message_id}", flush=True)
-        except discord.Forbidden:
-            print(f"MSG_DELETE_ID_RESULT:FORBIDDEN:{message_id}", flush=True)
-        except Exception as e:
-            print(f"MSG_DELETE_ID_RESULT:FAIL:{e}", flush=True)
 
     # =============================================
     # 5. FECHAR DMs

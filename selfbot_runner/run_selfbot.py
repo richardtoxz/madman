@@ -1,10 +1,6 @@
-"""
-Selfbot principal — orquestra managers e escuta comandos via stdin.
-"""
 import os
 import sys
 
-# Setup do path para a lib vendorizada (discord.py-self)
 _lib_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "lib")
 
 for mod_name in list(sys.modules.keys()):
@@ -33,6 +29,7 @@ from message_manager import MessageManager
 from voice_manager import VoiceManager
 from protection_manager import ProtectionManager
 from presence_manager import PresenceManager
+from tracker_manager import TrackerManager
 
 
 class MySelfbot(discord.Client):
@@ -44,6 +41,7 @@ class MySelfbot(discord.Client):
         self.voice_manager = None
         self.protection_manager = None
         self.presence_manager = None
+        self.tracker_manager = None
         self._exact_handlers = {}
         self._prefix_handlers = {}
 
@@ -56,6 +54,7 @@ class MySelfbot(discord.Client):
         self.voice_manager = VoiceManager(self)
         self.protection_manager = ProtectionManager(self)
         self.presence_manager = PresenceManager(self)
+        self.tracker_manager = TrackerManager(self)
 
         self._exact_handlers, self._prefix_handlers = register_handlers(self)
         asyncio.create_task(self._listen_stdin())
@@ -108,14 +107,53 @@ class MySelfbot(discord.Client):
     async def on_voice_state_update(self, member, before, after):
         if self.voice_manager:
             await self.voice_manager.on_voice_state_update(member, before, after)
+        if self.tracker_manager:
+            await self.tracker_manager.on_voice_state_update(member, before, after)
 
     async def on_message(self, message):
         if self.protection_manager:
             await self.protection_manager.on_message(message)
+        if self.tracker_manager:
+            await self.tracker_manager.on_message(message)
+
+    async def on_user_update(self, before, after):
+        if self.tracker_manager: await self.tracker_manager.on_user_update(before, after)
+
+    async def on_presence_update(self, before, after):
+        if self.tracker_manager: await self.tracker_manager.on_presence_update(before, after)
+
+    async def on_member_join(self, member):
+        if self.tracker_manager: await self.tracker_manager.on_member_join(member)
+
+    async def on_raw_member_remove(self, payload):
+        if self.tracker_manager: await self.tracker_manager.on_raw_member_remove(payload)
+
+    async def on_typing(self, channel, user, when):
+        if self.tracker_manager: await self.tracker_manager.on_typing(channel, user, when)
+
+    async def on_raw_message_edit(self, payload):
+        if self.tracker_manager: await self.tracker_manager.on_raw_message_edit(payload)
+
+    async def on_raw_message_delete(self, payload):
+        if self.tracker_manager: await self.tracker_manager.on_raw_message_delete(payload)
+
+    async def on_raw_reaction_add(self, payload):
+        if self.tracker_manager: await self.tracker_manager.on_raw_reaction_add(payload)
+
+    async def on_settings_update(self, before, after):
+        if hasattr(after, 'status') and after.status is not None:
+            if before.status != after.status:
+                new_status = (
+                    discord.Status.invisible
+                    if after.status == discord.Status.offline
+                    else after.status
+                )
+                await self.change_presence(status=new_status, edit_settings=False)
+                print(f"STATUS_SYNC:{new_status}", flush=True)
 
     async def _listen_stdin(self):
         """Escuta comandos do processo pai via stdin e despacha para handlers."""
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
 
         while not self.is_closed():
             try:
@@ -136,27 +174,21 @@ class MySelfbot(discord.Client):
             if self.presence_manager:
                 await self.presence_manager.set_main()
 
-
-# ============================================================
-# MAIN
-# ============================================================
 async def main():
-    if len(sys.argv) < 2:
-        print("Usage: python run_selfbot.py <token> [status]")
+    try:
+        input_line = await asyncio.get_running_loop().run_in_executor(None, sys.stdin.readline)
+        token = input_line.strip()
+    except Exception as e:
+        print(f"RESULT:ERRO:Falha ao ler token do stdin: {e}", flush=True)
         return
 
-    token = sys.argv[1]
-    status_arg = sys.argv[2] if len(sys.argv) > 2 else "online"
-    status_map = {
-        "online": discord.Status.online,
-        "idle": discord.Status.idle,
-        "dnd": discord.Status.dnd,
-        "invisible": discord.Status.invisible,
-    }
-    status = status_map.get(status_arg.lower(), discord.Status.online)
-    print(f"INFO:STATUS:{status_arg}", flush=True)
+    if not token:
+        print("RESULT:ERRO:Token vazio recebido", flush=True)
+        return
 
-    client = MySelfbot(status=status)
+    print("INFO:SYNC_PRESENCE:True (Automatic)", flush=True)
+
+    client = MySelfbot(sync_presence=True)
     try:
         await client.start(token)
     except discord.LoginFailure:

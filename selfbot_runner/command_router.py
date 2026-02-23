@@ -286,6 +286,23 @@ def register_handlers(bot):
     exact["PROTECTION_DISABLE"] = handle_protection_disable
     exact["PROTECTION_STATUS"] = handle_protection_status
 
+    # ─── TRACKER ──────────────────────────────────────────────
+    async def handle_tracker_start(bot, cmd):
+        parts = cmd.split(" ", 3)
+        if len(parts) >= 4:
+            target_id = parts[2]
+            channel_id = parts[3]
+            if bot.tracker_manager:
+                bot.tracker_manager.start_tracking(target_id, channel_id)
+
+    async def handle_tracker_stop(bot, cmd):
+        if bot.tracker_manager:
+            bot.tracker_manager.stop_tracking()
+
+    prefix["TRACKER START"] = handle_tracker_start
+    exact["TRACKER STOP"] = handle_tracker_stop
+
+
     # ─── PRESENCE ─────────────────────────────────────────────
     async def handle_presence_main(bot, cmd):
         if bot.presence_manager:

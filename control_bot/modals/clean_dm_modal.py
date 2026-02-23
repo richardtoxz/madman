@@ -98,9 +98,19 @@ class CleanDMModal(ui.Modal, title='Limpar Mensagens (DM/Canal)'):
 
         if "Deletadas " in result:
             try:
-                stats_part = result.split("Deletadas ")[1].split(" ")[0]
-                deleted_count = stats_part.split("/")[0]
-                total_count = stats_part.split("/")[1]
+                # Formato: "Limpeza total concluída. Deletadas 189 total."
+                # ou:      "Limpeza parcial. 5 msgs ainda visíveis. Deletadas 189 total."
+                after_del = result.split("Deletadas ")[1]
+                deleted_count = after_del.split(" ")[0].strip()
+
+                # Se a string contém X/Y (ex: datapack), pega o total da barra
+                if "/" in after_del:
+                    total_count = after_del.split("/")[1].split()[0].strip()
+                else:
+                    # total real = max(deletadas, total pré-contado)
+                    pre_total = int(view.channel_info.get("total", 0) or 0)
+                    del_int = int(deleted_count) if deleted_count.isdigit() else 0
+                    total_count = str(max(pre_total, del_int))
             except Exception:
                 pass
 

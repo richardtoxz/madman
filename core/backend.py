@@ -24,15 +24,20 @@ log = logging.getLogger(__name__)
 class SelfbotManager(RelationshipMixin, GuildMixin, MessagesMixin, VoiceMixin, ProtectionMixin):
     """Orquestra processos selfbot e delega operações para mixins."""
 
+    IDENTIFY_COOLDOWN = 5.5  # segundos entre IDENTIFYs para evitar spam no IP
+
     def __init__(self):
         self.active_processes: dict[int, SelfbotProcess] = {}
         self.user_whitelists: dict[int, list[int]] = {}
+        self._identify_lock = asyncio.Lock()
+        self._last_identify_at: float = 0.0
+        self._bulk_semaphore = asyncio.Semaphore(3)  # máx 3 operações bulk simultâneas
         self.user_guild_whitelists: dict[int, list[int]] = {}
 
     # ── Autenticação ─────────────────────────────────────────
 
     async def authenticate(
-        self, user_id: int, token: str, status: str = "online"
+        self, user_id: int, token: str
     ) -> tuple[bool, str]:
         """
         Autentica e conecta o selfbot em uma única operação atômica.
@@ -63,18 +68,30 @@ class SelfbotManager(RelationshipMixin, GuildMixin, MessagesMixin, VoiceMixin, P
         if not os.path.exists(script_path):
             return False, f"Script do selfbot não encontrado: {script_path}"
 
-        # Spawna o subprocess
-        try:
-            process = await asyncio.create_subprocess_exec(
-                sys.executable, script_path, token, status,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                stdin=asyncio.subprocess.PIPE,
-            )
-        except OSError as e:
-            return False, f"Falha ao criar subprocess: {e}"
+        # Stagger Identify: garante intervalo entre logins no mesmo IP
+        async with self._identify_lock:
+            now = asyncio.get_running_loop().time()
+            wait = self.IDENTIFY_COOLDOWN - (now - self._last_identify_at)
+            if wait > 0:
+                log.info("LOGIN_STAGGER: Aguardando %.1fs para o próximo Identify...", wait)
+                await asyncio.sleep(wait)
 
-        sp = SelfbotProcess(process, status)
+            # Spawna o subprocess
+            try:
+                process = await asyncio.create_subprocess_exec(
+                    sys.executable, script_path,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                    stdin=asyncio.subprocess.PIPE,
+                )
+                # Passa o token via stdin para não aparecer no Task Manager
+                process.stdin.write(f"{token}\n".encode())
+                await process.stdin.drain()
+                self._last_identify_at = asyncio.get_running_loop().time()
+            except OSError as e:
+                return False, f"Falha ao criar subprocess: {e}"
+
+        sp = SelfbotProcess(process, "sync_presence")
         sp.start_reader()
         self.active_processes[user_id] = sp
 
@@ -124,6 +141,17 @@ class SelfbotManager(RelationshipMixin, GuildMixin, MessagesMixin, VoiceMixin, P
                 return False
         return False
 
+    async def send_raw_command(self, user_id: int, command: str) -> bool:
+        """Envia um comando arbitrário em texto (IPC) para o runner local."""
+        proc = self._get_proc(user_id)
+        if proc and proc.is_alive:
+            try:
+                await proc.send(command)
+                return True
+            except RuntimeError:
+                return False
+        return False
+
     # ── Whitelists ───────────────────────────────────────────
 
     async def toggle_whitelist(self, user_id: int, target_id: int) -> bool:
@@ -155,7 +183,7 @@ class SelfbotManager(RelationshipMixin, GuildMixin, MessagesMixin, VoiceMixin, P
         proc = self.active_processes.get(user_id)
         if proc and not proc.is_alive:
             log.warning("Processo morto detectado para user %s", user_id)
-            asyncio.create_task(self._cleanup_process(user_id))
+            asyncio.get_running_loop().create_task(self._cleanup_process(user_id))
             return None
         return proc
 
@@ -188,69 +216,76 @@ class SelfbotManager(RelationshipMixin, GuildMixin, MessagesMixin, VoiceMixin, P
             return "❌ Não autenticado"
 
         last_result = "Iniciando..."
+        done = False
 
-        async for text in proc.send_and_stream(command, prefixes, timeout):
-            if text.startswith("TIMEOUT:"):
-                last_result = "ERRO: Timeout"
-                break
+        async with self._bulk_semaphore:
+            async for text in proc.send_and_stream(command, prefixes, timeout):
+                if done or text.startswith("TIMEOUT:"):
+                    last_result = "ERRO: Timeout" if not done else last_result
+                    break
 
-            for prefix in prefixes:
-                if text.startswith(f"{prefix}START:"):
-                    try:
-                        total = int(text.split(":")[1])
+                for prefix in prefixes:
+                    if text.startswith(f"{prefix}START:"):
+                        try:
+                            total = int(text.split(":")[1])
+                            if update_callback:
+                                await update_callback(0, total, "WAITING_START", "")
+                        except Exception:
+                            pass
+
+                    elif text.startswith(f"{prefix}PROGRESS:"):
+                        parts = text.split(":")
+                        if len(parts) >= 3:
+                            try:
+                                curr, total = int(parts[1]), int(parts[2])
+                                name = parts[3] if len(parts) >= 4 else ""
+                                if update_callback:
+                                    await update_callback(curr, total, "CLEANING", name)
+                            except Exception:
+                                pass
+
+                    elif text.startswith(f"{prefix}BATCH_PAUSE:"):
+                        parts = text.split(":")
+                        if len(parts) >= 4:
+                            try:
+                                secs, curr, total = parts[1], int(parts[2]), int(parts[3])
+                                if update_callback:
+                                    await update_callback(
+                                        curr, total, "BATCH_PAUSE", f"Pausa ({secs}s)"
+                                    )
+                            except Exception:
+                                pass
+
+                    elif "RATELIMIT" in text and prefix in text:
                         if update_callback:
-                            await update_callback(0, total, "WAITING_START", "")
-                    except Exception:
-                        pass
+                            await update_callback(None, None, "RATE_LIMITED", text)
 
-                elif text.startswith(f"{prefix}PROGRESS:"):
-                    parts = text.split(":")
-                    if len(parts) >= 3:
-                        try:
-                            curr, total = int(parts[1]), int(parts[2])
-                            name = parts[3] if len(parts) >= 4 else ""
-                            if update_callback:
-                                await update_callback(curr, total, "CLEANING", name)
-                        except Exception:
-                            pass
+                    elif text.startswith(f"{prefix}RESULT:"):
+                        last_result = (
+                            text.split(":", 2)[-1] if text.count(":") >= 2 else text
+                        )
+                        done = True
+                        break
 
-                elif text.startswith(f"{prefix}BATCH_PAUSE:"):
-                    parts = text.split(":")
-                    if len(parts) >= 4:
-                        try:
-                            secs, curr, total = parts[1], int(parts[2]), int(parts[3])
-                            if update_callback:
-                                await update_callback(
-                                    curr, total, "BATCH_PAUSE", f"Pausa ({secs}s)"
-                                )
-                        except Exception:
-                            pass
+                    elif text.startswith(f"{prefix}CANCELLED"):
+                        last_result = "CANCELADO"
+                        done = True
+                        break
 
-                elif "RATELIMIT" in text and prefix in text:
-                    if update_callback:
-                        await update_callback(None, None, "RATE_LIMITED", text)
+                    elif "ABORT" in text and prefix in text:
+                        last_result = f"ABORTADO: {text}"
+                        done = True
+                        break
 
-                elif text.startswith(f"{prefix}RESULT:"):
-                    last_result = (
-                        text.split(":", 2)[-1] if text.count(":") >= 2 else text
-                    )
+                    elif text.startswith(f"{prefix}ERROR:"):
+                        if update_callback:
+                            await update_callback(None, None, "ERROR", text)
+
+                if done:
                     break
-
-                elif text.startswith(f"{prefix}CANCELLED"):
-                    last_result = "CANCELADO"
-                    break
-
-                elif "ABORT" in text and prefix in text:
-                    last_result = f"ABORTADO: {text}"
-                    break
-
-                elif text.startswith(f"{prefix}ERROR:"):
-                    if update_callback:
-                        await update_callback(None, None, "ERROR", text)
 
         return last_result
 
-    # ── Pub/Sub ──────────────────────────────────────────────
 
     def subscribe_events(self, user_id: int, prefix: str, callback):
         proc = self._get_proc(user_id)
@@ -258,6 +293,6 @@ class SelfbotManager(RelationshipMixin, GuildMixin, MessagesMixin, VoiceMixin, P
             proc.subscribe_event(prefix, callback)
 
     def unsubscribe_events(self, user_id: int, prefix: str, callback):
-        proc = self.active_processes.get(user_id)
+        proc = self._get_proc(user_id)
         if proc:
             proc.unsubscribe_event(prefix, callback)
