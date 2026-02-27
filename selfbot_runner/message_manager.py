@@ -60,9 +60,7 @@ class MessageManager:
             pass
         return False
 
-    # =============================================
     # UTILIDADE: Delay adaptativo (delete 1 msg)
-    # =============================================
     async def _adaptive_delete(self, message, current_delay, consecutive_ok, consecutive_429, prefix):
         try:
             await message.delete()
@@ -109,9 +107,7 @@ class MessageManager:
             print(f"{prefix}_ERROR:UNKNOWN:{message.id}:{e}", flush=True)
             return False, current_delay, consecutive_ok, 0, False
 
-    # =============================================
     # CORE: Deletar lista de msgs
-    # =============================================
     async def _delete_messages_adaptive(self, messages, prefix="MSG_DEL"):
         stats = {"deletadas": 0, "falhas": 0, "ratelimits": 0, "abortado": False, "tempo": 0.0}
         start_time = time.time()
@@ -158,9 +154,28 @@ class MessageManager:
         stats["tempo"] = time.time() - start_time
         return stats
 
-    # =============================================
+
+    # UTILIDADE: Remover reações próprias num canal
+    async def _remove_own_reactions(self, channel):
+        removed = 0
+        try:
+            async for msg in channel.history(limit=500):
+                if not hasattr(msg, 'reactions') or not msg.reactions:
+                    continue
+                for reaction in msg.reactions:
+                    if getattr(reaction, 'me', False):
+                        try:
+                            await msg.remove_reaction(reaction.emoji, self.client.user)
+                            removed += 1
+                            await asyncio.sleep(0.5)
+                        except Exception:
+                            pass
+        except Exception:
+            pass
+        if removed:
+            print(f"REACTIONS_REMOVED:{removed}", flush=True)
+
     # 1. LIMPAR MSGS EM 1 CANAL
-    # =============================================
     async def clean_channel(self, channel_id: int):
         await self._reboot_state()
         channel, target_type, error = await self._resolve_channel(channel_id)
@@ -209,6 +224,9 @@ class MessageManager:
             if stats["deletadas"] == 0 or stats["abortado"] or self.cancelled:
                 break
 
+        # Remover reações próprias antes da verificação final
+        await self._remove_own_reactions(channel)
+
         # Verificação final
         print("STATUS:VERIFICACAO_FINAL", flush=True)
         remanescente = await self._verify_clean(channel)
@@ -219,9 +237,7 @@ class MessageManager:
         else:
             print(f"RESULT:{status_final}:Limpeza total concluída. Deletadas {grand_total_deletadas} total.", flush=True)
 
-    # =============================================
     # 2. LIMPAR MSGS EM TODAS AS DMs
-    # =============================================
     async def clean_all_dms(self):
         await self._reboot_state()
 
@@ -243,7 +259,7 @@ class MessageManager:
             name = str(dm.recipient) if dm.recipient else f"DM {dm.id}"
             print(f"INFO:CANAL_DETECTADO:DM com {name}", flush=True)
             print("INFO:TARGET_TYPE:user", flush=True)
-            print(f"INFO:ALL_DMS_CHANNEL:{idx + 1}:{total_dms}:{name}", flush=True)
+            print(f"MSG_CLEAN_ALL_DMS_CHANNEL:{idx + 1}:{total_dms}:{name}", flush=True)
 
             messages = await self._collect_messages_quiet(dm)
             if not messages:
@@ -264,6 +280,9 @@ class MessageManager:
                     extra_stats = await self._delete_messages_adaptive(extra, "MSG_DEL_EXTRA")
                     grand_deleted += extra_stats["deletadas"]
 
+            # Remover reações próprias nesta DM
+            await self._remove_own_reactions(dm)
+
             if stats["abortado"]:
                 print(f"MSG_CLEAN_ALL_DMS_RESULT:ABORTADO:Deletadas {grand_deleted} total.", flush=True)
                 return
@@ -272,11 +291,9 @@ class MessageManager:
                 await asyncio.sleep(random.uniform(2.0, 5.0))
 
         status = "CANCELADO" if self.cancelled else "COMPLETADO"
-        print(f"MSG_CLEAN_ALL_DMS_RESULT:{status}:Deletadas {grand_deleted} em {total_dms} DMs", flush=True)
+        print(f"MSG_CLEAN_ALL_DMS_RESULT:{status}:Deletadas {grand_deleted} Mensagens em {total_dms} DMs", flush=True)
 
-    # =============================================
     # 3. LIMPAR MSGS EM GUILD
-    # =============================================
     async def clean_guild(self, guild_id: int):
         await self._reboot_state()
 
@@ -334,9 +351,7 @@ class MessageManager:
         print(f"RESULT:{status_final}:Deletadas {stats['deletadas']} total.", flush=True)
 
 
-    # =============================================
     # 5. FECHAR DMs
-    # =============================================
     async def close_dm(self, channel_id: int):
         try:
             channel = self.client.get_channel(channel_id)
@@ -373,9 +388,7 @@ class MessageManager:
         status = "CANCELADO" if self.cancelled else "COMPLETADO"
         print(f"DM_CLOSE_ALL_RESULT:{status}:{closed}/{total}", flush=True)
 
-    # =============================================
     # 6. GROUP DMs
-    # =============================================
     async def leave_group_dm(self, channel_id: int):
         try:
             channel = self.client.get_channel(channel_id)
@@ -409,22 +422,50 @@ class MessageManager:
         status = "CANCELADO" if self.cancelled else "COMPLETADO"
         print(f"GROUP_DM_LEAVE_ALL_RESULT:{status}:{left}/{total}", flush=True)
 
-    # =============================================
     # 7. LISTAR DMs
-    # =============================================
     async def list_dms(self):
         dms = []
-        for ch in self.client.private_channels:
-            if isinstance(ch, discord.DMChannel):
-                r = ch.recipient
-                dms.append({"id": ch.id, "type": "dm", "name": str(r) if r else "?", "user_id": r.id if r else 0, "last_message_id": ch.last_message_id})
-            elif isinstance(ch, discord.GroupChannel):
-                dms.append({"id": ch.id, "type": "group", "name": str(ch), "owner_id": ch.owner_id, "members": len(ch.recipients) + 1, "last_message_id": ch.last_message_id})
+        try:
+            # fetch_private_channels() bate em GET /users/@me/channels e popula
+            # ch.recipient via store_user() — recipient nunca é None nesta lib
+            channels = await self.client.fetch_private_channels()
+        except Exception as e:
+            print(f"DM_LIST_FETCH_ERROR: {e} - usando cache", flush=True)
+            channels = list(self.client.private_channels)
+
+        for ch in channels:
+            try:
+                if isinstance(ch, discord.DMChannel):
+                    r = ch.recipient
+                    if not r:
+                        continue  # caso extremamente raro (usuário deletado)
+                    dms.append({
+                        "id": ch.id,
+                        "type": "dm",
+                        "name": r.name,
+                        "global_name": getattr(r, 'global_name', r.name) or r.name,
+                        "avatar_url": str(r.display_avatar.url) if r.display_avatar else "",
+                        "user_id": r.id,
+                        "last_message_id": ch.last_message_id
+                    })
+                elif isinstance(ch, discord.GroupChannel):
+                    icon_url = str(ch.icon.url) if ch.icon else ""
+                    dms.append({
+                        "id": ch.id,
+                        "type": "group",
+                        "name": str(ch),
+                        "global_name": str(ch),
+                        "avatar_url": icon_url,
+                        "owner_id": ch.owner_id,
+                        "members": len(ch.recipients) + 1,
+                        "last_message_id": ch.last_message_id
+                    })
+            except Exception as e:
+                print(f"DM_LIST_CHANNEL_ERROR: {ch.id}: {e}", flush=True)
+
         print(f"DM_LIST_RESULT:{json.dumps(dms)}", flush=True)
 
-    # =============================================
     # 8. SCAN GUILDS
-    # =============================================
     async def scan_guilds_for_messages(self):
         self.cancelled = False
         self.control_flags["cancelled"] = False
@@ -450,9 +491,7 @@ class MessageManager:
             await asyncio.sleep(random.uniform(1.5, 3.0))
         print(f"MSG_SCAN_GUILDS_RESULT:{json.dumps(results)}", flush=True)
 
-    # =============================================
     # 9. DATA PACKAGE DELETE
-    # =============================================
     async def delete_from_data_package(self, entries):
         self.cancelled = False
         self.paused = False
@@ -518,9 +557,7 @@ class MessageManager:
         status = "CANCELADO" if self.cancelled else "COMPLETADO"
         print(f"MSG_DATAPACK_RESULT:{status}:Deletados {deleted}/{total}", flush=True)
 
-    # =============================================
     # 10. CONTAR MSGS
-    # =============================================
     async def count_messages(self, channel_id: int):
         self.cancelled = False
         self.control_flags["cancelled"] = False
@@ -564,9 +601,7 @@ class MessageManager:
                 pass
         return count
 
-    # =============================================
     # HELPERS
-    # =============================================
     async def _resolve_channel(self, target_id):
         # Tenta primeiro como canal (Guild ou DM já aberta)
         channel = self.client.get_channel(target_id)

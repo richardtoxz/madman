@@ -1,10 +1,5 @@
-"""
-Gerenciamento de canais de voz do selfbot.
-Usa Gateway-only (change_voice_state) — sem PyNaCl.
-"""
 import asyncio
 import discord
-
 
 class VoiceManager:
     def __init__(self, client):

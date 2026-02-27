@@ -12,13 +12,11 @@ class TrackerModal(ui.Modal, title="Configurar Tracker"):
         max_length=20
     )
 
-    channel_id = ui.TextInput(
-        label="Channel ID (para logs de mensagens)",
+    webhook_url = ui.TextInput(
+        label="Webhook URL (para logs)",
         style=discord.TextStyle.short,
-        placeholder="123456789012345678",
+        placeholder="https://discord.com/api/webhooks/...",
         required=True,
-        min_length=17,
-        max_length=20
     )
 
     def __init__(self, manager, admin_id: int):
@@ -28,38 +26,33 @@ class TrackerModal(ui.Modal, title="Configurar Tracker"):
 
     async def on_submit(self, interaction: discord.Interaction):
         target = self.target_id.value.strip()
-        channel = self.channel_id.value.strip()
+        webhook = self.webhook_url.value.strip()
 
         if not target.isdigit():
             await interaction.response.send_message("❌ O ID do Alvo deve ser numérico.", ephemeral=True)
             return
 
-        if not channel.isdigit():
-            await interaction.response.send_message("❌ O Channel ID deve ser numérico.", ephemeral=True)
+        if not webhook.startswith("https://discord.com/api/webhooks/"):
+            await interaction.response.send_message("❌ Webhook inválido. Use o formato `https://discord.com/api/webhooks/...`", ephemeral=True)
             return
 
-        command = f"TRACKER START {target} {channel}"
+        command = f"TRACKER START {target} {webhook}"
         success = await self.manager.send_raw_command(self.admin_id, command)
 
         if success:
-            # Registra a subscription de eventos no control bot
-            from views.tracker_view import TrackerContextView
             bot = interaction.client
-
             tracker_state = getattr(bot, '_tracker_state', {})
             tracker_state[self.admin_id] = {
                 "target_id": int(target),
-                "channel_id": int(channel),
+                "webhook_url": webhook,
             }
             bot._tracker_state = tracker_state
-
-            self.manager.subscribe_events(self.admin_id, "TRACKER_EVENT:", bot._on_tracker_event)
 
             await interaction.response.send_message(
                 f"✅ Tracker ativado!\n"
                 f"**Alvo:** `{target}`\n"
-                f"**Canal de Logs:** <#{channel}>\n\n"
-                f"Mensagens serão agrupadas e enviadas com contexto expansível.",
+                f"**Logs:** Webhook configurado\n\n"
+                f"Todas as atividades serão logadas via webhook.",
                 ephemeral=True
             )
         else:
@@ -78,16 +71,9 @@ class TrackerStopModal(ui.View):
 
         if success:
             bot = interaction.client
-            # Remove o estado do tracker para que o painel mostre como inativo
             tracker_state = getattr(bot, '_tracker_state', {})
             tracker_state.pop(self.admin_id, None)
             bot._tracker_state = tracker_state
-            # Cancela a escuta dos eventos de tracker
-            try:
-                self.manager.unsubscribe_events(self.admin_id, "TRACKER_EVENT:", bot._on_tracker_event)
-            except Exception:
-                pass
             await interaction.response.send_message("🛑 Tracker desativado.", ephemeral=True)
         else:
             await interaction.response.send_message("❌ Falha ao comunicar com o selfbot.", ephemeral=True)
-

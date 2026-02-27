@@ -84,15 +84,10 @@ def _msg_to_dict(message: discord.Message) -> dict:
         sticker_id = getattr(s, 'id', None)
         if not sticker_id:
             continue
-        # Lottie (.json) não pode ser embutido como imagem num embed.
-        # O CDN serve um PNG de preview para qualquer sticker via /stickers/{id}.png
-        # mesmo que o formato original seja Lottie ou APNG.
+
         fmt_name = fmt.name if fmt else "unknown"
         native_url = getattr(s, 'url', None)
 
-        # Lottie stickers (.json) não têm versão de imagem estática no CDN do Discord.
-        # Testado: 404 em .png, .gif, .webp para stickers Lottie.
-        # PNG/APNG/GIF funcionam normalmente com a URL nativa da lib.
         embeddable = native_url and not native_url.endswith(".json")
         stickers.append({
             "name": name,
@@ -117,8 +112,7 @@ class TrackerManager:
     def __init__(self, client):
         self.client = client
         self.target_id = None
-        self.channel_id = None
-        self.webhook_url = os.getenv("TRACKER_WEBHOOK_URL")
+        self.webhook_url = None
         self.enabled = False
         self.state = TrackerState()
         self._webhook_session = None
@@ -127,43 +121,40 @@ class TrackerManager:
         self.context_ring = ContextRing(maxlen=self.config.CONTEXT_MAXLEN)
         self._msg_cache: dict[int, dict] = {} 
         self._msg_cache_order: deque = deque(maxlen=self.config.MSG_CACHE_MAXLEN) 
+        self.tracked_voice_channels: set[int] = set()
 
         target_env = os.getenv("TRACKER_TARGET_ID")
-        if target_env and target_env.isdigit():
+        webhook_env = os.getenv("TRACKER_WEBHOOK_URL")
+        if target_env and target_env.isdigit() and webhook_env:
             self.target_id = int(target_env)
-
-        channel_env = os.getenv("TRACKER_CHANNEL_ID")
-        if channel_env and channel_env.isdigit():
-            self.channel_id = int(channel_env)
-
-        if self.target_id and (self.channel_id or self.webhook_url):
+            self.webhook_url = webhook_env
             self.enabled = True
             print(f"TRACKER:INIT:Target={self.target_id}", flush=True)
             self._subscription_loop.start()
 
-    def start_tracking(self, target_id: str, channel_id: str):
+    def start_tracking(self, target_id: str, webhook_url: str):
         if target_id.isdigit():
             self.target_id = int(target_id)
-        if channel_id.isdigit():
-            self.channel_id = int(channel_id)
+        self.webhook_url = webhook_url
         self.enabled = True
         self.state = TrackerState()
         self.msg_buffer.clear()
         self._msg_cache.clear()
         self._msg_cache_order.clear()
-        print(f"TRACKER:STARTED:Target={self.target_id}:Channel={self.channel_id}", flush=True)
+        self.tracked_voice_channels.clear()
+        print(f"TRACKER:STARTED:Target={self.target_id}:Webhook={self.webhook_url[:40]}...", flush=True)
         if not self._subscription_loop.is_running():
             self._subscription_loop.start()
         asyncio.create_task(self._subscribe_to_target())
 
-
     def stop_tracking(self):
         self.enabled = False
         self.target_id = None
-        self.channel_id = None
+        self.webhook_url = None
         self.msg_buffer.clear()
         self._msg_cache.clear()
         self._msg_cache_order.clear()
+        self.tracked_voice_channels.clear()
         if self._subscription_loop.is_running():
             self._subscription_loop.stop()
         print("TRACKER:STOPPED", flush=True)
@@ -172,7 +163,10 @@ class TrackerManager:
         await asyncio.sleep(1.5)
         if not self.target_id:
             return
+        
         count = 0
+        found_member = None
+        
         for guild in self.client.guilds:
             try:
                 await guild.subscribe(member_updates=True)
@@ -182,12 +176,86 @@ class TrackerManager:
                         member = await guild.fetch_member(self.target_id)
                     except (discord.NotFound, discord.Forbidden, discord.HTTPException):
                         continue
-                await guild.subscribe_to(members=[member])
-                count += 1
+                
+                if member:
+                    found_member = member
+                    await guild.subscribe_to(members=[member])
+                    count += 1
                 await asyncio.sleep(0.3)
             except Exception as e:
                 print(f"TRACKER:SUBSCRIBE_ERR:{guild.id}:{e}", flush=True)
+                
         print(f"TRACKER:SUBSCRIBED_GUILDS:{count}", flush=True)
+        if found_member:
+            await self._dispatch_initial_state(found_member)
+
+    def _format_activity(self, act) -> str:
+        """Formata uma atividade do Discord para um texto amigável com base no tipo."""
+        if isinstance(act, discord.CustomActivity):
+            return f"> 💭 `{act.name}`"
+        elif isinstance(act, discord.Spotify):
+            return f"> 🎵 Ouvindo **{act.title}** de *{act.artist}*"
+        
+        # Uso do Enum nativo para outras atividades Ricas
+        a_type = getattr(act, 'type', None)
+        if a_type == discord.ActivityType.playing:
+            return f"> 🎮 Jogando **{act.name}**"
+        elif a_type == discord.ActivityType.streaming:
+            return f"> 🎥 Transmitindo **{act.name}**"
+        elif a_type == discord.ActivityType.listening:
+            return f"> 🎧 Ouvindo **{act.name}**"
+        elif a_type == discord.ActivityType.watching:
+            return f"> 📺 Assistindo **{act.name}**"
+        elif a_type == discord.ActivityType.competing:
+            return f"> 🏆 Competindo em **{act.name}**"
+        else:
+            return f"> 🕹️ Atividade: **{act.name}**"
+
+    async def _dispatch_initial_state(self, member: discord.Member):
+        """Dispara um log com o estado inicial do alvo (voz, presença) logo que o tracker é ligado."""
+        changes = []
+        
+        # Status / Presence
+        status_str = str(member.status)
+        status_emojis = {"online": "🟢", "idle": "🌙", "dnd": "⛔", "offline": "⚫"}
+        emoji = status_emojis.get(status_str, "⚪")
+        changes.append(("Situação Atual", f"{emoji} `{status_str.title()}`"))
+        self.state.status = status_str
+        
+        current_acts = [self._format_activity(act) for act in member.activities]
+                
+        if current_acts:
+            acts_text = "\n".join(current_acts)
+            changes.append(("Atividades", acts_text))
+            self.state.activities_repr = current_acts
+            
+        # Voice State
+        vs = member.voice
+        if vs and vs.channel:
+            changes.append(("🎙️ Conexão de Voz", f"Atualmente em `{vs.channel.name}`"))
+            self.state.in_voice_channel_id = vs.channel.id
+            self.tracked_voice_channels.add(vs.channel.id)  # Tracking estático/inicial
+            
+            others = [m.name for m in vs.channel.members if m.id != self.target_id]
+            changes.append(("👥 Companhia Atual", ", ".join(f"`{x}`" for x in others) or "*Sozinho*"))
+            
+            voice_details = []
+            if vs.self_mute: voice_details.append("Mutado 🎙️")
+            if vs.self_deaf: voice_details.append("Silenciado 🔇")
+            if vs.self_stream: voice_details.append("Abriu stream 🎥")
+            if vs.self_video: voice_details.append("Ligou a camera 📷")
+            
+            if voice_details:
+                changes.append(("⚙️ Conf. de Voz", " | ".join(voice_details)))
+                
+        await self._dispatch_log(
+            title="🔍 Tracker Iniciado",
+            color=0xd4a5a5, # Pastel Pink
+            description="O alvo está no momento:",
+            changes=changes,
+            user=member,
+            footer=f"📍 Origem: {member.guild.name}"
+        )
 
     # ── Webhook Helpers ──────────────────
 
@@ -211,46 +279,92 @@ class TrackerManager:
             for name, value in changes:
                 embed.add_field(name=name, value=value, inline=False)
                 
+        # Estilo mais limpo no footer
+        f_text = f"Madman Tracker"
         if footer:
-            embed.set_footer(text=footer)
+            f_text = f"{footer} • {f_text}"
+        embed.set_footer(text=f_text)
 
         try:
             session = await self._get_webhook_session()
             webhook = discord.Webhook.from_url(self.webhook_url, session=session)
-            await webhook.send(embed=embed, username="Tracker Automático")
+            await webhook.send(embed=embed, username="Madman Tracker")
         except Exception as e:
             print(f"TRACKER:WEBHOOK_ERROR:{e}", flush=True)
 
-    # ── IPC ───────────────────
-
-    def _emit_ipc(self, event_type: str, data: dict):
-        payload = {"type": event_type, "target_id": self.target_id, "channel_id": self.channel_id, **data}
-        print(f"TRACKER_EVENT:{json.dumps(payload, ensure_ascii=False)}", flush=True)
+    # ── Message Flush (Webhook) ──────────────────
 
     async def _on_buffer_flush(self, channel_id: int, messages: list[dict]):
-        context = self.context_ring.snapshot(channel_id)
-        guild_name, channel_name = "DM", "DM"
+        if not self.enabled or not self.webhook_url or not messages:
+            return
 
         ch = self.client.get_channel(channel_id)
-        if ch:
-            channel_name = getattr(ch, 'name', 'DM')
-            if hasattr(ch, 'guild') and ch.guild:
-                guild_name = ch.guild.name
+        channel_name = getattr(ch, 'name', 'DM') if ch else 'DM'
+        guild_name = getattr(ch.guild, 'name', 'DM') if ch and hasattr(ch, 'guild') and ch.guild else 'DM'
 
-        guild_id = str(ch.guild.id) if ch and hasattr(ch, 'guild') and ch.guild else "@me"
-        first_ts = messages[0]["timestamp"] if messages else ""
-        last_ts = messages[-1]["timestamp"] if messages else ""
+        image_exts = (".png", ".jpg", ".jpeg", ".gif", ".webp")
+        first_image_url = None
+        lines = []
 
-        self._emit_ipc("message_batch", {
-            "guild_name": guild_name,
-            "guild_id": guild_id,
-            "channel_name": channel_name,
-            "channel_id_src": channel_id,
-            "first_ts": first_ts,
-            "last_ts": last_ts,
-            "messages": messages,
-            "context": context,
-        })
+        for m in messages:
+            ts = m.get("timestamp", "")
+            content = m.get("content", "")
+            attachments = m.get("attachments", [])
+            stickers = m.get("stickers", [])
+            
+            # Formatação clean de mensagens
+            line = f"`{ts}` {content}" if content else f"`{ts}`"
+
+            for url in attachments:
+                clean = url.split("?")[0]
+                if clean.lower().endswith(image_exts) and first_image_url is None:
+                    first_image_url = url
+                else:
+                    filename = clean.rsplit("/", 1)[-1]
+                    line += f"\n> � `{filename}`"
+
+            for s in stickers:
+                s_url = s.get("url")
+                if s_url and first_image_url is None:
+                    first_image_url = s_url
+                else:
+                    label = f"> 🎭 **[{s['name']}]**" + (" *(Lottie)*" if not s_url else "")
+                    line += f"\n{label}"
+
+            lines.append(line)
+
+        content_text = "\n".join(lines)
+        if len(content_text) > 3500:
+            content_text = content_text[:3500] + "\n\n*... [histórico truncado]*"
+
+        first_msg = messages[0]
+        
+        # Tema mais moderno
+        embed = discord.Embed(
+            title="� Mensagem Recebida",
+            color=0xa8e6cf, # Pastel Green
+            description=content_text,
+            timestamp=discord.utils.utcnow()
+        )
+        embed.set_author(
+            name=first_msg.get('author_name', 'Unknown'),
+            icon_url=first_msg.get('author_avatar', '') or None
+        )
+        
+        # Tags bonitas inline
+        embed.add_field(name="📍 Local", value=f"`{guild_name}` ➔ `#{channel_name}`", inline=False)
+        
+        if first_image_url:
+            embed.set_image(url=first_image_url)
+            
+        embed.set_footer(text="Madman Tracker")
+
+        try:
+            session = await self._get_webhook_session()
+            webhook = discord.Webhook.from_url(self.webhook_url, session=session)
+            await webhook.send(embed=embed, username="Madman Tracker")
+        except Exception as e:
+            print(f"TRACKER:WEBHOOK_ERROR:message_batch:{e}", flush=True)
 
     # ── Subscription Loop ────────────────────────────────────
 
@@ -304,7 +418,6 @@ class TrackerManager:
                     title="Configurações de Conta Alteradas",
                     color=0x9b59b6, # Roxo
                     changes=changes,
-                    footer=f"Target ID: {self.target_id}"
                 )
         except Exception as e:
             print(f"TRACKER:PROFILE_FETCH_ERROR:{e}", flush=True)
@@ -319,19 +432,19 @@ class TrackerManager:
             
         changes = []
         if before.name != after.name:
-            changes.append(("Username", f"`{before.name}` ➔ `{after.name}`"))
+            changes.append(("🏷️ Username", f"`{before.name}` ➔ `{after.name}`"))
             self.state.username = after.name
         if before.global_name != after.global_name:
-            changes.append(("Nome de Exibição", f"`{before.global_name}` ➔ `{after.global_name}`"))
+            changes.append(("✨ Nome de Exibição", f"`{before.global_name}` ➔ `{after.global_name}`"))
             self.state.global_name = after.global_name
         if before.avatar != after.avatar:
-            changes.append(("Foto de Perfil", f"[Abrir Novo Avatar]({after.display_avatar.url})"))
+            changes.append(("📸 Foto de Perfil", f"[Abrir Novo Avatar]({after.display_avatar.url})"))
             self.state.avatar_url = after.display_avatar.url
             
         if changes:
             await self._dispatch_log(
-                title="Perfil Atualizado",
-                color=0xf1c40f,
+                title="🎨 Perfil Atualizado",
+                color=0xfac898, # Pastel Orange
                 changes=changes,
                 user=after
             )
@@ -349,31 +462,26 @@ class TrackerManager:
         changes = []
         status_str = str(after.status)
         if status_str != self.state.status:
-            changes.append(("Status", f"`{self.state.status}` ➔ `{status_str}`"))
+            status_emojis = {"online": "🟢", "idle": "🌙", "dnd": "⛔", "offline": "⚫"}
+            emoji = status_emojis.get(status_str, "⚪")
+            changes.append(("Status", f"{emoji} `{status_str.title()}`"))
             self.state.status = status_str
             asyncio.create_task(self._trigger_hybrid_fetch())
             
-        current_acts = []
-        for act in after.activities:
-            if isinstance(act, discord.CustomActivity):
-                current_acts.append(f"💭 {act.name}")
-            elif isinstance(act, discord.Spotify):
-                current_acts.append(f"🎵 Ouvindo **{act.title}** de {act.artist}")
-            else:
-                current_acts.append(f"🎮 Jogando **{act.name}**")
+        current_acts = [self._format_activity(act) for act in after.activities]
                 
         if current_acts != self.state.activities_repr:
-            new_acts = "\n".join(current_acts) or "*Nenhuma atividade*"
-            changes.append(("Atividade Atual", new_acts))
+            new_acts = "\n".join(current_acts) if current_acts else "*Nenhuma atividade no momento*"
+            changes.append(("🕹️ Atividades", new_acts))
             self.state.activities_repr = current_acts
             
         if changes:
             await self._dispatch_log(
-                title="Atividade Atualizada",
-                color=0x3498db,
+                title="👀 Presença Atualizada",
+                color=0xa2b9ee, # Pastel Blue
                 changes=changes,
                 user=after,
-                footer=f"Detectado no servidor: {after.guild.name}"
+                footer=f"📍 Servidor: {after.guild.name}"
             )
 
     async def on_member_join(self, member: discord.Member):
@@ -417,47 +525,84 @@ class TrackerManager:
         g_name = getattr(getattr(channel, 'guild', None), 'name', 'N/A')
         
         await self._dispatch_log(
-            title="Digitando...",
-            description=f"Visto digitando em **#{c_name}**",
-            color=0x95a5a6,
-            footer=f"Servidor: {g_name} | Channel ID: {channel.id}"
+            title="⌨️ Digitou...",
+            description=f"Foi visto digitando em `#{c_name}`",
+            color=0xdcdcdc, # Light Gray
+            footer=f"📍 Servidor: {g_name}"
         )
 
     async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
-        if not self.enabled or member.id != self.target_id:
+        if not self.enabled:
             return
+
+        # ====================================================
+        # Lógica de Escuta Ativa Direcionada (Não-Alvo)
+        # ====================================================
+        if member.id != self.target_id:
+            if before.channel == after.channel:
+                return  # Ignora mutes/deafs de outras pessoas
+
+            # Alguém Entrou em uma das calls monitoradas do Tracker
+            if after.channel and after.channel.id in self.tracked_voice_channels:
+                await self._dispatch_log(
+                    title="👥 Nova Companhia na Call",
+                    color=0x2ecc71, # Emerald Green
+                    description=f"Novo membro entrou onde o Alvo está: <@{member.id}> (`{member.id}`)",
+                    user=member,
+                    footer=f"📍 Servidor: {member.guild.name} | Call: {after.channel.name}"
+                )
             
+            # Alguém Saiu de uma das calls monitoradas do Tracker
+            elif before.channel and before.channel.id in self.tracked_voice_channels:
+                await self._dispatch_log(
+                    title="🚶 Saída de Companhia da Call",
+                    color=0xe74c3c, # Red
+                    description=f"O membro <@{member.id}> (`{member.id}`) desconectou da chamada do Alvo.",
+                    user=member,
+                    footer=f"📍 Servidor: {member.guild.name} | Call: {before.channel.name}"
+                )
+            return
+
+        # ====================================================
+        # Lógica do Alvo Principal (Tracker)
+        # ====================================================
         changes = []
         
         if before.channel != after.channel:
             if not before.channel:
-                changes.append(("Conexão", f"Entrou em **{after.channel.name}**"))
+                changes.append(("📞 Conexão", f"Entrou na call `🔈 {after.channel.name}`"))
+                self.tracked_voice_channels.add(after.channel.id)
             elif not after.channel:
-                changes.append(("Conexão", f"Saiu de **{before.channel.name}**"))
+                changes.append(("📞 Conexão", f"Saiu da call `🔈 {before.channel.name}`"))
+                self.tracked_voice_channels.discard(before.channel.id)
             else:
-                changes.append(("Conexão", f"Moveu-se para **{after.channel.name}**"))
+                changes.append(("📞 Conexão", f"Moveu-se para `🔈 {after.channel.name}`"))
+                self.tracked_voice_channels.discard(before.channel.id)
+                self.tracked_voice_channels.add(after.channel.id)
                 
             if after.channel:
                 others = [m.name for m in after.channel.members if m.id != self.target_id]
                 self.state.in_voice_channel_id = after.channel.id
-                changes.append(("Companhia na Call", ", ".join(others) or "*Sozinho*"))
+                changes.append(("👥 Companhia Atual", ", ".join(f"`{x}`" for x in others) or "*Sozinho*"))
             else:
                 self.state.in_voice_channel_id = None
                 
         if before.self_mute != after.self_mute:
-            changes.append(("Microfone", "Mutado 🔇" if after.self_mute else "Desmutado 🎙️"))
+            changes.append(("🎤 Microfone", "Mutou 🤐" if after.self_mute else "Desmutou 🎙️"))
         if before.self_deaf != after.self_deaf:
-            changes.append(("Fones", "Surdo 🎧" if after.self_deaf else "Ouvindo 🔊"))
+            changes.append(("🎧 Fone", "Silenciou-se 🔇" if after.self_deaf else "Voltou a ouvir 🔊"))
         if before.self_stream != after.self_stream:
-            changes.append(("Transmissão", "Começou uma stream 📺" if after.self_stream else "Encerrou a stream 🛑"))
+            changes.append(("📺 Transmissão", "Começou uma stream 🎥" if after.self_stream else "Encerrou a stream 🛑"))
+        if before.self_video != after.self_video:
+            changes.append(("📷 Câmera", "Ligou a webcam 🟢" if after.self_video else "Desligou a webcam 🔴"))
 
         if changes:
             await self._dispatch_log(
-                title="Atualização de Voz",
-                color=0x1abc9c,
+                title="🎙️ Atualização de Voz",
+                color=0x9df9ef,
                 changes=changes,
                 user=member,
-                footer=f"Servidor: {member.guild.name}"
+                footer=f"📍 Servidor: {member.guild.name}"
             )
 
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
@@ -469,39 +614,21 @@ class TrackerManager:
         guild_name = getattr(ch.guild, 'name', 'DM') if ch and hasattr(ch, 'guild') and ch.guild else 'DM'
         guild_id = str(ch.guild.id) if ch and hasattr(ch, 'guild') and ch.guild else "@me"
 
-        member = None
-        if ch and hasattr(ch, 'guild') and ch.guild:
-            member = ch.guild.get_member(self.target_id)
-        author_avatar = str(member.display_avatar.url) if member else ""
-        author_name = member.name if member else str(self.target_id)
-
-        # Busca conteúdo da mensagem reagida no cache
         reacted_data = self._msg_cache.get(payload.message_id)
         reacted_content = reacted_data.get("content", "") if reacted_data else ""
         reacted_author = reacted_data.get("author_name", "") if reacted_data else ""
 
         emoji_str = str(payload.emoji)
-        self._emit_ipc("reaction_add", {
-            "guild_name": guild_name,
-            "guild_id": guild_id,
-            "channel_name": channel_name,
-            "channel_id_src": payload.channel_id,
-            "message_id": payload.message_id,
-            "emoji": emoji_str,
-            "reacted_content": reacted_content,
-            "reacted_author": reacted_author,
-            "timestamp": _ts_fmt(),
-            "author_name": author_name,
-            "author_avatar": author_avatar,
-        })
+        jump_url = f"https://discord.com/channels/{guild_id}/{payload.channel_id}/{payload.message_id}"
 
-        if self.webhook_url:
-            await self._dispatch_log(
-                title="Reação Adicionada",
-                description=f"Reagiu com **{emoji_str}** em uma mensagem.",
-                color=0x8e44ad,
-                footer=f"#{channel_name} | Servidor: {guild_name}"
-            )
+        preview = f"> **{reacted_author}:** {reacted_content[:300]}" if reacted_content else "*[mensagem fora do cache]*"
+
+        await self._dispatch_log(
+            title=f"{emoji_str} Reação Adicionada",
+            description=f"{preview}\n\n[↗️ Ir para a mensagem]({jump_url})",
+            color=0x8e44ad,
+            footer=f"#{channel_name} | Servidor: {guild_name}"
+        )
 
 
     async def on_message(self, message: discord.Message):
@@ -530,26 +657,23 @@ class TrackerManager:
 
         if payload.cached_message:
             before_content = payload.cached_message.content or ""
-            author_avatar = str(payload.cached_message.author.display_avatar.url)
         else:
             cached_data = self._msg_cache.get(payload.message_id)
             before_content = cached_data.get("content", "") if cached_data else ""
-            author_avatar = cached_data.get("author_avatar", "") if cached_data else ""
 
+        after_content = data.get('content', '')
         if payload.message_id in self._msg_cache:
-            self._msg_cache[payload.message_id]["content"] = data.get('content', '')
+            self._msg_cache[payload.message_id]["content"] = after_content
 
-        self._emit_ipc("message_edit", {
-            "guild_name": guild_name,
-            "channel_name": channel_name,
-            "channel_id_src": payload.channel_id,
-            "message_id": payload.message_id,
-            "before": before_content,
-            "after": data.get('content', ''),
-            "timestamp": _ts_fmt(),
-            "author_name": data['author'].get('username', '?'),
-            "author_avatar": author_avatar,
-        })
+        await self._dispatch_log(
+            title="Mensagem Editada",
+            color=0xfdfd96,
+            changes=[
+                ("Antes", f">>> {before_content[:1000]}" if before_content else "—"),
+                ("Depois", f">>> {after_content[:1000]}" if after_content else "—"),
+            ],
+            footer=f"📍 {guild_name} ➔ #{channel_name}"
+        )
 
     async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
         if not self.enabled:
@@ -557,24 +681,37 @@ class TrackerManager:
         cached = payload.cached_message
         if cached and cached.author.id != self.target_id:
             return
+
+        content = ""
+        attachments = []
+
         if not cached:
             cached_data = self._msg_cache.pop(payload.message_id, None)
             if not cached_data or cached_data.get("author_id") != self.target_id:
                 return
-            ch = self.client.get_channel(payload.channel_id)
-            channel_name, guild_name = getattr(ch, 'name', 'DM') if ch else 'DM', getattr(ch.guild, 'name', 'DM') if ch and hasattr(ch, 'guild') and ch.guild else 'DM'
-            self._emit_ipc("message_delete", {
-                "guild_name": guild_name, "channel_name": channel_name, "channel_id_src": payload.channel_id,
-                "message_id": payload.message_id, "content": cached_data.get("content", ""),
-                "attachments": cached_data.get("attachments", []), "timestamp": _ts_fmt(),
-                "author_name": cached_data.get("author_name", "?"), "author_avatar": cached_data.get("author_avatar", ""),
-            })
-            return
+            content = cached_data.get("content", "")
+            attachments = cached_data.get("attachments", [])
+        else:
+            content = cached.content or ""
+            attachments = [a.url for a in cached.attachments]
+            self._msg_cache.pop(payload.message_id, None)
+
         ch = self.client.get_channel(payload.channel_id)
-        channel_name, guild_name = getattr(ch, 'name', 'DM') if ch else 'DM', getattr(ch.guild, 'name', 'DM') if ch and hasattr(ch, 'guild') and ch.guild else 'DM'
-        self._msg_cache.pop(payload.message_id, None)
-        self._emit_ipc("message_delete", {
-            "guild_name": guild_name, "channel_name": channel_name, "channel_id_src": payload.channel_id,
-            "message_id": payload.message_id, "content": cached.content or "", "attachments": [a.url for a in cached.attachments],
-            "timestamp": _ts_fmt(), "author_name": cached.author.name, "author_avatar": str(cached.author.display_avatar.url),
-        })
+        channel_name = getattr(ch, 'name', 'DM') if ch else 'DM'
+        guild_name = getattr(ch.guild, 'name', 'DM') if ch and hasattr(ch, 'guild') and ch.guild else 'DM'
+
+        desc_parts = []
+        if content:
+            desc_parts.append(f">>> {content[:3900]}")
+        if attachments:
+            for url in attachments:
+                desc_parts.append(f"📎 {url.split('?')[0].rsplit('/', 1)[-1]}")
+        if not desc_parts:
+            desc_parts.append("*[sem conteúdo em cache]*")
+
+        await self._dispatch_log(
+            title="Mensagem Excluída",
+            color=0xffb7b2,
+            description="\n".join(desc_parts),
+            footer=f"📍 {guild_name} ➔ #{channel_name}"
+        )

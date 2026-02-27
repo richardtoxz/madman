@@ -1,9 +1,3 @@
-"""
-Proteções automáticas do selfbot — DM Link Shield + Anti-Raid Shield.
-Monitora DMs e friend requests, classificando ameaças e agindo automaticamente.
-
-Escopo: phishing (scam) + convites de servidor (spam). Conteúdo normal é ignorado.
-"""
 import re
 import time
 import json
@@ -77,11 +71,10 @@ class ProtectionManager:
                     urls.append(child.url)
         return urls
 
-    @staticmethod
-    def _has_invite_link(urls: list[str]) -> bool:
+    def _has_invite_link(self, urls: list[str]) -> bool:
         """Verifica se alguma URL é um convite de servidor Discord."""
         for url in urls:
-            for pattern in INVITE_PATTERNS:
+            for pattern in self.config.INVITE_PATTERNS:
                 if pattern.search(url):
                     return True
         return False
@@ -152,13 +145,18 @@ class ProtectionManager:
         # Anti-raid: DM flood check
         now = time.time()
         self._dm_authors.append((now, author.id))
-        window = self.config.DM_FLOOD_WINDOW
-        relevant = [t for t, aid in self._dm_authors if now - t < window]
+        cutoff = now - self.config.DM_FLOOD_WINDOW
         
-        unique_authors = {aid for t, aid in relevant}
+        # Otimizado: filtra timestamps recentes e conta autores únicos
+        recent = [(t, aid) for t, aid in self._dm_authors if t > cutoff]
+        unique_authors = {aid for _, aid in recent}
+        
         if len(unique_authors) >= self.config.DM_FLOOD_MAX_UNIQUE:
             self.stats["dm_floods"] += 1
             print(f"PROTECTION:DM_FLOOD:{len(unique_authors)}", flush=True)
+            # Ação: fecha a DM para evitar spam massivo
+            await message.channel.close()
+            return
 
         # Link Shield: classifica conteúdo (texto) e botões (separados)
         button_urls = self._extract_component_urls(message)
@@ -202,9 +200,9 @@ class ProtectionManager:
         now = time.time()
         self._fr_timestamps.append(now)
 
-        window = self.config.FR_FLOOD_WINDOW
-        relevant = [t for t in self._fr_timestamps if now - t < window]
-        if len(relevant) >= self.config.FR_FLOOD_MAX_COUNT:
+        cutoff = now - self.config.FR_FLOOD_WINDOW
+        recent = [t for t in self._fr_timestamps if t > cutoff]
+        if len(recent) >= self.config.FR_FLOOD_MAX_COUNT:
             self.stats["fr_floods"] += 1
             self.stats["fr_rejected"] += 1
             print(

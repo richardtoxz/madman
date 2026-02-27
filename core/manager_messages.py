@@ -97,7 +97,7 @@ class MessagesMixin:
         if not p:
             return "❌ Não conectado"
 
-        prefixes = ["MSG_CLEAN_ALL_DMS_", "MSG_DEL_", "MSG_CLEAN_"]
+        prefixes = ["MSG_CLEAN_ALL_DMS_", "MSG_DEL_", "MSG_CLEAN_", "PROGRESS:"]
         last_result = "Iniciando..."
 
         async for text in p.send_and_stream("MSG_CLEAN_ALL_DMS", prefixes, timeout=3600):
@@ -256,6 +256,30 @@ class MessagesMixin:
                 break
 
         return results
+
+    # ── Listar DMs ──────────────────────────────────────────
+
+    async def list_open_dms(self, user_id: int):
+        p = self._get_proc(user_id)
+        if not p:
+            return []
+        
+        # send_and_wait já retorna o texto SEM o prefixo (strip automático)
+        raw = await p.send_and_wait("DM_LIST", "DM_LIST_RESULT:", timeout=15.0)
+        if raw:
+            try:
+                return json.loads(raw)
+            except Exception:
+                pass
+        return []
+
+    # ── DM: Fechar uma ───────────────────────────────────────
+
+    async def close_single_dm(self, user_id: int, channel_id: int):
+        p = self._get_proc(user_id)
+        if not p:
+            return
+        await p.send(f"DM_CLOSE:{channel_id}")
 
     # ── DM: Fechar todas ─────────────────────────────────────
 

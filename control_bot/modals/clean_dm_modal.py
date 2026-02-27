@@ -134,9 +134,9 @@ class CleanDMModal(ui.Modal, title='Limpar Mensagens (DM/Canal)'):
             await send_stealth_dm(interaction, title="🧹 Central de Limpeza Madman", description=description, color=0x2ecc71)
 
         try:
-            await interaction.edit_original_response(content=final_text, embed=None, view=None)
+            await interaction.delete_original_response()
         except Exception:
             try:
-                await interaction.followup.send(content=final_text, ephemeral=True)
+                await interaction.edit_original_response(content=final_text, embed=None, view=None)
             except Exception:
                 pass

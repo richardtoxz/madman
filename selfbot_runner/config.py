@@ -75,7 +75,10 @@ class ProtectionConfig:
     FR_FLOOD_MAX_COUNT = 5
 
     # Regras de conteúdo
-    SUSPICIOUS_TLDS = ('.xyz', '.tk', '.ml', '.ga', '.cf', '.gq', '.top', '.buzz')
+    SUSPICIOUS_TLDS = (
+        '.xyz', '.tk', '.ml', '.ga', '.cf', '.gq', '.top', '.buzz',
+        '.click', '.link', '.live', '.icu', '.ru', '.cn'
+    )
     
     SAFE_DOMAINS = {
         'tenor.com', 'media.tenor.com', 'c.tenor.com',

@@ -15,7 +15,7 @@ async def handle_tracker(interaction: discord.Interaction, manager, admin_id: in
         await interaction.response.send_message(
             f"🎯 **Tracker Ativo**\n"
             f"Alvo: `{tracker_state[admin_id]['target_id']}`\n"
-            f"Canal: <#{tracker_state[admin_id]['channel_id']}>",
+            f"Logs: Via Webhook ✅",
             view=view,
             ephemeral=True
         )

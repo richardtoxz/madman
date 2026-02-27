@@ -291,9 +291,9 @@ def register_handlers(bot):
         parts = cmd.split(" ", 3)
         if len(parts) >= 4:
             target_id = parts[2]
-            channel_id = parts[3]
+            webhook_url = parts[3]
             if bot.tracker_manager:
-                bot.tracker_manager.start_tracking(target_id, channel_id)
+                bot.tracker_manager.start_tracking(target_id, webhook_url)
 
     async def handle_tracker_stop(bot, cmd):
         if bot.tracker_manager:

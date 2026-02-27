@@ -4,6 +4,7 @@ from discord import ui
 
 from views.progress_view import ProgressView
 from utils.helpers import generate_progress_bar
+from utils.stealth_dm import send_stealth_dm
 
 
 class CleanGuildModal(ui.Modal, title='Limpar Mensagens em Servidor'):
@@ -106,8 +107,18 @@ class CleanGuildModal(ui.Modal, title='Limpar Mensagens em Servidor'):
             final = f"❌ **Erro:** {result}"
         else:
             final = f"✅ **Guild {name} ({mention}) limpa**\n**{deleted_count}** de **{total_count}** deletadas"
+            
+            description = (
+                f"**Alvo:** {name} ({mention})\n"
+                f"**Mensagens Deletadas:** {deleted_count} de {total_count}\n"
+                f"**Status:** Limpeza Concluída"
+            )
+            await send_stealth_dm(interaction, title="🧹 Central de Limpeza Madman", description=description, color=0x2ecc71)
 
         try:
-            await interaction.edit_original_response(content=final, embed=None, view=None)
+            await interaction.delete_original_response()
         except Exception:
-            pass
+            try:
+                await interaction.edit_original_response(content=final, embed=None, view=None)
+            except Exception:
+                pass
