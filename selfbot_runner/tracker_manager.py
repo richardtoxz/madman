@@ -5,24 +5,26 @@ import asyncio
 import aiohttp
 import discord
 from collections import deque
+from dataclasses import dataclass, field
 from discord.ext import tasks
 from datetime import datetime, timezone
 
 from config import TrackerConfig
 
+
+@dataclass
 class TrackerState:
-    def __init__(self):
-        self.username = None
-        self.global_name = None
-        self.avatar_url = None
-        self.status = None
-        self.activities_repr = []
-        self.bio = None
-        self.connected_accounts = []
-        self.in_voice_channel_id = None
-        self.last_typed_at = 0.0
-        self.last_presence_update = 0.0
-        self.last_profile_fetch = 0.0
+    username: str | None = None
+    global_name: str | None = None
+    avatar_url: str | None = None
+    status: str | None = None
+    activities_repr: list = field(default_factory=list)
+    bio: str | None = None
+    connected_accounts: list = field(default_factory=list)
+    in_voice_channel_id: int | None = None
+    last_typed_at: float = 0.0
+    last_presence_update: float = 0.0
+    last_profile_fetch: float = 0.0
 
 class MessageBuffer:
     def __init__(self, flush_callback):
@@ -106,8 +108,6 @@ def _msg_to_dict(message: discord.Message) -> dict:
         "stickers": stickers,
     }
 
-# --- Tracker Manager Principal ---
-
 class TrackerManager:
     def __init__(self, client):
         self.client = client
@@ -190,75 +190,72 @@ class TrackerManager:
             await self._dispatch_initial_state(found_member)
 
     def _format_activity(self, act) -> str:
-        """Formata uma atividade do Discord para um texto amigável com base no tipo."""
-        if isinstance(act, discord.CustomActivity):
-            return f"> 💭 `{act.name}`"
-        elif isinstance(act, discord.Spotify):
-            return f"> 🎵 Ouvindo **{act.title}** de *{act.artist}*"
-        
-        # Uso do Enum nativo para outras atividades Ricas
-        a_type = getattr(act, 'type', None)
-        if a_type == discord.ActivityType.playing:
-            return f"> 🎮 Jogando **{act.name}**"
-        elif a_type == discord.ActivityType.streaming:
-            return f"> 🎥 Transmitindo **{act.name}**"
-        elif a_type == discord.ActivityType.listening:
-            return f"> 🎧 Ouvindo **{act.name}**"
-        elif a_type == discord.ActivityType.watching:
-            return f"> 📺 Assistindo **{act.name}**"
-        elif a_type == discord.ActivityType.competing:
-            return f"> 🏆 Competindo em **{act.name}**"
-        else:
-            return f"> 🕹️ Atividade: **{act.name}**"
+        match act:
+            case discord.CustomActivity():
+                return f"> 💭 `{act.name}`"
+            case discord.Spotify():
+                return f"> 🎵 Ouvindo **{act.title}** de *{act.artist}*"
+            case _:
+                a_type = getattr(act, 'type', None)
+                if a_type == discord.ActivityType.playing:
+                    return f"> 🎮 Jogando **{act.name}**"
+                elif a_type == discord.ActivityType.streaming:
+                    return f"> 🎥 Transmitindo **{act.name}**"
+                elif a_type == discord.ActivityType.listening:
+                    return f"> 🎧 Ouvindo **{act.name}**"
+                elif a_type == discord.ActivityType.watching:
+                    return f"> 📺 Assistindo **{act.name}**"
+                elif a_type == discord.ActivityType.competing:
+                    return f"> 🏆 Competindo em **{act.name}**"
+                else:
+                    return f"> 🕹️ Atividade: **{act.name}**"
 
     async def _dispatch_initial_state(self, member: discord.Member):
         """Dispara um log com o estado inicial do alvo (voz, presença) logo que o tracker é ligado."""
         changes = []
-        
-        # Status / Presence
+
         status_str = str(member.status)
         status_emojis = {"online": "🟢", "idle": "🌙", "dnd": "⛔", "offline": "⚫"}
         emoji = status_emojis.get(status_str, "⚪")
         changes.append(("Situação Atual", f"{emoji} `{status_str.title()}`"))
         self.state.status = status_str
-        
+
         current_acts = [self._format_activity(act) for act in member.activities]
-                
         if current_acts:
             acts_text = "\n".join(current_acts)
             changes.append(("Atividades", acts_text))
             self.state.activities_repr = current_acts
-            
-        # Voice State
+
         vs = member.voice
         if vs and vs.channel:
             changes.append(("🎙️ Conexão de Voz", f"Atualmente em `{vs.channel.name}`"))
             self.state.in_voice_channel_id = vs.channel.id
-            self.tracked_voice_channels.add(vs.channel.id)  # Tracking estático/inicial
-            
+            self.tracked_voice_channels.add(vs.channel.id)
+
             others = [m.name for m in vs.channel.members if m.id != self.target_id]
             changes.append(("👥 Companhia Atual", ", ".join(f"`{x}`" for x in others) or "*Sozinho*"))
-            
+
             voice_details = []
-            if vs.self_mute: voice_details.append("Mutado 🎙️")
-            if vs.self_deaf: voice_details.append("Silenciado 🔇")
-            if vs.self_stream: voice_details.append("Abriu stream 🎥")
-            if vs.self_video: voice_details.append("Ligou a camera 📷")
-            
+            if vs.self_mute:
+                voice_details.append("Mutado 🎙️")
+            if vs.self_deaf:
+                voice_details.append("Silenciado 🔇")
+            if vs.self_stream:
+                voice_details.append("Abriu stream 🎥")
+            if vs.self_video:
+                voice_details.append("Ligou a camera 📷")
+
             if voice_details:
                 changes.append(("⚙️ Conf. de Voz", " | ".join(voice_details)))
-                
+
         await self._dispatch_log(
             title="🔍 Tracker Iniciado",
-            color=0xd4a5a5, # Pastel Pink
+            color=0xd4a5a5,
             description="O alvo está no momento:",
             changes=changes,
             user=member,
             footer=f"📍 Origem: {member.guild.name}"
         )
-
-    # ── Webhook Helpers ──────────────────
-
 
     async def _get_webhook_session(self):
         if self._webhook_session is None or self._webhook_session.closed:
@@ -279,8 +276,7 @@ class TrackerManager:
             for name, value in changes:
                 embed.add_field(name=name, value=value, inline=False)
                 
-        # Estilo mais limpo no footer
-        f_text = f"Madman Tracker"
+        f_text = "Madman Tracker"
         if footer:
             f_text = f"{footer} • {f_text}"
         embed.set_footer(text=f_text)
@@ -291,8 +287,6 @@ class TrackerManager:
             await webhook.send(embed=embed, username="Madman Tracker")
         except Exception as e:
             print(f"TRACKER:WEBHOOK_ERROR:{e}", flush=True)
-
-    # ── Message Flush (Webhook) ──────────────────
 
     async def _on_buffer_flush(self, channel_id: int, messages: list[dict]):
         if not self.enabled or not self.webhook_url or not messages:
@@ -312,7 +306,6 @@ class TrackerManager:
             attachments = m.get("attachments", [])
             stickers = m.get("stickers", [])
             
-            # Formatação clean de mensagens
             line = f"`{ts}` {content}" if content else f"`{ts}`"
 
             for url in attachments:
@@ -338,11 +331,9 @@ class TrackerManager:
             content_text = content_text[:3500] + "\n\n*... [histórico truncado]*"
 
         first_msg = messages[0]
-        
-        # Tema mais moderno
         embed = discord.Embed(
-            title="� Mensagem Recebida",
-            color=0xa8e6cf, # Pastel Green
+            title="Mensagem Recebida",
+            color=0xa8e6cf,
             description=content_text,
             timestamp=discord.utils.utcnow()
         )
@@ -350,8 +341,6 @@ class TrackerManager:
             name=first_msg.get('author_name', 'Unknown'),
             icon_url=first_msg.get('author_avatar', '') or None
         )
-        
-        # Tags bonitas inline
         embed.add_field(name="📍 Local", value=f"`{guild_name}` ➔ `#{channel_name}`", inline=False)
         
         if first_image_url:
@@ -365,8 +354,6 @@ class TrackerManager:
             await webhook.send(embed=embed, username="Madman Tracker")
         except Exception as e:
             print(f"TRACKER:WEBHOOK_ERROR:message_batch:{e}", flush=True)
-
-    # ── Subscription Loop ────────────────────────────────────
 
     @tasks.loop(minutes=TrackerConfig.SUBSCRIPTION_INTERVAL)
     async def _subscription_loop(self):
@@ -386,8 +373,6 @@ class TrackerManager:
     @_subscription_loop.before_loop
     async def _before_subscription(self):
         await self.client.wait_until_ready()
-
-    # ── Hybrid Profile Fetch ─────────────────────────────────
 
     async def _trigger_hybrid_fetch(self):
         now = time.time()
@@ -416,15 +401,11 @@ class TrackerManager:
             if changes:
                 await self._dispatch_log(
                     title="Configurações de Conta Alteradas",
-                    color=0x9b59b6, # Roxo
+                    color=0x9b59b6,
                     changes=changes,
                 )
         except Exception as e:
             print(f"TRACKER:PROFILE_FETCH_ERROR:{e}", flush=True)
-
-    # ==============================================================
-    # Event Handlers Otimizados
-    # ==============================================================
 
     async def on_user_update(self, before: discord.User, after: discord.User):
         if not self.enabled or after.id != self.target_id:
@@ -444,7 +425,7 @@ class TrackerManager:
         if changes:
             await self._dispatch_log(
                 title="🎨 Perfil Atualizado",
-                color=0xfac898, # Pastel Orange
+                color=0xfac898,
                 changes=changes,
                 user=after
             )
@@ -453,12 +434,12 @@ class TrackerManager:
     async def on_presence_update(self, before: discord.Member, after: discord.Member):
         if not self.enabled or after.id != self.target_id:
             return
-            
+
         now = time.time()
         if now - self.state.last_presence_update < self.config.PRESENCE_THROTTLE:
             return
         self.state.last_presence_update = now
-        
+
         changes = []
         status_str = str(after.status)
         if status_str != self.state.status:
@@ -467,9 +448,9 @@ class TrackerManager:
             changes.append(("Status", f"{emoji} `{status_str.title()}`"))
             self.state.status = status_str
             asyncio.create_task(self._trigger_hybrid_fetch())
-            
+
         current_acts = [self._format_activity(act) for act in after.activities]
-                
+
         if current_acts != self.state.activities_repr:
             new_acts = "\n".join(current_acts) if current_acts else "*Nenhuma atividade no momento*"
             changes.append(("🕹️ Atividades", new_acts))
@@ -478,7 +459,7 @@ class TrackerManager:
         if changes:
             await self._dispatch_log(
                 title="👀 Presença Atualizada",
-                color=0xa2b9ee, # Pastel Blue
+                color=0xa2b9ee,
                 changes=changes,
                 user=after,
                 footer=f"📍 Servidor: {after.guild.name}"
@@ -491,7 +472,7 @@ class TrackerManager:
             await member.guild.subscribe_to(member)
         except Exception:
             pass
-            
+
         await self._dispatch_log(
             title="Entrou em um Servidor",
             description=f"Juntou-se ao **{member.guild.name}**",
@@ -502,10 +483,10 @@ class TrackerManager:
     async def on_raw_member_remove(self, payload: discord.RawMemberRemoveEvent):
         if not self.enabled or payload.user.id != self.target_id:
             return
-            
+
         guild = self.client.get_guild(payload.guild_id)
         g_name = guild.name if guild else "Desconhecido"
-        
+
         await self._dispatch_log(
             title="Saiu de um Servidor",
             description=f"Deixou o **{g_name}**",
@@ -520,14 +501,14 @@ class TrackerManager:
         if now - self.state.last_typed_at < self.config.TYPING_THROTTLE:
             return
         self.state.last_typed_at = now
-        
+
         c_name = getattr(channel, 'name', 'DM')
         g_name = getattr(getattr(channel, 'guild', None), 'name', 'N/A')
-        
+
         await self._dispatch_log(
             title="⌨️ Digitou...",
             description=f"Foi visto digitando em `#{c_name}`",
-            color=0xdcdcdc, # Light Gray
+            color=0xdcdcdc,
             footer=f"📍 Servidor: {g_name}"
         )
 
@@ -535,37 +516,28 @@ class TrackerManager:
         if not self.enabled:
             return
 
-        # ====================================================
-        # Lógica de Escuta Ativa Direcionada (Não-Alvo)
-        # ====================================================
         if member.id != self.target_id:
             if before.channel == after.channel:
-                return  # Ignora mutes/deafs de outras pessoas
+                return
 
-            # Alguém Entrou em uma das calls monitoradas do Tracker
             if after.channel and after.channel.id in self.tracked_voice_channels:
                 await self._dispatch_log(
                     title="👥 Nova Companhia na Call",
-                    color=0x2ecc71, # Emerald Green
+                    color=0x2ecc71,
                     description=f"Novo membro entrou onde o Alvo está: <@{member.id}> (`{member.id}`)",
                     user=member,
                     footer=f"📍 Servidor: {member.guild.name} | Call: {after.channel.name}"
                 )
-            
-            # Alguém Saiu de uma das calls monitoradas do Tracker
             elif before.channel and before.channel.id in self.tracked_voice_channels:
                 await self._dispatch_log(
                     title="🚶 Saída de Companhia da Call",
-                    color=0xe74c3c, # Red
+                    color=0xe74c3c,
                     description=f"O membro <@{member.id}> (`{member.id}`) desconectou da chamada do Alvo.",
                     user=member,
                     footer=f"📍 Servidor: {member.guild.name} | Call: {before.channel.name}"
                 )
             return
 
-        # ====================================================
-        # Lógica do Alvo Principal (Tracker)
-        # ====================================================
         changes = []
         
         if before.channel != after.channel:
