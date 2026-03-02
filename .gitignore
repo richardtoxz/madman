@@ -10,8 +10,8 @@ venv/
 .venv/
 
 # Vendored Dependencies (installed by setup_envs.py)
-selfbot_runner/lib/
-control_bot/lib/
+panel/lib/
+worker/lib/
 
 # IDE
 .vscode/
