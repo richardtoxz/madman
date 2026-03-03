@@ -1,0 +1,9 @@
+services:
+  bot:
+    build: .
+    container_name: madman-bot
+    restart: unless-stopped
+    volumes:
+      - ./.env:/app/.env
+    environment:
+      - PYTHONUNBUFFERED=1
