@@ -17,13 +17,6 @@ from protection_manager import ProtectionManager
 from presence_manager import PresenceManager
 from tracker_manager import TrackerManager
 
-for mod_name in list(sys.modules.keys()):
-    if mod_name.startswith("discord"):
-        del sys.modules[mod_name]
-
-    print(f"ERROR:LIB_NOT_FOUND:{_lib_path}", flush=True)
-    sys.exit(1)
-
 
 print(f"DEBUG:DISCORD_VERSION:{discord.__version__}", flush=True)
 

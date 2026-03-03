@@ -10,13 +10,35 @@ def install_libs():
     )
 
     print("\nInstalling discord.py-self for the Selfbot...")
-    # Precisamos desinstalar a discord.py do ambiente principal se houver conflito,
-    # ou apenas instalar em pastas separadas.
+
     subprocess.run(
         [sys.executable, "-m", "pip", "install", "discord.py-self", "-t", "worker/lib"]
     )
 
     print("\nConcluído! Use 'python panel/main.py' para iniciar.")
+
+    print("\nPatching Python 3.13 audioop compatibility...")
+    patch_audioop()
+
+
+def patch_audioop():
+    paths = ["panel/lib/discord/player.py", "worker/lib/discord/player.py"]
+    for p in paths:
+        if os.path.exists(p):
+            with open(p, "r", encoding="utf-8") as f:
+                content = f.read()
+
+            if (
+                "import audioop" in content
+                and "try:\n    import audioop" not in content
+            ):
+                content = content.replace(
+                    "import audioop",
+                    "try:\n    import audioop\nexcept ImportError:\n    audioop = None",
+                )
+                with open(p, "w", encoding="utf-8") as f:
+                    f.write(content)
+                print(f"Patched: {p}")
 
 
 if __name__ == "__main__":
