@@ -218,6 +218,104 @@ class TrackerManager:
                 else:
                     return f"> 🕹️ Atividade: **{act.name}**"
 
+    async def _dispatch_voice_embed(
+        self,
+        title: str,
+        color: int,
+        member: discord.Member,
+        channel: discord.VoiceChannel | None,
+        guild: discord.Guild,
+    ):
+        if not self.enabled or not self.webhook_url:
+            return
+
+        embed = discord.Embed(
+            title=title, color=color, timestamp=discord.utils.utcnow()
+        )
+        embed.set_author(name=member.name, icon_url=member.display_avatar.url)
+
+        embed.add_field(name="👤 Usuário", value=f"`{member.id}`", inline=False)
+
+        if channel:
+            embed.add_field(
+                name="🏠 Servidor",
+                value=f"**{guild.name}**\n`{guild.id}`",
+                inline=True,
+            )
+            embed.add_field(
+                name="🔊 Canal de voz",
+                value=f"**{channel.name}**\n`{channel.id}`",
+                inline=True,
+            )
+
+            others = [m for m in channel.members if m.id != member.id]
+            member_list = (
+                "\n".join(f"• `{m.id}`" for m in others) if others else "*Vazio*"
+            )
+            embed.add_field(
+                name=f"👥 Usuários no canal ({len(others)})",
+                value=member_list,
+                inline=False,
+            )
+
+            link = f"https://discord.com/channels/{guild.id}/{channel.id}"
+            embed.add_field(
+                name="🔗 Link Do Canal",
+                value=f"[Clique para acessar]({link})",
+                inline=False,
+            )
+        else:
+            embed.add_field(
+                name="🏠 Servidor",
+                value=f"**{guild.name}**\n`{guild.id}`",
+                inline=False,
+            )
+
+        embed.set_footer(text="Madman Tracker")
+
+        try:
+            session = await self._get_webhook_session()
+            webhook = discord.Webhook.from_url(self.webhook_url, session=session)
+            await webhook.send(embed=embed, username="Madman Tracker")
+        except Exception as e:
+            print(f"TRACKER:WEBHOOK_ERROR:{e}", flush=True)
+
+    async def _dispatch_server_embed(
+        self,
+        title: str,
+        color: int,
+        user: discord.User | discord.Member,
+        guild_name: str,
+        guild_id: int,
+    ):
+        if not self.enabled or not self.webhook_url:
+            return
+
+        embed = discord.Embed(
+            title=title, color=color, timestamp=discord.utils.utcnow()
+        )
+        embed.set_author(name=user.name, icon_url=user.display_avatar.url)
+
+        embed.add_field(
+            name="👤 Usuário",
+            value=f"`{user.name} ({user.id})`",
+            inline=False,
+        )
+        embed.add_field(
+            name="🏠 Servidor",
+            value=f"**{guild_name}**\n`{guild_id}`",
+            inline=False,
+        )
+
+        embed.set_footer(text="Madman Tracker")
+
+        try:
+            session = await self._get_webhook_session()
+            webhook = discord.Webhook.from_url(self.webhook_url, session=session)
+            await webhook.send(embed=embed, username="Madman Tracker")
+        except Exception as e:
+            print(f"TRACKER:WEBHOOK_ERROR:{e}", flush=True)
+
     async def _dispatch_initial_state(self, member: discord.Member):
         changes = []
 
@@ -233,33 +331,6 @@ class TrackerManager:
             changes.append(("Atividades", acts_text))
             self.state.activities_repr = current_acts
 
-        vs = member.voice
-        if vs and vs.channel:
-            changes.append(("🎙️ Conexão de Voz", f"Atualmente em `{vs.channel.name}`"))
-            self.state.in_voice_channel_id = vs.channel.id
-            self.tracked_voice_channels.add(vs.channel.id)
-
-            others = [m.name for m in vs.channel.members if m.id != self.target_id]
-            changes.append(
-                (
-                    "👥 Companhia Atual",
-                    ", ".join(f"`{x}`" for x in others) or "*Sozinho*",
-                )
-            )
-
-            voice_details = []
-            if vs.self_mute:
-                voice_details.append("Mutado 🎙️")
-            if vs.self_deaf:
-                voice_details.append("Silenciado 🔇")
-            if vs.self_stream:
-                voice_details.append("Abriu stream 🎥")
-            if vs.self_video:
-                voice_details.append("Ligou a camera 📷")
-
-            if voice_details:
-                changes.append(("⚙️ Conf. de Voz", " | ".join(voice_details)))
-
         await self._dispatch_log(
             title="🔍 Tracker Iniciado",
             color=0xD4A5A5,
@@ -268,6 +339,19 @@ class TrackerManager:
             user=member,
             footer=f"📍 Origem: {member.guild.name}",
         )
+
+        vs = member.voice
+        if vs and vs.channel:
+            self.state.in_voice_channel_id = vs.channel.id
+            self.tracked_voice_channels.add(vs.channel.id)
+
+            await self._dispatch_voice_embed(
+                title="🔊 Conectado no Canal de Voz",
+                color=0x9DF9EF,
+                member=member,
+                channel=vs.channel,
+                guild=member.guild,
+            )
 
     async def _get_webhook_session(self):
         if self._webhook_session is None or self._webhook_session.closed:
@@ -526,11 +610,12 @@ class TrackerManager:
         except Exception:
             pass
 
-        await self._dispatch_log(
-            title="Entrou em um Servidor",
-            description=f"Juntou-se ao **{member.guild.name}**",
+        await self._dispatch_server_embed(
+            title="📥 Entrou no Servidor",
             color=0x2ECC71,
-            footer=f"Guild ID: {member.guild.id}",
+            user=member,
+            guild_name=member.guild.name,
+            guild_id=member.guild.id,
         )
 
     async def on_raw_member_remove(self, payload: discord.RawMemberRemoveEvent):
@@ -540,11 +625,12 @@ class TrackerManager:
         guild = self.client.get_guild(payload.guild_id)
         g_name = guild.name if guild else "Desconhecido"
 
-        await self._dispatch_log(
-            title="Saiu de um Servidor",
-            description=f"Deixou o **{g_name}**",
+        await self._dispatch_server_embed(
+            title="📤 Saiu do Servidor",
             color=0xE74C3C,
-            footer=f"Guild ID: {payload.guild_id}",
+            user=payload.user,
+            guild_name=g_name,
+            guild_id=payload.guild_id,
         )
 
     async def on_typing(self, channel, user, when):
@@ -559,8 +645,7 @@ class TrackerManager:
         g_name = getattr(getattr(channel, "guild", None), "name", "N/A")
 
         await self._dispatch_log(
-            title="⌨️ Digitou...",
-            description=f"Foi visto digitando em `#{c_name}`",
+            description=f"⌨️ Foi visto digitando em `#{c_name}`",
             color=0xDCDCDC,
             footer=f"📍 Servidor: {g_name}",
         )
@@ -579,92 +664,101 @@ class TrackerManager:
                 return
 
             if after.channel and after.channel.id in self.tracked_voice_channels:
-                await self._dispatch_log(
-                    title="👥 Nova Companhia na Call",
+                await self._dispatch_voice_embed(
+                    title="👥 Entrou na Call do Alvo",
                     color=0x2ECC71,
-                    description=f"Novo membro entrou onde o Alvo está: <@{member.id}> (`{member.id}`)",
-                    user=member,
-                    footer=f"📍 Servidor: {member.guild.name} | Call: {after.channel.name}",
+                    member=member,
+                    channel=after.channel,
+                    guild=member.guild,
                 )
             elif before.channel and before.channel.id in self.tracked_voice_channels:
-                await self._dispatch_log(
-                    title="🚶 Saída de Companhia da Call",
+                await self._dispatch_voice_embed(
+                    title="🚶 Saiu da Call do Alvo",
                     color=0xE74C3C,
-                    description=f"O membro <@{member.id}> (`{member.id}`) desconectou da chamada do Alvo.",
-                    user=member,
-                    footer=f"📍 Servidor: {member.guild.name} | Call: {before.channel.name}",
+                    member=member,
+                    channel=before.channel,
+                    guild=member.guild,
                 )
             return
 
-        changes = []
-
         if before.channel != after.channel:
             if not before.channel:
-                changes.append(
-                    ("📞 Conexão", f"Entrou na call `🔈 {after.channel.name}`")
-                )
                 self.tracked_voice_channels.add(after.channel.id)
-            elif not after.channel:
-                changes.append(
-                    ("📞 Conexão", f"Saiu da call `🔈 {before.channel.name}`")
-                )
-                self.tracked_voice_channels.discard(before.channel.id)
-            else:
-                changes.append(
-                    ("📞 Conexão", f"Moveu-se para `🔈 {after.channel.name}`")
-                )
-                self.tracked_voice_channels.discard(before.channel.id)
-                self.tracked_voice_channels.add(after.channel.id)
-
-            if after.channel:
-                others = [
-                    m.name for m in after.channel.members if m.id != self.target_id
-                ]
                 self.state.in_voice_channel_id = after.channel.id
-                changes.append(
-                    (
-                        "👥 Companhia Atual",
-                        ", ".join(f"`{x}`" for x in others) or "*Sozinho*",
-                    )
+                await self._dispatch_voice_embed(
+                    title="🔊 Entrou no Canal de Voz",
+                    color=0x2ECC71,
+                    member=member,
+                    channel=after.channel,
+                    guild=member.guild,
+                )
+            elif not after.channel:
+                self.tracked_voice_channels.discard(before.channel.id)
+                self.state.in_voice_channel_id = None
+                await self._dispatch_voice_embed(
+                    title="🔇 Saiu do Canal de Voz",
+                    color=0xE74C3C,
+                    member=member,
+                    channel=before.channel,
+                    guild=member.guild,
                 )
             else:
-                self.state.in_voice_channel_id = None
+                self.tracked_voice_channels.discard(before.channel.id)
+                self.tracked_voice_channels.add(after.channel.id)
+                self.state.in_voice_channel_id = after.channel.id
+                await self._dispatch_voice_embed(
+                    title="🔀 Mudou de Canal de Voz",
+                    color=0xF39C12,
+                    member=member,
+                    channel=after.channel,
+                    guild=member.guild,
+                )
+
+        voice_channel = after.channel or before.channel
+        guild = member.guild
 
         if before.self_mute != after.self_mute:
-            changes.append(
-                ("🎤 Microfone", "Mutou 🤐" if after.self_mute else "Desmutou 🎙️")
+            title = (
+                "🤐 Mutou o Microfone" if after.self_mute else "🎙️ Desmutou o Microfone"
             )
-        if before.self_deaf != after.self_deaf:
-            changes.append(
-                (
-                    "🎧 Fone",
-                    "Silenciou-se 🔇" if after.self_deaf else "Voltou a ouvir 🔊",
-                )
-            )
-        if before.self_stream != after.self_stream:
-            changes.append(
-                (
-                    "📺 Transmissão",
-                    "Começou uma stream 🎥"
-                    if after.self_stream
-                    else "Encerrou a stream 🛑",
-                )
-            )
-        if before.self_video != after.self_video:
-            changes.append(
-                (
-                    "📷 Câmera",
-                    "Ligou a webcam 🟢" if after.self_video else "Desligou a webcam 🔴",
-                )
+            await self._dispatch_voice_embed(
+                title=title,
+                color=0x9DF9EF,
+                member=member,
+                channel=voice_channel,
+                guild=guild,
             )
 
-        if changes:
-            await self._dispatch_log(
-                title="🎙️ Atualização de Voz",
+        if before.self_deaf != after.self_deaf:
+            title = "🔇 Silenciou o Áudio" if after.self_deaf else "🔊 Ativou o Áudio"
+            await self._dispatch_voice_embed(
+                title=title,
                 color=0x9DF9EF,
-                changes=changes,
-                user=member,
-                footer=f"📍 Servidor: {member.guild.name}",
+                member=member,
+                channel=voice_channel,
+                guild=guild,
+            )
+
+        if before.self_stream != after.self_stream:
+            title = (
+                "🎥 Iniciou uma Stream" if after.self_stream else "🛑 Encerrou a Stream"
+            )
+            await self._dispatch_voice_embed(
+                title=title,
+                color=0x9B59B6,
+                member=member,
+                channel=voice_channel,
+                guild=guild,
+            )
+
+        if before.self_video != after.self_video:
+            title = "📷 Ligou a Câmera" if after.self_video else "📷 Desligou a Câmera"
+            await self._dispatch_voice_embed(
+                title=title,
+                color=0x9DF9EF,
+                member=member,
+                channel=voice_channel,
+                guild=guild,
             )
 
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
