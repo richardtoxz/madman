@@ -1,7 +1,8 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-from views.ephemeral_panel import EphemeralPanelView
+
+from ..views.ephemeral_panel import EphemeralPanelView
 
 
 class PanelCog(commands.Cog):

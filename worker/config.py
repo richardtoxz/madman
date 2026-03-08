@@ -1,11 +1,12 @@
 import re
+from dataclasses import dataclass
 
 
-control_flags = {
-    "started": False,
-    "paused": False,
-    "cancelled": False,
-}
+@dataclass(slots=True)
+class ControlState:
+    started: bool = False
+    paused: bool = False
+    cancelled: bool = False
 
 
 class MessageConfig:

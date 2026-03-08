@@ -28,9 +28,9 @@ class ProtectionMixin:
         result = await p.send_and_wait(
             "PROTECTION_STATUS", "PROTECTION:STATUS:", timeout=5.0
         )
-        if result and result.startswith("PROTECTION:STATUS:"):
+        if result:
             try:
-                return json.loads(result.split(":", 2)[2])
-            except (json.JSONDecodeError, IndexError):
+                return json.loads(result)
+            except json.JSONDecodeError:
                 pass
         return None

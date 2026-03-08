@@ -1,8 +1,8 @@
 import discord
 from discord import ui
 
-from utils.helpers import PainelView
-from views.handlers import (
+from ..utils.helpers import PainelView
+from .handlers import (
     handle_authenticate,
     handle_disconnect,
     handle_clean_dm,
@@ -15,9 +15,9 @@ from views.handlers import (
     handle_clean_friends,
     handle_unblock_all,
 )
-from views.handlers.voice import handle_voice_afk, handle_voice_follow
-from views.handlers.protection import handle_protection
-from views.handlers.tracker import handle_tracker
+from .handlers.voice import handle_voice_afk, handle_voice_follow
+from .handlers.protection import handle_protection
+from .handlers.tracker import handle_tracker
 
 HANDLER_MAP = {
     "auth": handle_authenticate,

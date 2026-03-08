@@ -2,7 +2,7 @@ import asyncio
 import discord
 from discord import ui
 
-from utils.stealth_dm import send_stealth_dm
+from ...utils.stealth_dm import send_stealth_dm
 
 
 async def _start_guild_action(interaction: discord.Interaction, manager, user_id: int, action: str):

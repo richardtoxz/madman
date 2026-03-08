@@ -1,67 +1,85 @@
 import asyncio
 import json
-from config import control_flags
+
+from .ipc import emit_line, emit_response, split_request_id
+
+
+def _state(bot):
+    return bot.control_state
+
+
+def _request_id(bot):
+    return getattr(bot, "_current_request_id", None)
+
+
+def _emit(bot, prefix: str, payload: str):
+    emit_response(prefix, payload, _request_id(bot))
+
+
+def _emit_line(bot, message: str):
+    emit_line(message, _request_id(bot))
 
 
 async def handle_start(bot, cmd):
-    control_flags["started"] = True
-    print("STATUS:STARTED", flush=True)
+    _state(bot).started = True
+    _emit_line(bot, "STATUS:STARTED")
 
 
 async def handle_pause(bot, cmd):
-    control_flags["paused"] = True
+    _state(bot).paused = True
     if bot.msg_manager:
         bot.msg_manager.paused = True
-    print("STATUS:PAUSED", flush=True)
+    _emit_line(bot, "STATUS:PAUSED")
 
 
 async def handle_resume(bot, cmd):
-    control_flags["paused"] = False
+    _state(bot).paused = False
     if bot.msg_manager:
         bot.msg_manager.paused = False
-    print("STATUS:RESUMED", flush=True)
+    _emit_line(bot, "STATUS:RESUMED")
 
 
 async def handle_cancel(bot, cmd):
-    control_flags["cancelled"] = True
+    _state(bot).cancelled = True
     if bot.msg_manager:
         bot.msg_manager.cancelled = True
     if getattr(bot, "rel_manager", None):
         bot.rel_manager.cancelled = True
     if getattr(bot, "guild_manager", None):
         bot.guild_manager.cancelled = True
-    print("STATUS:CANCELLED", flush=True)
+    _emit_line(bot, "STATUS:CANCELLED")
 
 
 async def handle_close(bot, cmd):
-    print("STATUS:CLOSING", flush=True)
+    _emit_line(bot, "STATUS:CLOSING")
     await bot.close()
 
 
 async def handle_rel_stats(bot, cmd):
-    print(
-        f"REL_STATS_RESULT:{json.dumps(await bot.rel_manager.get_stats())}", flush=True
-    )
+    _emit(bot, "REL_STATS_RESULT:", json.dumps(await bot.rel_manager.get_stats()))
 
 
 async def handle_rel_friends_list(bot, cmd):
-    print(
-        f"REL_FRIENDS_RESULT:{json.dumps(await bot.rel_manager.get_friends_list())}",
-        flush=True,
+    _emit(
+        bot,
+        "REL_FRIENDS_RESULT:",
+        json.dumps(await bot.rel_manager.get_friends_list()),
     )
 
 
 async def handle_rel_pending_list(bot, cmd):
-    print(
-        f"REL_PENDING_RESULT:{json.dumps(await bot.rel_manager.get_pending_requests())}",
-        flush=True,
+    _emit(
+        bot,
+        "REL_PENDING_RESULT:",
+        json.dumps(await bot.rel_manager.get_pending_requests()),
     )
 
 
 async def handle_rel_blocked_list(bot, cmd):
-    print(
-        f"REL_BLOCKED_RESULT:{json.dumps(await bot.rel_manager.get_blocked_list())}",
-        flush=True,
+    _emit(
+        bot,
+        "REL_BLOCKED_RESULT:",
+        json.dumps(await bot.rel_manager.get_blocked_list()),
     )
 
 
@@ -72,22 +90,30 @@ async def handle_rel_remove_all(bot, cmd):
         if i.strip().isdigit()
     ]
     bot.rel_manager.cancelled = False
-    asyncio.create_task(bot._safe_exec(bot.rel_manager.remove_all_friends(wl)))
+    asyncio.create_task(
+        bot._safe_exec(bot.rel_manager.remove_all_friends(wl, request_id=_request_id(bot)))
+    )
 
 
 async def handle_rel_unblock_all(bot, cmd):
     bot.rel_manager.cancelled = False
-    asyncio.create_task(bot._safe_exec(bot.rel_manager.unblock_all()))
+    asyncio.create_task(
+        bot._safe_exec(bot.rel_manager.unblock_all(request_id=_request_id(bot)))
+    )
 
 
 async def handle_rel_accept_all(bot, cmd):
     bot.rel_manager.cancelled = False
-    asyncio.create_task(bot._safe_exec(bot.rel_manager.accept_all_requests()))
+    asyncio.create_task(
+        bot._safe_exec(bot.rel_manager.accept_all_requests(request_id=_request_id(bot)))
+    )
 
 
 async def handle_rel_deny_all(bot, cmd):
     bot.rel_manager.cancelled = False
-    asyncio.create_task(bot._safe_exec(bot.rel_manager.deny_all_requests()))
+    asyncio.create_task(
+        bot._safe_exec(bot.rel_manager.deny_all_requests(request_id=_request_id(bot)))
+    )
 
 
 async def handle_rel_nickname(bot, cmd):
@@ -95,41 +121,38 @@ async def handle_rel_nickname(bot, cmd):
     if len(parts) >= 3:
         tid, nick = int(parts[1].strip()), parts[2].strip() or None
         ok = await bot.rel_manager.set_friend_nickname(tid, nick)
-        print(f"REL_NICKNAME_RESULT:{'OK' if ok else 'FAIL'}", flush=True)
+        _emit(bot, "REL_NICKNAME_RESULT:", "OK" if ok else "FAIL")
 
 
 async def handle_rel_add_friend(bot, cmd):
     username = cmd.split(":", 1)[1].strip()
     try:
         await bot.rel_manager.send_friend_request_by_name(username)
-        print(f"REL_ADD_FRIEND_RESULT:OK:{username}", flush=True)
+        _emit(bot, "REL_ADD_FRIEND_RESULT:", f"OK:{username}")
     except Exception as e:
-        print(f"REL_ADD_FRIEND_RESULT:FAIL:{e}", flush=True)
+        _emit(bot, "REL_ADD_FRIEND_RESULT:", f"FAIL:{e}")
 
 
 async def handle_rel_block(bot, cmd):
     tid = int(cmd.upper().split(":")[1].strip())
     try:
         await bot.rel_manager.block_user(tid)
-        print(f"REL_BLOCK_RESULT:OK:{tid}", flush=True)
+        _emit(bot, "REL_BLOCK_RESULT:", f"OK:{tid}")
     except Exception as e:
-        print(f"REL_BLOCK_RESULT:FAIL:{e}", flush=True)
+        _emit(bot, "REL_BLOCK_RESULT:", f"FAIL:{e}")
 
 
 async def handle_rel_unblock(bot, cmd):
     tid = int(cmd.upper().split(":")[1].strip())
     try:
         await bot.rel_manager.unblock_user(tid)
-        print(f"REL_UNBLOCK_RESULT:OK:{tid}", flush=True)
+        _emit(bot, "REL_UNBLOCK_RESULT:", f"OK:{tid}")
     except Exception as e:
-        print(f"REL_UNBLOCK_RESULT:FAIL:{e}", flush=True)
+        _emit(bot, "REL_UNBLOCK_RESULT:", f"FAIL:{e}")
 
 
 async def handle_guild_stats(bot, cmd):
-    print(
-        f"GUILD_STATS_RESULT:{json.dumps(await bot.guild_manager.get_stats())}",
-        flush=True,
-    )
+    _emit(bot, "GUILD_STATS_RESULT:", json.dumps(await bot.guild_manager.get_stats()))
 
 
 async def handle_guild_leave_all(bot, cmd):
@@ -144,7 +167,10 @@ async def handle_guild_leave_all(bot, cmd):
     bot.guild_manager.cancelled = False
     asyncio.create_task(
         bot._safe_exec(
-            bot.guild_manager.leave_all_guilds(wl), presence_task_token=presence_token
+            bot.guild_manager.leave_all_guilds(
+                wl, request_id=_request_id(bot)
+            ),
+            presence_task_token=presence_token,
         )
     )
 
@@ -161,7 +187,10 @@ async def handle_guild_mute_all(bot, cmd):
     bot.guild_manager.cancelled = False
     asyncio.create_task(
         bot._safe_exec(
-            bot.guild_manager.mute_all_guilds(wl), presence_task_token=presence_token
+            bot.guild_manager.mute_all_guilds(
+                wl, request_id=_request_id(bot)
+            ),
+            presence_task_token=presence_token,
         )
     )
 
@@ -173,7 +202,10 @@ async def handle_target(bot, cmd):
         presence_token = await bot.presence_manager.set_task("Limpando mensagens")
     asyncio.create_task(
         bot._safe_exec(
-            bot.msg_manager.clean_channel(tid), presence_task_token=presence_token
+            bot.msg_manager.clean_channel(
+                tid, request_id=_request_id(bot)
+            ),
+            presence_task_token=presence_token,
         )
     )
 
@@ -185,7 +217,10 @@ async def handle_msg_clean_channel(bot, cmd):
         presence_token = await bot.presence_manager.set_task("Limpando canal de texto")
     asyncio.create_task(
         bot._safe_exec(
-            bot.msg_manager.clean_channel(cid), presence_task_token=presence_token
+            bot.msg_manager.clean_channel(
+                cid, request_id=_request_id(bot)
+            ),
+            presence_task_token=presence_token,
         )
     )
 
@@ -196,7 +231,10 @@ async def handle_msg_clean_all_dms(bot, cmd):
         presence_token = await bot.presence_manager.set_task("Limpando todas as DMs")
     asyncio.create_task(
         bot._safe_exec(
-            bot.msg_manager.clean_all_dms(), presence_task_token=presence_token
+            bot.msg_manager.clean_all_dms(
+                request_id=_request_id(bot)
+            ),
+            presence_task_token=presence_token,
         )
     )
 
@@ -208,7 +246,10 @@ async def handle_msg_clean_guild(bot, cmd):
         presence_token = await bot.presence_manager.set_task("Limpando servidor")
     asyncio.create_task(
         bot._safe_exec(
-            bot.msg_manager.clean_guild(gid), presence_task_token=presence_token
+            bot.msg_manager.clean_guild(
+                gid, request_id=_request_id(bot)
+            ),
+            presence_task_token=presence_token,
         )
     )
 
@@ -216,96 +257,112 @@ async def handle_msg_clean_guild(bot, cmd):
 async def handle_msg_count(bot, cmd):
     cid = int(cmd.upper().split(":")[1])
     bot.msg_manager.cancelled = False
-    asyncio.create_task(bot._safe_exec(bot.msg_manager.count_messages(cid)))
+    asyncio.create_task(
+        bot._safe_exec(bot.msg_manager.count_messages(cid, request_id=_request_id(bot)))
+    )
 
 
 async def handle_msg_scan_guilds(bot, cmd):
     bot.msg_manager.cancelled = False
-    asyncio.create_task(bot._safe_exec(bot.msg_manager.scan_guilds_for_messages()))
-
-
-async def handle_msg_datapack(bot, cmd):
-    data_json = cmd.split(":", 1)[1]
-    try:
-        entries = json.loads(data_json)
-        bot.msg_manager.cancelled = False
-        bot.msg_manager.paused = False
-        asyncio.create_task(
-            bot._safe_exec(bot.msg_manager.delete_from_data_package(entries))
+    asyncio.create_task(
+        bot._safe_exec(
+            bot.msg_manager.scan_guilds_for_messages(request_id=_request_id(bot))
         )
-    except json.JSONDecodeError as e:
-        print(f"MSG_DATAPACK_RESULT:ERRO:JSON invalido: {e}", flush=True)
+    )
 
 
 async def handle_dm_close(bot, cmd):
     cid = int(cmd.upper().split(":")[1])
-    asyncio.create_task(bot._safe_exec(bot.msg_manager.close_dm(cid)))
+    asyncio.create_task(
+        bot._safe_exec(bot.msg_manager.close_dm(cid, request_id=_request_id(bot)))
+    )
 
 
 async def handle_dm_close_all(bot, cmd):
     bot.msg_manager.cancelled = False
-    asyncio.create_task(bot._safe_exec(bot.msg_manager.close_all_dms()))
+    asyncio.create_task(
+        bot._safe_exec(bot.msg_manager.close_all_dms(request_id=_request_id(bot)))
+    )
 
 
 async def handle_dm_list(bot, cmd):
-    await bot.msg_manager.list_dms()
+    await bot.msg_manager.list_dms(request_id=_request_id(bot))
 
 
 async def handle_group_dm_leave(bot, cmd):
     cid = int(cmd.upper().split(":")[1])
-    asyncio.create_task(bot._safe_exec(bot.msg_manager.leave_group_dm(cid)))
+    asyncio.create_task(
+        bot._safe_exec(
+            bot.msg_manager.leave_group_dm(cid, request_id=_request_id(bot))
+        )
+    )
 
 
 async def handle_group_dm_leave_all(bot, cmd):
     bot.msg_manager.cancelled = False
-    asyncio.create_task(bot._safe_exec(bot.msg_manager.leave_all_group_dms()))
+    asyncio.create_task(
+        bot._safe_exec(
+            bot.msg_manager.leave_all_group_dms(request_id=_request_id(bot))
+        )
+    )
 
 
 async def handle_voice_join(bot, cmd):
     cid = int(cmd.split(":")[1].strip())
-    asyncio.create_task(bot._safe_exec(bot.voice_manager.join_voice(cid)))
+    asyncio.create_task(
+        bot._safe_exec(bot.voice_manager.join_voice(cid, request_id=_request_id(bot)))
+    )
 
 
 async def handle_voice_leave(bot, cmd):
-    asyncio.create_task(bot._safe_exec(bot.voice_manager.leave_voice()))
+    asyncio.create_task(
+        bot._safe_exec(bot.voice_manager.leave_voice(request_id=_request_id(bot)))
+    )
 
 
 async def handle_voice_follow(bot, cmd):
     uid = int(cmd.split(":")[1].strip())
-    asyncio.create_task(bot._safe_exec(bot.voice_manager.start_follow(uid)))
+    asyncio.create_task(
+        bot._safe_exec(
+            bot.voice_manager.start_follow(uid, request_id=_request_id(bot))
+        )
+    )
 
 
 async def handle_voice_unfollow(bot, cmd):
-    asyncio.create_task(bot._safe_exec(bot.voice_manager.stop_follow()))
+    asyncio.create_task(
+        bot._safe_exec(bot.voice_manager.stop_follow(request_id=_request_id(bot)))
+    )
 
 
 async def handle_voice_status(bot, cmd):
     vm = bot.voice_manager
     if vm.is_following:
-        print(
-            f"VOICE_STATUS:FOLLOWING:{vm.follow_target_id}:{vm.current_channel_id}",
-            flush=True,
+        _emit(
+            bot,
+            "VOICE_STATUS:",
+            f"FOLLOWING:{vm.follow_target_id}:{vm.current_channel_id}",
         )
     elif vm.is_in_voice:
-        print(f"VOICE_STATUS:JOINED:{vm.current_channel_id}", flush=True)
+        _emit(bot, "VOICE_STATUS:", f"JOINED:{vm.current_channel_id}")
     else:
-        print("VOICE_STATUS:IDLE", flush=True)
+        _emit(bot, "VOICE_STATUS:", "IDLE")
 
 
 async def handle_protection_enable(bot, cmd):
     if getattr(bot, "presence_manager", None):
         await bot.presence_manager.set_protection(True)
-    bot.protection_manager.enable()
+    bot.protection_manager.enable(request_id=_request_id(bot))
 
 
 async def handle_protection_disable(bot, cmd):
     if getattr(bot, "presence_manager", None):
         await bot.presence_manager.set_protection(False)
-    bot.protection_manager.disable()
+    bot.protection_manager.disable(request_id=_request_id(bot))
 
 
 async def handle_protection_status(bot, cmd):
-    bot.protection_manager.get_status()
+    bot.protection_manager.get_status(request_id=_request_id(bot))
 
 
 async def handle_tracker_start(bot, cmd):
@@ -319,7 +376,7 @@ async def handle_tracker_start(bot, cmd):
 
 async def handle_tracker_stop(bot, cmd):
     if getattr(bot, "tracker_manager", None):
-        bot.tracker_manager.stop_tracking()
+        await bot.tracker_manager.stop_tracking()
 
 
 async def handle_presence_main(bot, cmd):
@@ -383,7 +440,6 @@ def register_handlers(bot):
         "MSG_CLEAN_CHANNEL:": handle_msg_clean_channel,
         "MSG_CLEAN_GUILD:": handle_msg_clean_guild,
         "MSG_COUNT:": handle_msg_count,
-        "MSG_DATAPACK:": handle_msg_datapack,
         "DM_CLOSE:": handle_dm_close,
         "GROUP_DM_LEAVE:": handle_group_dm_leave,
         "VOICE_JOIN:": handle_voice_join,
@@ -397,15 +453,20 @@ def register_handlers(bot):
 
 
 async def dispatch(bot, exact_handlers, prefix_handlers, cmd_raw):
+    cmd, request_id = split_request_id(cmd_raw.strip())
+    cmd_upper = cmd.upper()
+    previous_request_id = getattr(bot, "_current_request_id", None)
+    bot._current_request_id = request_id
 
-    cmd_upper = cmd_raw.strip().upper()
-
-    handler = exact_handlers.get(cmd_upper)
-    if handler:
-        await handler(bot, cmd_raw.strip())
-        return
-
-    for pfx, handler in prefix_handlers.items():
-        if cmd_upper.startswith(pfx):
-            await handler(bot, cmd_raw.strip())
+    try:
+        handler = exact_handlers.get(cmd_upper)
+        if handler:
+            await handler(bot, cmd)
             return
+
+        for pfx, handler in prefix_handlers.items():
+            if cmd_upper.startswith(pfx):
+                await handler(bot, cmd)
+                return
+    finally:
+        bot._current_request_id = previous_request_id

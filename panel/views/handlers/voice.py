@@ -1,6 +1,7 @@
 import discord
 
-from modals.voice_modal import VoiceAFKModal, VoiceFollowModal
+from ...modals.voice_modal import VoiceAFKModal, VoiceFollowModal
+from ...utils.interaction import send_modal_safely
 
 
 async def handle_voice_afk(interaction: discord.Interaction, manager, user_id: int):
@@ -9,7 +10,7 @@ async def handle_voice_afk(interaction: discord.Interaction, manager, user_id: i
             "Você precisa estar autenticado! Use **Autenticar** primeiro.", ephemeral=True
         )
 
-    await interaction.response.send_modal(VoiceAFKModal(manager, user_id))
+    return await send_modal_safely(interaction, VoiceAFKModal(manager, user_id))
 
 
 async def handle_voice_follow(interaction: discord.Interaction, manager, user_id: int):
@@ -18,4 +19,4 @@ async def handle_voice_follow(interaction: discord.Interaction, manager, user_id
             "Você precisa estar autenticado! Use **Autenticar** primeiro.", ephemeral=True
         )
 
-    await interaction.response.send_modal(VoiceFollowModal(manager, user_id))
+    return await send_modal_safely(interaction, VoiceFollowModal(manager, user_id))

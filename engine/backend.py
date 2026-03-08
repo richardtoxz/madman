@@ -14,7 +14,11 @@ log = logging.getLogger(__name__)
 
 
 class SelfbotManager(
-    RelationshipMixin, GuildMixin, MessagesMixin, VoiceMixin, ProtectionMixin
+    RelationshipMixin,
+    GuildMixin,
+    MessagesMixin,
+    VoiceMixin,
+    ProtectionMixin,
 ):
     IDENTIFY_COOLDOWN = 5.5
 
@@ -58,13 +62,10 @@ class SelfbotManager(
     async def _spawn_ready_process(
         self, token: str
     ) -> tuple[bool, SelfbotProcess | str]:
-        script_path = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)),
-            "worker",
-            "run_selfbot.py",
-        )
-        if not os.path.exists(script_path):
-            return False, f"Script do selfbot não encontrado: {script_path}"
+        project_root = os.path.dirname(os.path.dirname(__file__))
+        worker_package_dir = os.path.join(project_root, "worker")
+        if not os.path.exists(worker_package_dir):
+            return False, f"Pacote do selfbot não encontrado: {worker_package_dir}"
 
         async with self._identify_lock:
             now = asyncio.get_running_loop().time()
@@ -78,10 +79,12 @@ class SelfbotManager(
             try:
                 process = await asyncio.create_subprocess_exec(
                     sys.executable,
-                    script_path,
+                    "-m",
+                    "worker.run_selfbot",
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
                     stdin=asyncio.subprocess.PIPE,
+                    cwd=project_root,
                 )
                 process.stdin.write(f"{token}\n".encode())
                 await process.stdin.drain()

@@ -15,7 +15,7 @@ def install_libs():
         [sys.executable, "-m", "pip", "install", "discord.py-self", "-t", "worker/lib"]
     )
 
-    print("\nConcluído! Use 'python panel/main.py' para iniciar.")
+    print("\nConcluído! Use 'python -m panel.main' para iniciar.")
 
     print("\nPatching Python 3.13 audioop compatibility...")
     patch_audioop()

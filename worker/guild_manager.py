@@ -1,4 +1,4 @@
-from bulk_executor import safe_bulk_execute
+from .bulk_executor import safe_bulk_execute
 
 
 class GuildManager:
@@ -9,7 +9,7 @@ class GuildManager:
     async def get_stats(self):
         return {"total": len(self.client.guilds)}
 
-    async def leave_all_guilds(self, whitelist):
+    async def leave_all_guilds(self, whitelist, request_id: str | None = None):
         guilds = [g for g in self.client.guilds if g.id not in whitelist]
         self.cancelled = False
         return await safe_bulk_execute(
@@ -18,9 +18,10 @@ class GuildManager:
             lambda g: g.name,
             lambda: self.cancelled,
             "GUILD_LEAVE",
+            request_id=request_id,
         )
 
-    async def mute_all_guilds(self, whitelist):
+    async def mute_all_guilds(self, whitelist, request_id: str | None = None):
         guilds = [g for g in self.client.guilds if g.id not in whitelist]
         self.cancelled = False
 
@@ -46,5 +47,10 @@ class GuildManager:
             )
 
         return await safe_bulk_execute(
-            guilds, mute_guild, lambda g: g.name, lambda: self.cancelled, "GUILD_MUTE"
+            guilds,
+            mute_guild,
+            lambda g: g.name,
+            lambda: self.cancelled,
+            "GUILD_MUTE",
+            request_id=request_id,
         )

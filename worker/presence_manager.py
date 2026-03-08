@@ -1,6 +1,8 @@
 import discord
 import datetime
-from config import PresenceConfig
+
+from .config import PresenceConfig
+from .ipc import emit_line
 
 
 class PresenceManager:
@@ -23,19 +25,11 @@ class PresenceManager:
 
         self._resolving = True
         try:
-            print(
-                f"PRESENCE:Resolvendo assets para APP_ID {self.config.APP_ID}...",
-                flush=True,
-            )
             assets_data = await self.client.http.get_app_assets(self.config.APP_ID)
             for asset in assets_data:
                 self._assets_map[asset["name"]] = str(asset["id"])
-            print(
-                f"PRESENCE:Assets resolvidos: {list(self._assets_map.keys())}",
-                flush=True,
-            )
         except Exception as e:
-            print(f"PRESENCE:ERRO ao resolver assets: {e}", flush=True)
+            emit_line(f"PRESENCE:ERRO ao resolver assets: {e}")
         finally:
             self._resolving = False
 
@@ -88,15 +82,9 @@ class PresenceManager:
             self._task_start = None
             self._task_token = None
             activity = self._build_main_activity()
-            payload = activity.to_dict()
-            print(f"PRESENCE:DEBUG_PAYLOAD:{payload}", flush=True)
             await self.client.change_presence(activity=activity)
-            print("PRESENCE:MAIN_SET_SUCCESS", flush=True)
         except Exception as e:
-            print(f"PRESENCE:CRITICAL_ERROR:set_main:{e}", flush=True)
-            import traceback
-
-            traceback.print_exc()
+            emit_line(f"PRESENCE:CRITICAL_ERROR:set_main:{e}")
 
     async def set_task(self, name: str, detail: str | None = None) -> int | None:
         try:
@@ -109,12 +97,9 @@ class PresenceManager:
             activity = self._build_task_activity()
 
             await self.client.change_presence(activity=activity)
-            print(
-                f"PRESENCE:TASK_SET_SUCCESS:{name}:token={self._task_token}", flush=True
-            )
             return self._task_token
         except Exception as e:
-            print(f"PRESENCE:CRITICAL_ERROR:set_task:{e}", flush=True)
+            emit_line(f"PRESENCE:CRITICAL_ERROR:set_task:{e}")
             return None
 
     async def complete_task(self, token: int | None):
@@ -123,10 +108,6 @@ class PresenceManager:
             return
 
         if token != self._task_token:
-            print(
-                f"PRESENCE:SKIP_COMPLETE_STALE:token={token}:active={self._task_token}",
-                flush=True,
-            )
             return
 
         self._task_name = None
@@ -137,19 +118,13 @@ class PresenceManager:
         try:
             activity = self._build_main_activity()
             await self.client.change_presence(activity=activity)
-            print(f"PRESENCE:TASK_COMPLETE:token={token}", flush=True)
         except Exception as e:
-            print(f"PRESENCE:CRITICAL_ERROR:complete_task:{e}", flush=True)
+            emit_line(f"PRESENCE:CRITICAL_ERROR:complete_task:{e}")
 
     async def set_protection(self, enabled: bool):
         self._protection_enabled = enabled
         if not self._task_name:
             await self.set_main()
-        else:
-            print(
-                f"PRESENCE:PROTECTION_UPDATED:{enabled} (refresh pendente: tarefa ativa)",
-                flush=True,
-            )
 
     async def update_detail(self, detail: str):
         if not self._task_name:

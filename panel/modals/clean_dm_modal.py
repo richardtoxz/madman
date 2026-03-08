@@ -2,9 +2,9 @@ import asyncio
 import discord
 from discord import ui
 
-from views.progress_view import ProgressView
-from utils.helpers import generate_progress_bar
-from utils.stealth_dm import send_stealth_dm
+from ..views.progress_view import ProgressView
+from ..utils.helpers import generate_progress_bar
+from ..utils.stealth_dm import send_stealth_dm
 
 
 class CleanDMModal(ui.Modal, title="Limpar Mensagens (DM/Canal)"):

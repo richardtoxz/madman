@@ -2,10 +2,11 @@ import asyncio
 import discord
 from discord import ui
 
-from modals.clean_dm_modal import CleanDMModal
-from modals.clean_guild_modal import CleanGuildModal
-from utils.helpers import generate_progress_bar
-from utils.stealth_dm import send_stealth_dm
+from ...modals.clean_dm_modal import CleanDMModal
+from ...modals.clean_guild_modal import CleanGuildModal
+from ...utils.helpers import generate_progress_bar
+from ...utils.interaction import send_modal_safely
+from ...utils.stealth_dm import send_stealth_dm
 
 
 def _require_auth(manager, user_id: int):
@@ -17,7 +18,7 @@ async def handle_clean_dm(interaction: discord.Interaction, manager, user_id: in
         return await interaction.response.send_message(
             "❌ Você precisa estar autenticado! Use **Autenticar** primeiro.", ephemeral=True
         )
-    await interaction.response.send_modal(CleanDMModal(manager))
+    return await send_modal_safely(interaction, CleanDMModal(manager))
 
 
 async def handle_clean_all_dms(interaction: discord.Interaction, manager, user_id: int):
@@ -205,7 +206,7 @@ async def handle_clean_guild(interaction: discord.Interaction, manager, user_id:
         return await interaction.response.send_message(
             "❌ Você precisa estar autenticado! Use **Autenticar** primeiro.", ephemeral=True
         )
-    await interaction.response.send_modal(CleanGuildModal(manager))
+    return await send_modal_safely(interaction, CleanGuildModal(manager))
 
 
 async def handle_close_dms(interaction: discord.Interaction, manager, user_id: int):

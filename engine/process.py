@@ -1,8 +1,11 @@
 import asyncio
 import json
 import logging
+import uuid
 
 log = logging.getLogger(__name__)
+
+REQUEST_ID_MARKER = "||REQ:"
 
 
 class SelfbotProcess:
@@ -17,6 +20,7 @@ class SelfbotProcess:
         self._reader_task: asyncio.Task | None = None
         self._stderr_task: asyncio.Task | None = None
         self._lock = asyncio.Lock()
+        self._waiter_condition = asyncio.Condition()
 
     @property
     def is_alive(self) -> bool:
@@ -51,6 +55,32 @@ class SelfbotProcess:
     def emit_event(self, text: str):
         self._dispatch_event_line(text)
 
+    @staticmethod
+    def _prefixes_conflict(left: str, right: str) -> bool:
+        return (
+            left == right
+            or left.startswith(right)
+            or right.startswith(left)
+        )
+
+    async def _acquire_waiters(self, prefixes: list[str], queue: asyncio.Queue) -> None:
+        async with self._waiter_condition:
+            while any(
+                self._prefixes_conflict(active, requested)
+                for active in self._response_waiters
+                for requested in prefixes
+            ):
+                await self._waiter_condition.wait()
+
+            for prefix in prefixes:
+                self._response_waiters[prefix] = queue
+
+    async def _release_waiters(self, prefixes: list[str]) -> None:
+        async with self._waiter_condition:
+            for prefix in prefixes:
+                self._response_waiters.pop(prefix, None)
+            self._waiter_condition.notify_all()
+
     async def _read_loop(self):
         while True:
             try:
@@ -73,12 +103,18 @@ class SelfbotProcess:
                     self._ready = True
                     log.info("Selfbot ready: %s (%s)", self._username, self._user_id)
 
-                dispatched = False
+                matched_prefix = None
+                matched_queue = None
                 for prefix, queue in list(self._response_waiters.items()):
-                    if text.startswith(prefix):
-                        await queue.put(text)
-                        dispatched = True
-                        break
+                    if text.startswith(prefix) and (
+                        matched_prefix is None or len(prefix) > len(matched_prefix)
+                    ):
+                        matched_prefix = prefix
+                        matched_queue = queue
+
+                dispatched = matched_queue is not None
+                if matched_queue is not None:
+                    await matched_queue.put(text)
 
                 if not dispatched:
                     self._dispatch_event_line(text)
@@ -133,19 +169,27 @@ class SelfbotProcess:
     async def send_and_wait(
         self, command: str, response_prefix: str, timeout: float = 10.0
     ):
+        request_id = uuid.uuid4().hex
         queue = asyncio.Queue()
-        self._response_waiters[response_prefix] = queue
+        await self._acquire_waiters([response_prefix], queue)
         try:
-            sent = await self.send(command)
+            sent = await self.send(f"{command}{REQUEST_ID_MARKER}{request_id}")
             if not sent:
                 return "ERRO:IPC_SEND_FAILED"
             try:
-                text = await asyncio.wait_for(queue.get(), timeout=timeout)
-                return text[len(response_prefix) :]
+                while True:
+                    text = await asyncio.wait_for(queue.get(), timeout=timeout)
+                    payload = text[len(response_prefix) :]
+                    body, _, response_request_id = payload.rpartition(REQUEST_ID_MARKER)
+                    if response_request_id:
+                        if response_request_id != request_id:
+                            continue
+                        return body
+                    return payload
             except asyncio.TimeoutError:
                 return None
         finally:
-            self._response_waiters.pop(response_prefix, None)
+            await self._release_waiters([response_prefix])
 
     async def send_and_wait_json(
         self, command: str, response_prefix: str, timeout: float = 10.0
@@ -159,13 +203,13 @@ class SelfbotProcess:
         return None
 
     async def send_and_stream(self, command: str, prefixes: list, timeout: float = 600):
+        request_id = uuid.uuid4().hex
         queue = asyncio.Queue()
-
-        for p in prefixes:
-            self._response_waiters[p] = queue
+        waiter_prefixes = list(prefixes)
+        await self._acquire_waiters(waiter_prefixes, queue)
 
         try:
-            sent = await self.send(command)
+            sent = await self.send(f"{command}{REQUEST_ID_MARKER}{request_id}")
             if not sent:
                 yield "IPC_ERROR:IPC_SEND_FAILED"
                 return
@@ -173,6 +217,11 @@ class SelfbotProcess:
             while True:
                 try:
                     text = await asyncio.wait_for(queue.get(), timeout=timeout)
+                    body, _, response_request_id = text.rpartition(REQUEST_ID_MARKER)
+                    if response_request_id:
+                        if response_request_id != request_id:
+                            continue
+                        text = body
                     yield text
 
                     for p in prefixes:
@@ -184,8 +233,7 @@ class SelfbotProcess:
                     yield "TIMEOUT:Operacao demorou demais"
                     return
         finally:
-            for p in prefixes:
-                self._response_waiters.pop(p, None)
+            await self._release_waiters(waiter_prefixes)
 
     async def close(self):
         if self._reader_task and not self._reader_task.done():

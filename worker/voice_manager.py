@@ -1,5 +1,7 @@
 import discord
 
+from .ipc import emit_line, emit_response
+
 
 class VoiceManager:
     def __init__(self, client):
@@ -17,22 +19,29 @@ class VoiceManager:
     def is_following(self):
         return self._follow_active and self.follow_target_id is not None
 
-    async def join_voice(self, channel_id: int):
+    async def join_voice(self, channel_id: int, request_id: str | None = None):
         channel = self.client.get_channel(channel_id)
         if not channel:
-            print(f"VOICE_RESULT:ERRO:Canal {channel_id} não encontrado.", flush=True)
+            emit_response(
+                "VOICE_STATUS:",
+                f"ERRO:Canal {channel_id} não encontrado.",
+                request_id,
+            )
             return
 
         if not isinstance(channel, (discord.VoiceChannel, discord.StageChannel)):
-            print(
-                f"VOICE_RESULT:ERRO:Canal {channel_id} não é um canal de voz.",
-                flush=True,
+            emit_response(
+                "VOICE_STATUS:",
+                f"ERRO:Canal {channel_id} não é um canal de voz.",
+                request_id,
             )
             return
 
         guild = channel.guild
         if not guild:
-            print("VOICE_RESULT:ERRO:Guild do canal não encontrada.", flush=True)
+            emit_response(
+                "VOICE_STATUS:", "ERRO:Guild do canal não encontrada.", request_id
+            )
             return
 
         try:
@@ -52,13 +61,17 @@ class VoiceManager:
                         "Em canal de voz", f"Canal: {channel.name}"
                     )
 
-            print(f"VOICE_STATUS:JOINED:{channel.name}:{guild.name}", flush=True)
+            emit_response(
+                "VOICE_STATUS:", f"JOINED:{channel.name}:{guild.name}", request_id
+            )
         except Exception as e:
-            print(f"VOICE_RESULT:ERRO:{e}", flush=True)
+            emit_response("VOICE_STATUS:", f"ERRO:{e}", request_id)
 
-    async def leave_voice(self):
+    async def leave_voice(self, request_id: str | None = None):
         if not self.current_guild_id:
-            print("VOICE_STATUS:LEFT:Não estava em nenhum canal.", flush=True)
+            emit_response(
+                "VOICE_STATUS:", "LEFT:Não estava em nenhum canal.", request_id
+            )
             if self.client.presence_manager and not self.is_following:
                 await self.client.presence_manager.set_main()
             return
@@ -81,9 +94,9 @@ class VoiceManager:
             else:
                 await self.client.presence_manager.set_main()
 
-        print("VOICE_STATUS:LEFT", flush=True)
+        emit_response("VOICE_STATUS:", "LEFT", request_id)
 
-    async def start_follow(self, target_user_id: int):
+    async def start_follow(self, target_user_id: int, request_id: str | None = None):
         self.follow_target_id = target_user_id
         self._follow_active = True
 
@@ -95,11 +108,12 @@ class VoiceManager:
         for guild in self.client.guilds:
             member = guild.get_member(target_user_id)
             if member and member.voice and member.voice.channel:
-                await self.join_voice(member.voice.channel.id)
+                await self.join_voice(member.voice.channel.id, request_id=request_id)
                 user_name = member.display_name
-                print(
-                    f"VOICE_STATUS:FOLLOWING:{user_name}:{member.voice.channel.name}",
-                    flush=True,
+                emit_response(
+                    "VOICE_STATUS:",
+                    f"FOLLOWING:{user_name}:{member.voice.channel.name}",
+                    request_id,
                 )
                 return
 
@@ -107,20 +121,24 @@ class VoiceManager:
         name = user.display_name if user else str(target_user_id)
         if self.client.presence_manager:
             await self.client.presence_manager.update_detail(f"Aguardando: {name}")
-        print(f"VOICE_STATUS:FOLLOWING:{name}:aguardando", flush=True)
+        emit_response("VOICE_STATUS:", f"FOLLOWING:{name}:aguardando", request_id)
 
-    async def stop_follow(self):
+    async def stop_follow(self, request_id: str | None = None):
         was_following = self._follow_active
         self.follow_target_id = None
         self._follow_active = False
 
         if self.is_in_voice:
-            await self.leave_voice()
+            await self.leave_voice(request_id=request_id)
 
         if was_following:
-            print("VOICE_STATUS:UNFOLLOWED", flush=True)
+            emit_response("VOICE_STATUS:", "UNFOLLOWED", request_id)
         else:
-            print("VOICE_STATUS:UNFOLLOWED:Não estava seguindo ninguém.", flush=True)
+            emit_response(
+                "VOICE_STATUS:",
+                "UNFOLLOWED:Não estava seguindo ninguém.",
+                request_id,
+            )
 
         if self.client.presence_manager and not self.is_in_voice:
             await self.client.presence_manager.set_main()
@@ -137,12 +155,11 @@ class VoiceManager:
                 await self.client.presence_manager.update_detail(
                     f"Canal: {after.channel.name}"
                 )
-            print(
-                f"VOICE_STATUS:FOLLOW_MOVED:{member.display_name}:{after.channel.name}",
-                flush=True,
+            emit_line(
+                f"VOICE_STATUS:FOLLOW_MOVED:{member.display_name}:{after.channel.name}"
             )
         elif not after.channel and before.channel:
             await self.leave_voice()
             if self.client.presence_manager:
                 await self.client.presence_manager.update_detail("Aguardando alvo")
-            print(f"VOICE_STATUS:FOLLOW_TARGET_LEFT:{member.display_name}", flush=True)
+            emit_line(f"VOICE_STATUS:FOLLOW_TARGET_LEFT:{member.display_name}")

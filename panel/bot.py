@@ -3,9 +3,9 @@ import logging
 import discord
 from discord.ext import commands
 
-from config import ID_CANAL_PAINEL, ID_CANAL_SOBRE
-from views.control_view import PersistentControlView
-from utils import SobreView
+from .config import ID_CANAL_PAINEL, ID_CANAL_SOBRE
+from .views.control_view import PersistentControlView
+from .utils import SobreView
 
 log = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class ControlBot(commands.Bot):
         self.manager = manager
 
     async def setup_hook(self):
-        await self.load_extension("cogs.panel_cog")
+        await self.load_extension("panel.cogs.panel_cog")
         await self.tree.sync()
 
     async def _setup_static_channel(

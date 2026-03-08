@@ -3,7 +3,7 @@ import asyncio
 import logging
 import time
 
-from utils.sweeper import GHOST_SIGNATURE, sweep_orphaned_messages
+from .sweeper import GHOST_SIGNATURE, sweep_orphaned_messages
 
 logger = logging.getLogger(__name__)
 

@@ -3,7 +3,9 @@ import time
 import random
 import discord
 from collections import namedtuple
-from config import BulkConfig
+
+from .config import BulkConfig
+from .ipc import emit_line
 
 
 Result = namedtuple(
@@ -19,6 +21,7 @@ async def safe_bulk_execute(
     cancelled_check,
     progress_print_prefix="BULK",
     config=None,
+    request_id: str | None = None,
 ):
     if config is None:
         config = BulkConfig()
@@ -36,21 +39,21 @@ async def safe_bulk_execute(
     if total == 0:
         return Result(0, 0, 0, False, "", 0.0)
 
-    print(f"{progress_print_prefix}_START:{total}", flush=True)
+    emit_line(f"{progress_print_prefix}_START:{total}", request_id)
 
     actions_since_pause = 0
     for i, item in enumerate(items):
         if cancelled_check():
             aborted = True
             abort_reason = "Cancelado pelo usuario"
-            print(f"{progress_print_prefix}_CANCELLED", flush=True)
+            emit_line(f"{progress_print_prefix}_CANCELLED", request_id)
             break
 
         if actions_since_pause > 0 and actions_since_pause >= config.BATCH_SIZE:
             pause = random.uniform(config.BATCH_PAUSE_MIN, config.BATCH_PAUSE_MAX)
-            print(
+            emit_line(
                 f"{progress_print_prefix}_BATCH_PAUSE:{pause:.0f}:{success}:{total}",
-                flush=True,
+                request_id,
             )
             await asyncio.sleep(pause)
             actions_since_pause = 0
@@ -81,16 +84,16 @@ async def safe_bulk_execute(
                     wait_time = max(retry_after, current_backoff) + random.uniform(
                         2.0, 5.0
                     )
-                    print(
+                    emit_line(
                         f"{progress_print_prefix}_RATELIMIT:{consecutive_429}:{config.MAX_429_CONSECUTIVE}:{wait_time:.0f}",
-                        flush=True,
+                        request_id,
                     )
                     if consecutive_429 >= config.MAX_429_CONSECUTIVE:
                         aborted = True
                         abort_reason = f"Muitos rate limits consecutivos ({consecutive_429}). Tente mais tarde."
-                        print(
+                        emit_line(
                             f"{progress_print_prefix}_ABORT_RATELIMIT:{abort_reason}",
-                            flush=True,
+                            request_id,
                         )
                         break
                     await asyncio.sleep(wait_time)
@@ -107,7 +110,7 @@ async def safe_bulk_execute(
                 if "captcha" in str(e).lower():
                     aborted = True
                     abort_reason = "Discord exigiu CAPTCHA."
-                    print(f"{progress_print_prefix}_ABORT_CAPTCHA", flush=True)
+                    emit_line(f"{progress_print_prefix}_ABORT_CAPTCHA", request_id)
                     break
                 await asyncio.sleep(5)
                 break
@@ -117,17 +120,22 @@ async def safe_bulk_execute(
 
         if item_success is True:
             success += 1
-            print(
-                f"{progress_print_prefix}_PROGRESS:{success}:{total}:{name}", flush=True
+            emit_line(
+                f"{progress_print_prefix}_PROGRESS:{success}:{total}:{name}",
+                request_id,
             )
         elif item_success == "SKIPPED":
             success += 1
-            print(
-                f"{progress_print_prefix}_SKIPPED:{success}:{total}:{name}", flush=True
+            emit_line(
+                f"{progress_print_prefix}_SKIPPED:{success}:{total}:{name}",
+                request_id,
             )
         else:
             failed += 1
-            print(f"{progress_print_prefix}_FAILED:{failed}:{total}:{name}", flush=True)
+            emit_line(
+                f"{progress_print_prefix}_FAILED:{failed}:{total}:{name}",
+                request_id,
+            )
 
         if i < total - 1 and not aborted and item_success != "SKIPPED":
             if item_success is True:
@@ -140,8 +148,8 @@ async def safe_bulk_execute(
 
     duration = time.time() - start_time
     status = "ABORTADO" if aborted else "COMPLETADO"
-    print(
+    emit_line(
         f"{progress_print_prefix}_RESULT:{status}:{success}/{total} em {duration:.0f}s",
-        flush=True,
+        request_id,
     )
     return Result(success, failed, rate_limited_count, aborted, abort_reason, duration)

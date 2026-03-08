@@ -1,7 +1,9 @@
 import asyncio
 import discord
 from discord import ui
-from views.handlers import (
+
+from ..utils.interaction import is_unknown_interaction_error
+from .handlers import (
     handle_authenticate,
     handle_disconnect,
     handle_clean_dm,
@@ -14,9 +16,9 @@ from views.handlers import (
     handle_clean_friends,
     handle_unblock_all,
 )
-from views.handlers.voice import handle_voice_afk, handle_voice_follow
-from views.handlers.protection import handle_protection
-from views.handlers.tracker import handle_tracker
+from .handlers.voice import handle_voice_afk, handle_voice_follow
+from .handlers.protection import handle_protection
+from .handlers.tracker import handle_tracker
 
 HANDLER_MAP = {
     "auth": handle_authenticate,
@@ -61,7 +63,15 @@ class BaseEphemeralSelect(ui.Select):
         if not handler:
             return
 
-        await handler(interaction, self.manager, interaction.user.id)
+        try:
+            handled = await handler(interaction, self.manager, interaction.user.id)
+        except discord.HTTPException as error:
+            if is_unknown_interaction_error(error):
+                return
+            raise
+
+        if handled is False:
+            return
 
         for opt in self.options:
             opt.default = False
@@ -205,3 +215,8 @@ class EphemeralPanelView(ui.View):
         self.add_item(SessionCleanSelect(manager))
         self.add_item(ActionsSocialSelect(manager))
         self.add_item(VoiceProtectionSelect(manager))
+
+    async def on_error(self, interaction, error, item):
+        if is_unknown_interaction_error(error):
+            return
+        raise error

@@ -1,5 +1,6 @@
 import discord
-from bulk_executor import safe_bulk_execute
+
+from .bulk_executor import safe_bulk_execute
 
 
 class RelationshipManager:
@@ -109,7 +110,7 @@ class RelationshipManager:
             for r in self.client.blocked
         ]
 
-    async def remove_all_friends(self, whitelist):
+    async def remove_all_friends(self, whitelist, request_id: str | None = None):
         friends = [f for f in self.client.friends if f.user.id not in whitelist]
         self.cancelled = False
         return await safe_bulk_execute(
@@ -118,9 +119,10 @@ class RelationshipManager:
             lambda r: f"{r.user.name} ({r.user.id})",
             lambda: self.cancelled,
             "REL_CLEANUP",
+            request_id=request_id,
         )
 
-    async def unblock_all(self):
+    async def unblock_all(self, request_id: str | None = None):
         blocked = list(self.client.blocked)
         self.cancelled = False
         return await safe_bulk_execute(
@@ -129,9 +131,10 @@ class RelationshipManager:
             lambda r: f"{r.user.name} ({r.user.id})",
             lambda: self.cancelled,
             "REL_UNBLOCK",
+            request_id=request_id,
         )
 
-    async def accept_all_requests(self):
+    async def accept_all_requests(self, request_id: str | None = None):
         incoming = [
             r
             for r in self.client.relationships
@@ -144,9 +147,10 @@ class RelationshipManager:
             lambda r: f"{r.user.name} ({r.user.id})",
             lambda: self.cancelled,
             "REL_ACCEPT",
+            request_id=request_id,
         )
 
-    async def deny_all_requests(self):
+    async def deny_all_requests(self, request_id: str | None = None):
         pending = [
             r
             for r in self.client.relationships
@@ -163,6 +167,7 @@ class RelationshipManager:
             lambda r: f"{r.user.name} ({r.user.id})",
             lambda: self.cancelled,
             "REL_DENY",
+            request_id=request_id,
         )
 
     async def set_friend_nickname(self, user_id, nickname):

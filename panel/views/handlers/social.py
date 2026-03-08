@@ -2,8 +2,8 @@ import asyncio
 import discord
 from discord import ui
 
-from utils.helpers import generate_progress_bar
-from utils.stealth_dm import send_stealth_dm
+from ...utils.helpers import generate_progress_bar
+from ...utils.stealth_dm import send_stealth_dm
 
 
 async def handle_pending_requests(interaction: discord.Interaction, manager, user_id: int):

@@ -1,5 +1,6 @@
 import discord
-from modals.token_modal import AuthenticateModal
+from ...modals.token_modal import AuthenticateModal
+from ...utils.interaction import send_modal_safely
 
 
 async def handle_authenticate(interaction: discord.Interaction, manager, user_id: int):
@@ -8,9 +9,7 @@ async def handle_authenticate(interaction: discord.Interaction, manager, user_id
             "Já existe uma conta autenticada. Desconecte-a primeiro.", ephemeral=True
         )
 
-    await interaction.response.send_modal(
-        AuthenticateModal(manager, user_id)
-    )
+    return await send_modal_safely(interaction, AuthenticateModal(manager, user_id))
 
 
 async def handle_disconnect(interaction: discord.Interaction, manager, user_id: int):

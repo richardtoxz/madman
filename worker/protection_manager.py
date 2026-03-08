@@ -3,7 +3,9 @@ import time
 import json
 import discord
 from collections import deque
-from config import ProtectionConfig
+
+from .config import ProtectionConfig
+from .ipc import emit_line, emit_response
 
 URL_PATTERN = re.compile(
     r"(https?://([a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,})[^\s\)]*)", re.IGNORECASE
@@ -26,17 +28,17 @@ class ProtectionManager:
         self._dm_authors = deque(maxlen=self.config.DM_FLOOD_MAXLEN)
         self._fr_timestamps = deque(maxlen=self.config.FR_FLOOD_MAXLEN)
 
-    def enable(self):
+    def enable(self, request_id: str | None = None):
         self.enabled = True
-        print("PROTECTION:ENABLED", flush=True)
+        emit_response("PROTECTION:", "ENABLED", request_id)
 
-    def disable(self):
+    def disable(self, request_id: str | None = None):
         self.enabled = False
-        print("PROTECTION:DISABLED", flush=True)
+        emit_response("PROTECTION:", "DISABLED", request_id)
 
-    def get_status(self):
+    def get_status(self, request_id: str | None = None):
         data = {"enabled": self.enabled, **self.stats}
-        print(f"PROTECTION:STATUS:{json.dumps(data)}", flush=True)
+        emit_response("PROTECTION:STATUS:", json.dumps(data), request_id)
 
     def _is_safe_domain(self, domain: str) -> bool:
         domain_lower = domain.lower()
@@ -124,7 +126,7 @@ class ProtectionManager:
 
         if len(unique_authors) >= self.config.DM_FLOOD_MAX_UNIQUE:
             self.stats["dm_floods"] += 1
-            print(f"PROTECTION:DM_FLOOD:{len(unique_authors)}", flush=True)
+            emit_line(f"PROTECTION:DM_FLOOD:{len(unique_authors)}")
             await message.channel.close()
             return
 
@@ -143,21 +145,19 @@ class ProtectionManager:
                 except Exception:
                     pass
                 self.stats["scams_blocked"] += 1
-                print(
-                    f"PROTECTION:BLOCKED:{author_name}:{author.id}:scam link detectado",
-                    flush=True,
+                emit_line(
+                    f"PROTECTION:BLOCKED:{author_name}:{author.id}:scam link detectado"
                 )
 
             elif threat == "SPAM":
                 await message.channel.close()
                 self.stats["spam_closed"] += 1
-                print(
-                    f"PROTECTION:CLOSED:{author_name}:{author.id}:invite link detectado",
-                    flush=True,
+                emit_line(
+                    f"PROTECTION:CLOSED:{author_name}:{author.id}:invite link detectado"
                 )
 
         except discord.HTTPException as e:
-            print(f"PROTECTION:ERROR:{e}", flush=True)
+            emit_line(f"PROTECTION:ERROR:{e}")
 
     async def on_relationship_add(self, relationship):
         if not self.enabled:
@@ -174,9 +174,8 @@ class ProtectionManager:
         if len(recent) >= self.config.FR_FLOOD_MAX_COUNT:
             self.stats["fr_floods"] += 1
             self.stats["fr_rejected"] += 1
-            print(
-                f"PROTECTION:FR_FLOOD:{len(recent)}:rejeitando {relationship.user}",
-                flush=True,
+            emit_line(
+                f"PROTECTION:FR_FLOOD:{len(recent)}:rejeitando {relationship.user}"
             )
             try:
                 await relationship.delete()

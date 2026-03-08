@@ -1,5 +1,7 @@
 import discord
-from modals.tracker_modal import TrackerModal, TrackerStopModal
+
+from ...modals.tracker_modal import TrackerModal, TrackerStopModal
+from ...utils.interaction import send_modal_safely
 
 
 async def handle_tracker(interaction: discord.Interaction, manager, admin_id: int):
@@ -20,4 +22,6 @@ async def handle_tracker(interaction: discord.Interaction, manager, admin_id: in
             ephemeral=True
         )
     else:
-        await interaction.response.send_modal(TrackerModal(manager, admin_id))
+        return await send_modal_safely(
+            interaction, TrackerModal(manager, admin_id)
+        )

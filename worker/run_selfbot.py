@@ -1,24 +1,18 @@
-import os
 import sys
-
-_lib_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "lib")
-if _lib_path not in sys.path:
-    sys.path.insert(0, _lib_path)
 
 import discord
 import asyncio
-from config import control_flags
-from command_router import register_handlers, dispatch
-from relationship_manager import RelationshipManager
-from guild_manager import GuildManager
-from message_manager import MessageManager
-from voice_manager import VoiceManager
-from protection_manager import ProtectionManager
-from presence_manager import PresenceManager
-from tracker_manager import TrackerManager
 
-
-print(f"DEBUG:DISCORD_VERSION:{discord.__version__}", flush=True)
+from .config import ControlState
+from .command_router import register_handlers, dispatch
+from .relationship_manager import RelationshipManager
+from .guild_manager import GuildManager
+from .message_manager import MessageManager
+from .voice_manager import VoiceManager
+from .protection_manager import ProtectionManager
+from .presence_manager import PresenceManager
+from .tracker_manager import TrackerManager
+from .ipc import emit_line
 
 sys.stdout.reconfigure(line_buffering=True, encoding="utf-8", errors="replace")
 
@@ -26,6 +20,7 @@ sys.stdout.reconfigure(line_buffering=True, encoding="utf-8", errors="replace")
 class MySelfbot(discord.Client):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.control_state = ControlState()
         self.msg_manager = None
         self.rel_manager = None
         self.guild_manager = None
@@ -37,9 +32,9 @@ class MySelfbot(discord.Client):
         self._prefix_handlers = {}
 
     async def on_ready(self):
-        print(f"READY:{self.user}:{self.user.id}", flush=True)
+        emit_line(f"READY:{self.user}:{self.user.id}")
 
-        self.msg_manager = MessageManager(self, control_flags)
+        self.msg_manager = MessageManager(self, self.control_state)
         self.rel_manager = RelationshipManager(self)
         self.guild_manager = GuildManager(self)
         self.voice_manager = VoiceManager(self)
@@ -61,11 +56,10 @@ class MySelfbot(discord.Client):
             discord.RelationshipType.incoming_request: "INCOMING_REQUEST",
             discord.RelationshipType.outgoing_request: "OUTGOING_REQUEST",
         }
-        print(
+        emit_line(
             f"EVENT:REL_ADD:{relationship.user.id}"
             f":{type_names.get(relationship.type, str(relationship.type))}"
-            f":{relationship.user.name}",
-            flush=True,
+            f":{relationship.user.name}"
         )
 
     async def on_relationship_update(self, before, after):
@@ -74,26 +68,24 @@ class MySelfbot(discord.Client):
             changes.append(f"type:{before.type}->{after.type}")
         if before.nick != after.nick:
             changes.append(f"nick:{before.nick}->{after.nick}")
-        print(
-            f"EVENT:REL_UPDATE:{after.user.id}:{'|'.join(changes) if changes else 'presence'}",
-            flush=True,
+        emit_line(
+            f"EVENT:REL_UPDATE:{after.user.id}:{'|'.join(changes) if changes else 'presence'}"
         )
 
     async def on_relationship_remove(self, relationship):
-        print(
-            f"EVENT:REL_REMOVE:{relationship.user.id}:{relationship.type}:{relationship.user.name}",
-            flush=True,
+        emit_line(
+            f"EVENT:REL_REMOVE:{relationship.user.id}:{relationship.type}:{relationship.user.name}"
         )
 
     async def on_guild_join(self, guild):
-        print(f"EVENT:GUILD_JOIN:{guild.id}:{guild.name}", flush=True)
+        emit_line(f"EVENT:GUILD_JOIN:{guild.id}:{guild.name}")
 
     async def on_guild_remove(self, guild):
-        print(f"EVENT:GUILD_REMOVE:{guild.id}:{guild.name}", flush=True)
+        emit_line(f"EVENT:GUILD_REMOVE:{guild.id}:{guild.name}")
 
     async def on_guild_update(self, before, after):
         if before.name != after.name:
-            print(f"EVENT:GUILD_UPDATE:{after.id}:name:{after.name}", flush=True)
+            emit_line(f"EVENT:GUILD_UPDATE:{after.id}:name:{after.name}")
 
     async def on_voice_state_update(self, member, before, after):
         if self.voice_manager:
@@ -148,7 +140,6 @@ class MySelfbot(discord.Client):
                     else after.status
                 )
                 await self.change_presence(status=new_status, edit_settings=False)
-                print(f"STATUS_SYNC:{new_status}", flush=True)
 
     async def _listen_stdin(self):
         loop = asyncio.get_running_loop()
@@ -160,16 +151,21 @@ class MySelfbot(discord.Client):
                     break
                 await dispatch(self, self._exact_handlers, self._prefix_handlers, line)
             except Exception as e:
-                print(f"ERROR:Erro no comando: {e}", flush=True)
+                emit_line(f"ERROR:Erro no comando: {e}")
 
     async def _safe_exec(self, coro, presence_task_token: int | None = None):
         try:
             await coro
         except Exception as e:
-            print(f"ERROR:Execucao falhou: {e}", flush=True)
+            emit_line(f"ERROR:Execucao falhou: {e}")
         finally:
             if self.presence_manager:
                 await self.presence_manager.complete_task(presence_task_token)
+
+    async def close(self):
+        if self.tracker_manager:
+            await self.tracker_manager.shutdown()
+        await super().close()
 
 
 async def main():
@@ -179,22 +175,20 @@ async def main():
         )
         token = input_line.strip()
     except Exception as e:
-        print(f"RESULT:ERRO:Falha ao ler token do stdin: {e}", flush=True)
+        emit_line(f"RESULT:ERRO:Falha ao ler token do stdin: {e}")
         return
 
     if not token:
-        print("RESULT:ERRO:Token vazio recebido", flush=True)
+        emit_line("RESULT:ERRO:Token vazio recebido")
         return
-
-    print("INFO:SYNC_PRESENCE:True (Automatic)", flush=True)
 
     client = MySelfbot(sync_presence=True)
     try:
         await client.start(token)
     except discord.LoginFailure:
-        print("RESULT:ERRO:Token invalido", flush=True)
+        emit_line("RESULT:ERRO:Token invalido")
     except Exception as e:
-        print(f"RESULT:ERRO_CRITICO:{e}", flush=True)
+        emit_line(f"RESULT:ERRO_CRITICO:{e}")
 
 
 if __name__ == "__main__":
