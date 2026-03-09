@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord import app_commands
 
 from ..views.ephemeral_panel import EphemeralPanelView
+from ..utils.interaction import send_message_safely
 
 
 class PanelCog(commands.Cog):
@@ -26,8 +27,11 @@ class PanelCog(commands.Cog):
         )
         embed.set_footer(text="Madman Servvices")
 
-        await interaction.response.send_message(
-            embed=embed, view=panel_view, ephemeral=True
+        await send_message_safely(
+            interaction,
+            embed=embed,
+            view=panel_view,
+            ephemeral=True,
         )
 
 

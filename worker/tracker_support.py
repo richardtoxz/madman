@@ -16,6 +16,7 @@ class TrackerState:
     avatar_url: str | None = None
     status: str | None = None
     activities_repr: list = field(default_factory=list)
+    guild_presence: dict[int, dict] = field(default_factory=dict)
     bio: str | None = None
     connected_accounts: list = field(default_factory=list)
     in_voice_channel_id: int | None = None

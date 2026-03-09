@@ -26,8 +26,10 @@ class TrackerManager(TrackerDispatchMixin, TrackerEventMixin):
         self._msg_cache: dict[int, dict] = {}
         self._msg_cache_order: deque = deque(maxlen=self.config.MSG_CACHE_MAXLEN)
         self.tracked_voice_channels: set[int] = set()
+        self.tracked_guild_ids: set[int] = set()
         self._run_id = 0
         self._subscribe_task: asyncio.Task | None = None
+        self._pending_offline_task: asyncio.Task | None = None
 
         target_env = os.getenv("TRACKER_TARGET_ID")
         webhook_env = os.getenv("TRACKER_WEBHOOK_URL")
@@ -54,11 +56,74 @@ class TrackerManager(TrackerDispatchMixin, TrackerEventMixin):
         )
 
     def _reset_runtime_state(self):
+        if self._pending_offline_task and not self._pending_offline_task.done():
+            self._pending_offline_task.cancel()
+        self._pending_offline_task = None
         self.state = TrackerState()
         self.msg_buffer.clear()
         self._msg_cache.clear()
         self._msg_cache_order.clear()
         self.tracked_voice_channels.clear()
+        self.tracked_guild_ids.clear()
+
+    async def _pause_if_ws_ratelimited(self):
+        if self.client.is_ws_ratelimited():
+            await asyncio.sleep(self.config.WS_RATELIMIT_PAUSE)
+
+    async def _resolve_member_for_guild(self, guild: discord.Guild):
+        member = guild.get_member(self.target_id)
+        if member is not None:
+            return member
+
+        try:
+            members = await guild.query_members(
+                user_ids=[self.target_id],
+                limit=1,
+                presences=True,
+                cache=True,
+                subscribe=True,
+            )
+            if members:
+                return members[0]
+        except Exception:
+            pass
+
+        try:
+            return await guild.fetch_member(self.target_id)
+        except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+            return None
+
+    async def _ensure_guild_subscription(
+        self, guild: discord.Guild, run_id: int
+    ) -> discord.Member | None:
+        if not self.enabled or run_id != self._run_id or not self.target_id:
+            return None
+
+        await self._pause_if_ws_ratelimited()
+
+        try:
+            if not guild.is_subscribed_to(features=["member_updates"]):
+                await guild.subscribe(member_updates=True)
+        except Exception as e:
+            emit_line(f"TRACKER:SUBSCRIBE_ERR:{guild.id}:{e}")
+            return None
+
+        member = await self._resolve_member_for_guild(guild)
+        if member is None:
+            return None
+
+        self.tracked_guild_ids.add(guild.id)
+
+        try:
+            if not guild.is_subscribed_to(
+                features=["member_updates"], members=[member]
+            ):
+                await guild.subscribe_to(members=[member])
+        except Exception as e:
+            emit_line(f"TRACKER:SUBSCRIBE_MEMBER_ERR:{guild.id}:{e}")
+            return None
+
+        return member
 
     async def stop_tracking(self):
         self.enabled = False
@@ -102,45 +167,47 @@ class TrackerManager(TrackerDispatchMixin, TrackerEventMixin):
         if not self.target_id or not self.enabled or run_id != self._run_id:
             return
 
-        count = 0
         found_member = None
+        processed = 0
 
         for guild in self.client.guilds:
             if not self.enabled or run_id != self._run_id:
                 return
-            try:
-                await guild.subscribe(member_updates=True)
-                member = guild.get_member(self.target_id)
-                if member is None:
-                    try:
-                        member = await guild.fetch_member(self.target_id)
-                    except (discord.NotFound, discord.Forbidden, discord.HTTPException):
-                        continue
+            member = await self._ensure_guild_subscription(guild, run_id)
+            if member and found_member is None:
+                found_member = member
 
-                if member:
-                    found_member = member
-                    await guild.subscribe_to(members=[member])
-                    count += 1
-                await asyncio.sleep(0.3)
-            except Exception as e:
-                emit_line(f"TRACKER:SUBSCRIBE_ERR:{guild.id}:{e}")
+            processed += 1
+            if processed % self.config.SUBSCRIBE_BATCH_SIZE == 0:
+                await asyncio.sleep(self.config.SUBSCRIBE_BATCH_PAUSE)
 
         if found_member and self.enabled and run_id == self._run_id:
             await self._dispatch_initial_state(found_member)
 
-    @tasks.loop(minutes=TrackerConfig.SUBSCRIPTION_INTERVAL)
+    @tasks.loop(seconds=TrackerConfig.SUBSCRIPTION_INTERVAL_SECONDS)
     async def _subscription_loop(self):
         if not self.enabled or not self.client.is_ready():
             return
-        count = 0
-        for guild in self.client.guilds:
-            member = guild.get_member(self.target_id)
-            if member:
-                try:
-                    await guild.subscribe_to(members=[member])
-                    count += 1
-                except Exception:
-                    pass
+
+        run_id = self._run_id
+        processed = 0
+
+        for guild_id in tuple(self.tracked_guild_ids):
+            if not self.enabled or run_id != self._run_id or not self.target_id:
+                return
+
+            guild = self.client.get_guild(guild_id)
+            if guild is None:
+                self.tracked_guild_ids.discard(guild_id)
+                continue
+
+            member = await self._ensure_guild_subscription(guild, run_id)
+            if member is None:
+                self.tracked_guild_ids.discard(guild_id)
+
+            processed += 1
+            if processed % self.config.SUBSCRIBE_BATCH_SIZE == 0:
+                await asyncio.sleep(self.config.SUBSCRIBE_BATCH_PAUSE)
 
     @_subscription_loop.before_loop
     async def _before_subscription(self):

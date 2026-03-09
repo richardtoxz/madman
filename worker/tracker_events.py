@@ -8,6 +8,63 @@ from .tracker_support import msg_to_dict
 
 
 class TrackerEventMixin:
+    def _cancel_pending_offline(self):
+        if self._pending_offline_task and not self._pending_offline_task.done():
+            self._pending_offline_task.cancel()
+        self._pending_offline_task = None
+
+    def _select_effective_presence(self):
+        snapshots = list(self.state.guild_presence.values())
+        if not snapshots:
+            return None, []
+
+        online_like = [snap for snap in snapshots if snap["status"] != "offline"]
+        source = online_like or snapshots
+        source.sort(key=lambda snap: snap["updated_at"], reverse=True)
+        effective = source[0]
+        return effective["status"], list(effective["activities"])
+
+    async def _emit_presence_changes(self, member: discord.Member, status_str: str, activities: list[str]):
+        changes = []
+
+        if status_str != self.state.status:
+            status_emojis = {"online": "🟢", "idle": "🌙", "dnd": "⛔", "offline": "⚫"}
+            emoji = status_emojis.get(status_str, "⚪")
+            changes.append(("Status", f"{emoji} `{status_str.title()}`"))
+            self.state.status = status_str
+            asyncio.create_task(self._trigger_hybrid_fetch())
+
+        if activities != self.state.activities_repr:
+            new_acts = "\n".join(activities) if activities else "*Nenhuma atividade no momento*"
+            changes.append(("🕹️ Atividades", new_acts))
+            self.state.activities_repr = activities
+
+        if changes:
+            await self._dispatch_log(
+                title="👀 Presença Atualizada",
+                color=0xA2B9EE,
+                changes=changes,
+                user=member,
+            )
+
+    async def _debounced_emit_offline(self, member: discord.Member, run_id: int):
+        try:
+            await asyncio.sleep(self.config.OFFLINE_DEBOUNCE)
+
+            if not self.enabled or run_id != self._run_id:
+                return
+
+            status_str, activities = self._select_effective_presence()
+            if status_str != "offline":
+                return
+
+            await self._emit_presence_changes(member, status_str, activities)
+        except asyncio.CancelledError:
+            return
+        finally:
+            if self._pending_offline_task and self._pending_offline_task.done():
+                self._pending_offline_task = None
+
     async def _trigger_hybrid_fetch(self):
         run_id = self._run_id
         target_id = self.target_id
@@ -101,38 +158,34 @@ class TrackerEventMixin:
             return
         self.state.last_presence_update = now
 
-        changes = []
-        status_str = str(after.status)
-        if status_str != self.state.status:
-            status_emojis = {"online": "🟢", "idle": "🌙", "dnd": "⛔", "offline": "⚫"}
-            emoji = status_emojis.get(status_str, "⚪")
-            changes.append(("Status", f"{emoji} `{status_str.title()}`"))
-            self.state.status = status_str
-            asyncio.create_task(self._trigger_hybrid_fetch())
-
+        guild_id = after.guild.id
         current_acts = [self._format_activity(act) for act in after.activities]
-        if current_acts != self.state.activities_repr:
-            new_acts = (
-                "\n".join(current_acts)
-                if current_acts
-                else "*Nenhuma atividade no momento*"
-            )
-            changes.append(("🕹️ Atividades", new_acts))
-            self.state.activities_repr = current_acts
+        self.state.guild_presence[guild_id] = {
+            "status": str(after.status),
+            "activities": tuple(current_acts),
+            "updated_at": now,
+        }
 
-        if changes:
-            await self._dispatch_log(
-                title="👀 Presença Atualizada",
-                color=0xA2B9EE,
-                changes=changes,
-                user=after,
+        status_str, activities = self._select_effective_presence()
+        if status_str is None:
+            return
+
+        if status_str == "offline":
+            self._cancel_pending_offline()
+            self._pending_offline_task = asyncio.create_task(
+                self._debounced_emit_offline(after, self._run_id)
             )
+            return
+
+        self._cancel_pending_offline()
+        await self._emit_presence_changes(after, status_str, activities)
 
     async def on_member_join(self, member: discord.Member):
         if not self.enabled or member.id != self.target_id:
             return
         try:
-            await member.guild.subscribe_to(member)
+            self.tracked_guild_ids.add(member.guild.id)
+            await member.guild.subscribe_to(members=[member])
         except Exception:
             pass
 
@@ -147,6 +200,9 @@ class TrackerEventMixin:
     async def on_raw_member_remove(self, payload: discord.RawMemberRemoveEvent):
         if not self.enabled or payload.user.id != self.target_id:
             return
+
+        self.tracked_guild_ids.discard(payload.guild_id)
+        self.state.guild_presence.pop(payload.guild_id, None)
 
         guild = self.client.get_guild(payload.guild_id)
         g_name = guild.name if guild else "Desconhecido"

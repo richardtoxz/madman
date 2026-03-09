@@ -144,7 +144,6 @@ class TrackerDispatchMixin:
             description="O alvo está no momento:",
             changes=changes,
             user=member,
-            footer=f"📍 Origem: {member.guild.name}",
         )
 
         vs = member.voice
