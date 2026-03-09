@@ -172,6 +172,71 @@ class MessageDeleteMixin:
 
 
 class MessageLookupMixin:
+    async def _get_guild_targets(self, guild, channel_ids=None):
+        targets = []
+        seen_ids = set()
+
+        channels = list(getattr(guild, "channels", []))
+        if not channels:
+            try:
+                channels = list(await guild.fetch_channels())
+            except Exception:
+                channels = []
+
+        for target in [*channels, *getattr(guild, "threads", [])]:
+            target_id = getattr(target, "id", None)
+            if not target_id or target_id in seen_ids:
+                continue
+            if channel_ids is not None and target_id not in channel_ids:
+                continue
+            if not hasattr(target, "history"):
+                continue
+            seen_ids.add(target_id)
+            targets.append(target)
+
+        return targets
+
+    async def _collect_guild_history_messages(
+        self,
+        guild,
+        request_id: str | None = None,
+        *,
+        channel_ids=None,
+        limit_per_channel=800,
+    ):
+        messages = []
+        seen_ids = set()
+        targets = await self._get_guild_targets(guild, channel_ids=channel_ids)
+
+        emit_line("STATUS:CONTANDO_HISTORY", request_id)
+
+        for index, target in enumerate(targets, start=1):
+            if self.cancelled:
+                return None
+
+            channel_messages = await self._collect_messages_quiet(
+                target, limit=limit_per_channel
+            )
+            if not channel_messages:
+                continue
+
+            added = 0
+            for msg in channel_messages:
+                if msg.id in seen_ids:
+                    continue
+                seen_ids.add(msg.id)
+                messages.append(msg)
+                added += 1
+
+            if added:
+                emit_line(f"COUNT_PROGRESS:{len(messages)}", request_id)
+
+            if index % 5 == 0:
+                await asyncio.sleep(0.1)
+
+        messages.sort(key=lambda m: m.id, reverse=True)
+        return messages
+
     async def _remove_own_reactions(self, channel, request_id: str | None = None):
         removed = 0
         try:

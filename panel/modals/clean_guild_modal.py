@@ -103,17 +103,23 @@ class CleanGuildModal(ui.Modal, title="Limpar Mensagens em Servidor"):
         total_count = str(view.channel_info.get("total", "0"))
         if "Deletadas " in result:
             try:
-                sp = result.split("Deletadas ")[1].split(" ")[0]
-                deleted_count = sp.split("/")[0]
-                total_count = sp.split("/")[1]
+                after_del = result.split("Deletadas ")[1]
+                deleted_count = after_del.split(" ")[0].strip()
+                if "/" in after_del:
+                    total_count = after_del.split("/")[1].split(" ")[0].strip()
+                elif deleted_count.isdigit():
+                    total_count = deleted_count
             except Exception:
                 pass
 
         name = view.channel_info.get("name", str(guild_id))
 
-        mention = (
-            f"<#{guild_id}>" if view.target_type == "channel" else f"<@{guild_id}>"
-        )
+        if view.target_type == "channel":
+            mention = f"<#{guild_id}>"
+        elif view.target_type == "user":
+            mention = f"<@{guild_id}>"
+        else:
+            mention = f"ID `{guild_id}`"
 
         if view.cancelled_by_user:
             final = f"⏹️ **Interrompido**\n**{deleted_count}** de **{total_count}** apagadas em **{name}** ({mention})"

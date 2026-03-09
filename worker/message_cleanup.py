@@ -141,11 +141,16 @@ class MessageCleanupMixin:
 
 		guild = self.client.get_guild(guild_id)
 		if not guild:
+			try:
+				guild = await self.client.fetch_guild(guild_id)
+			except Exception:
+				guild = None
+		if not guild:
 			emit_line(f"RESULT:ERRO:Guild {guild_id} nao encontrada", request_id)
 			return
 
 		emit_line(f"INFO:CANAL_DETECTADO:Guild: {guild.name}", request_id)
-		emit_line("INFO:TARGET_TYPE:channel", request_id)
+		emit_line("INFO:TARGET_TYPE:guild", request_id)
 		emit_line("STATUS:CONTANDO_SEARCH", request_id)
 
 		messages = []
@@ -154,18 +159,43 @@ class MessageCleanupMixin:
 			async for msg in guild.search(authors=[self.client.user], limit=None):
 				if self.cancelled:
 					break
+				if not self._is_my_message(msg):
+					continue
 				messages.append(msg)
 				count += 1
 				if count % 25 == 0:
 					emit_line(f"COUNT_PROGRESS:{count}", request_id)
 					await asyncio.sleep(0.05)
 		except Exception as e:
-			emit_line(f"RESULT:ERRO:Falha no search: {e}", request_id)
-			return
+			emit_line(f"INFO:GUILD_SEARCH_FAIL:{e}", request_id)
+
+		if messages:
+			unique_messages = {}
+			for msg in messages:
+				unique_messages[msg.id] = msg
+			messages = list(unique_messages.values())
+			messages.sort(key=lambda item: item.id, reverse=True)
+
+		channel_ids = {
+			msg.channel.id
+			for msg in messages
+			if getattr(getattr(msg, "channel", None), "id", None)
+		}
 
 		if not messages:
-			emit_line(f"RESULT:INFO:Nenhuma mensagem sua em {guild.name}", request_id)
-			return
+			messages = await self._collect_guild_history_messages(
+				guild,
+				request_id=request_id,
+				limit_per_channel=1200,
+			)
+			if not messages:
+				emit_line(f"RESULT:INFO:Nenhuma mensagem sua em {guild.name}", request_id)
+				return
+			channel_ids = {
+				msg.channel.id
+				for msg in messages
+				if getattr(getattr(msg, "channel", None), "id", None)
+			}
 
 		emit_line(f"TOTAL:{len(messages)}", request_id)
 		emit_line("STATUS:WAITING_START", request_id)
@@ -180,12 +210,12 @@ class MessageCleanupMixin:
 		if not stats["abortado"] and not self.cancelled and stats["deletadas"] > 0:
 			emit_line("STATUS:RE_ESCANEO_FINAL", request_id)
 			await asyncio.sleep(3)
-			extra_messages = []
-			try:
-				async for msg in guild.search(authors=[self.client.user], limit=50):
-					extra_messages.append(msg)
-			except Exception:
-				pass
+			extra_messages = await self._collect_guild_history_messages(
+				guild,
+				request_id=request_id,
+				channel_ids=channel_ids or None,
+				limit_per_channel=150,
+			)
 			if extra_messages:
 				emit_line(f"INFO:DELETANDO_EXTRAS:{len(extra_messages)}", request_id)
 				extra_stats = await self._delete_messages_adaptive(
