@@ -113,7 +113,7 @@ async def handle_clean_all_dms(interaction: discord.Interaction, manager, user_i
                 embed=None, view=None
             )
 
-            from utils.stealth_dm import cleanup_stealth_messages
+            from ...utils.stealth_dm import cleanup_stealth_messages
             asyncio.create_task(cleanup_stealth_messages(i.user, i.client.user.id))
 
             prog = {

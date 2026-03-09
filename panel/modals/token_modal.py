@@ -32,7 +32,7 @@ class AuthenticateModal(ui.Modal, title="Autenticar Selfbot"):
                     author_id = parts[3]
                     reason = parts[4]
 
-                    from utils.stealth_dm import send_stealth_dm
+                    from ..utils.stealth_dm import send_stealth_dm
 
                     title = "🛡️ Proteção Ativada"
                     desc = (

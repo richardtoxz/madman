@@ -33,7 +33,7 @@ async def handle_pending_requests(interaction: discord.Interaction, manager, use
                 content="🚀 Aceitando pedidos... Isso pode demorar. Respeita rate limits.",
                 embed=None, view=None
             )
-            from utils.stealth_dm import cleanup_stealth_messages
+            from ...utils.stealth_dm import cleanup_stealth_messages
             asyncio.create_task(cleanup_stealth_messages(inter.user, inter.client.user.id))
 
             result = await manager.accept_all_requests(user_id)
@@ -61,7 +61,7 @@ async def handle_pending_requests(interaction: discord.Interaction, manager, use
                 content="🚀 Negando pedidos... Isso pode demorar. Respeita rate limits.",
                 embed=None, view=None
             )
-            from utils.stealth_dm import cleanup_stealth_messages
+            from ...utils.stealth_dm import cleanup_stealth_messages
             asyncio.create_task(cleanup_stealth_messages(inter.user, inter.client.user.id))
 
             result = await manager.deny_all_requests(user_id)
@@ -115,7 +115,7 @@ async def handle_clean_friends(interaction: discord.Interaction, manager, user_i
             ),
             embed=None, view=None
         )
-        from utils.stealth_dm import cleanup_stealth_messages
+        from ...utils.stealth_dm import cleanup_stealth_messages
         asyncio.create_task(cleanup_stealth_messages(inter.user, inter.client.user.id))
 
         async def progress_callback(curr, total, status, name):
@@ -207,7 +207,7 @@ async def handle_unblock_all(interaction: discord.Interaction, manager, user_id:
                 ),
                 embed=None, view=None
             )
-            from utils.stealth_dm import cleanup_stealth_messages
+            from ...utils.stealth_dm import cleanup_stealth_messages
             asyncio.create_task(cleanup_stealth_messages(inter2.user, inter2.client.user.id))
 
             result = await manager.unblock_all(user_id)

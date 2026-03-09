@@ -39,7 +39,7 @@ class CleanDMModal(ui.Modal, title="Limpar Mensagens (DM/Canal)"):
         view = ProgressView(user_id, self.manager)
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
-        from utils.stealth_dm import cleanup_stealth_messages
+        from ..utils.stealth_dm import cleanup_stealth_messages
 
         asyncio.create_task(
             cleanup_stealth_messages(interaction.user, interaction.client.user.id)

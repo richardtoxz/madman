@@ -19,7 +19,7 @@ async def _start_guild_action(interaction: discord.Interaction, manager, user_id
             content=f"Iniciando processo: {action_name}...", embed=None, view=None
         )
 
-        from utils.stealth_dm import cleanup_stealth_messages
+        from ...utils.stealth_dm import cleanup_stealth_messages
         asyncio.create_task(cleanup_stealth_messages(inter.user, inter.client.user.id))
 
         async def progress_callback(curr, total, status, name):
