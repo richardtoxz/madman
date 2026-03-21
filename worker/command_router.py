@@ -91,7 +91,9 @@ async def handle_rel_remove_all(bot, cmd):
     ]
     bot.rel_manager.cancelled = False
     asyncio.create_task(
-        bot._safe_exec(bot.rel_manager.remove_all_friends(wl, request_id=_request_id(bot)))
+        bot._safe_exec(
+            bot.rel_manager.remove_all_friends(wl, request_id=_request_id(bot))
+        )
     )
 
 
@@ -167,9 +169,7 @@ async def handle_guild_leave_all(bot, cmd):
     bot.guild_manager.cancelled = False
     asyncio.create_task(
         bot._safe_exec(
-            bot.guild_manager.leave_all_guilds(
-                wl, request_id=_request_id(bot)
-            ),
+            bot.guild_manager.leave_all_guilds(wl, request_id=_request_id(bot)),
             presence_task_token=presence_token,
         )
     )
@@ -187,9 +187,7 @@ async def handle_guild_mute_all(bot, cmd):
     bot.guild_manager.cancelled = False
     asyncio.create_task(
         bot._safe_exec(
-            bot.guild_manager.mute_all_guilds(
-                wl, request_id=_request_id(bot)
-            ),
+            bot.guild_manager.mute_all_guilds(wl, request_id=_request_id(bot)),
             presence_task_token=presence_token,
         )
     )
@@ -202,9 +200,7 @@ async def handle_target(bot, cmd):
         presence_token = await bot.presence_manager.set_task("Limpando mensagens")
     asyncio.create_task(
         bot._safe_exec(
-            bot.msg_manager.clean_channel(
-                tid, request_id=_request_id(bot)
-            ),
+            bot.msg_manager.clean_channel(tid, request_id=_request_id(bot)),
             presence_task_token=presence_token,
         )
     )
@@ -217,9 +213,7 @@ async def handle_msg_clean_channel(bot, cmd):
         presence_token = await bot.presence_manager.set_task("Limpando canal de texto")
     asyncio.create_task(
         bot._safe_exec(
-            bot.msg_manager.clean_channel(
-                cid, request_id=_request_id(bot)
-            ),
+            bot.msg_manager.clean_channel(cid, request_id=_request_id(bot)),
             presence_task_token=presence_token,
         )
     )
@@ -231,9 +225,7 @@ async def handle_msg_clean_all_dms(bot, cmd):
         presence_token = await bot.presence_manager.set_task("Limpando todas as DMs")
     asyncio.create_task(
         bot._safe_exec(
-            bot.msg_manager.clean_all_dms(
-                request_id=_request_id(bot)
-            ),
+            bot.msg_manager.clean_all_dms(request_id=_request_id(bot)),
             presence_task_token=presence_token,
         )
     )
@@ -246,9 +238,7 @@ async def handle_msg_clean_guild(bot, cmd):
         presence_token = await bot.presence_manager.set_task("Limpando servidor")
     asyncio.create_task(
         bot._safe_exec(
-            bot.msg_manager.clean_guild(
-                gid, request_id=_request_id(bot)
-            ),
+            bot.msg_manager.clean_guild(gid, request_id=_request_id(bot)),
             presence_task_token=presence_token,
         )
     )
@@ -292,18 +282,14 @@ async def handle_dm_list(bot, cmd):
 async def handle_group_dm_leave(bot, cmd):
     cid = int(cmd.upper().split(":")[1])
     asyncio.create_task(
-        bot._safe_exec(
-            bot.msg_manager.leave_group_dm(cid, request_id=_request_id(bot))
-        )
+        bot._safe_exec(bot.msg_manager.leave_group_dm(cid, request_id=_request_id(bot)))
     )
 
 
 async def handle_group_dm_leave_all(bot, cmd):
     bot.msg_manager.cancelled = False
     asyncio.create_task(
-        bot._safe_exec(
-            bot.msg_manager.leave_all_group_dms(request_id=_request_id(bot))
-        )
+        bot._safe_exec(bot.msg_manager.leave_all_group_dms(request_id=_request_id(bot)))
     )
 
 
@@ -323,9 +309,7 @@ async def handle_voice_leave(bot, cmd):
 async def handle_voice_follow(bot, cmd):
     uid = int(cmd.split(":")[1].strip())
     asyncio.create_task(
-        bot._safe_exec(
-            bot.voice_manager.start_follow(uid, request_id=_request_id(bot))
-        )
+        bot._safe_exec(bot.voice_manager.start_follow(uid, request_id=_request_id(bot)))
     )
 
 
@@ -398,6 +382,64 @@ async def handle_presence_update(bot, cmd):
         await bot.presence_manager.update_detail(detail)
 
 
+async def handle_quest_list(bot, cmd):
+    if getattr(bot, "quest_manager", None):
+        await bot.quest_manager.list_quests(request_id=_request_id(bot))
+
+
+async def handle_quest_start(bot, cmd):
+    quest_id = cmd.split(":", 1)[1].strip() if ":" in cmd else ""
+    if not quest_id:
+        _emit_line(bot, "QUEST:ERRO:quest_id nao fornecido")
+        return
+    if getattr(bot, "quest_manager", None):
+        presence_token = None
+        if getattr(bot, "presence_manager", None):
+            presence_token = await bot.presence_manager.set_task("Quest Completer")
+        asyncio.create_task(
+            bot._safe_exec(
+                bot.quest_manager.complete_quest(quest_id, request_id=_request_id(bot)),
+                presence_task_token=presence_token,
+            )
+        )
+
+
+async def handle_quest_cancel(bot, cmd):
+    if getattr(bot, "quest_manager", None):
+        bot.quest_manager.cancel()
+        _emit_line(bot, "QUEST:CANCELLED")
+
+
+async def handle_quest_auto(bot, cmd):
+    if getattr(bot, "quest_manager", None):
+        asyncio.create_task(
+            bot.quest_manager.auto_complete_all(request_id=_request_id(bot))
+        )
+
+
+async def handle_quest_config(bot, cmd):
+    payload_raw = cmd.split(":", 1)[1].strip() if ":" in cmd else ""
+    if not payload_raw:
+        _emit_line(bot, "QUEST:ERRO:payload de configuracao vazio")
+        return
+
+    try:
+        payload = json.loads(payload_raw)
+    except Exception:
+        _emit_line(bot, "QUEST:ERRO:payload de configuracao invalido")
+        return
+
+    webhook_url = payload.get("webhook_url")
+    captcha_api_key = payload.get("captcha_api_key")
+
+    if getattr(bot, "quest_manager", None):
+        await bot.quest_manager.set_runtime_config(
+            webhook_url=webhook_url,
+            captcha_api_key=captcha_api_key,
+            request_id=_request_id(bot),
+        )
+
+
 def register_handlers(bot):
     exact = {
         "START": handle_start,
@@ -426,6 +468,9 @@ def register_handlers(bot):
         "PROTECTION_STATUS": handle_protection_status,
         "TRACKER STOP": handle_tracker_stop,
         "PRESENCE_MAIN": handle_presence_main,
+        "QUEST_LIST": handle_quest_list,
+        "QUEST_CANCEL": handle_quest_cancel,
+        "QUEST_AUTO": handle_quest_auto,
     }
 
     prefix = {
@@ -447,6 +492,8 @@ def register_handlers(bot):
         "TRACKER START": handle_tracker_start,
         "PRESENCE_TASK:": handle_presence_task,
         "PRESENCE_UPDATE:": handle_presence_update,
+        "QUEST_START:": handle_quest_start,
+        "QUEST_CONFIG:": handle_quest_config,
     }
 
     return exact, prefix

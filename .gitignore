@@ -1,32 +1,19 @@
-# Python
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
 .Python
-.agent/
-# Virtual Environment
 venv/
 .venv/
-
-# Vendored Dependencies (installed by setup_envs.py)
 panel/lib/
 worker/lib/
-
-# IDE
 .vscode/
 .idea/
-
-# Environment & Secrets
 .env
 .env.*
 !.env.example
 *.token
 config_local.py
-
-# OS
 .DS_Store
 Thumbs.db
-
-# Scrapy
 .scrapy/

@@ -11,21 +11,15 @@ class TrackerModal(ui.Modal, title="Configurar Tracker"):
         min_length=17,
         max_length=20,
     )
-    webhook_url = ui.TextInput(
-        label="Webhook URL (para logs)",
-        style=discord.TextStyle.short,
-        placeholder="https://discord.com/api/webhooks/...",
-        required=True,
-    )
 
-    def __init__(self, manager, admin_id: int):
+    def __init__(self, manager, admin_id: int, webhook_url: str):
         super().__init__()
         self.manager = manager
         self.admin_id = admin_id
+        self.webhook_url = webhook_url
 
     async def on_submit(self, interaction: discord.Interaction):
         target = self.target_id.value.strip()
-        webhook = self.webhook_url.value.strip()
 
         if not target.isdigit():
             await interaction.response.send_message(
@@ -33,14 +27,7 @@ class TrackerModal(ui.Modal, title="Configurar Tracker"):
             )
             return
 
-        if not webhook.startswith("https://discord.com/api/webhooks/"):
-            await interaction.response.send_message(
-                "❌ Webhook inválido. Use o formato `https://discord.com/api/webhooks/...`",
-                ephemeral=True,
-            )
-            return
-
-        command = f"TRACKER START {target} {webhook}"
+        command = f"TRACKER START {target} {self.webhook_url}"
         success = await self.manager.send_raw_command(self.admin_id, command)
 
         if success:
@@ -48,7 +35,7 @@ class TrackerModal(ui.Modal, title="Configurar Tracker"):
             tracker_state = getattr(bot, "_tracker_state", {})
             tracker_state[self.admin_id] = {
                 "target_id": int(target),
-                "webhook_url": webhook,
+                "webhook_url": self.webhook_url,
             }
             bot._tracker_state = tracker_state
 

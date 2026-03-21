@@ -57,6 +57,11 @@ class PresenceConfig:
     ASSET_LOGO = "madman_logo"
 
 
+class QuestConfig:
+    VIDEO_REPORT_INTERVAL = 10.0
+    MAX_FUTURE_SECONDS = 10
+
+
 class ProtectionConfig:
     DM_FLOOD_MAXLEN = 50
     FR_FLOOD_MAXLEN = 30

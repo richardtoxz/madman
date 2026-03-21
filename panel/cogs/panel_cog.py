@@ -3,7 +3,6 @@ from discord.ext import commands
 from discord import app_commands
 
 from ..views.ephemeral_panel import EphemeralPanelView
-from ..utils.interaction import send_message_safely
 
 
 class PanelCog(commands.Cog):
@@ -20,16 +19,7 @@ class PanelCog(commands.Cog):
             self.bot.manager, original_interaction=interaction
         )
 
-        embed = discord.Embed(
-            title="<:engrenagem:1472004351039111228> Painel de Controle (Privado)",
-            description="Selecione uma categoria abaixo para controlar sua conta.\n",
-            color=0x2B2D31,
-        )
-        embed.set_footer(text="Madman Servvices")
-
-        await send_message_safely(
-            interaction,
-            embed=embed,
+        await interaction.response.send_message(
             view=panel_view,
             ephemeral=True,
         )

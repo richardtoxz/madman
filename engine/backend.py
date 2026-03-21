@@ -9,6 +9,7 @@ from engine.manager_guilds import GuildMixin
 from engine.manager_messages import MessagesMixin
 from engine.manager_voice import VoiceMixin
 from engine.manager_protection import ProtectionMixin
+from engine.manager_quest import QuestMixin
 
 log = logging.getLogger(__name__)
 
@@ -19,6 +20,7 @@ class SelfbotManager(
     MessagesMixin,
     VoiceMixin,
     ProtectionMixin,
+    QuestMixin,
 ):
     IDENTIFY_COOLDOWN = 5.5
 

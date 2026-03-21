@@ -8,10 +8,12 @@ from .command_router import register_handlers, dispatch
 from .relationship_manager import RelationshipManager
 from .guild_manager import GuildManager
 from .message_manager import MessageManager
+from .captcha_solver import build_captcha_handler, close_captcha_solver
 from .voice_manager import VoiceManager
 from .protection_manager import ProtectionManager
 from .presence_manager import PresenceManager
 from .tracker_manager import TrackerManager
+from .quest import QuestManager
 from .ipc import emit_line
 
 sys.stdout.reconfigure(line_buffering=True, encoding="utf-8", errors="replace")
@@ -28,6 +30,7 @@ class MySelfbot(discord.Client):
         self.protection_manager = None
         self.presence_manager = None
         self.tracker_manager = None
+        self.quest_manager = None
         self._exact_handlers = {}
         self._prefix_handlers = {}
 
@@ -41,6 +44,8 @@ class MySelfbot(discord.Client):
         self.protection_manager = ProtectionManager(self)
         self.presence_manager = PresenceManager(self)
         self.tracker_manager = TrackerManager(self)
+        self.quest_manager = QuestManager(self)
+        self.http.captcha_handler = build_captcha_handler(self)
 
         self._exact_handlers, self._prefix_handlers = register_handlers(self)
         asyncio.create_task(self._listen_stdin())
@@ -163,8 +168,11 @@ class MySelfbot(discord.Client):
                 await self.presence_manager.complete_task(presence_task_token)
 
     async def close(self):
+        if self.quest_manager:
+            await self.quest_manager.shutdown()
         if self.tracker_manager:
             await self.tracker_manager.shutdown()
+        await close_captcha_solver()
         await super().close()
 
 

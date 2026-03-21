@@ -5,7 +5,7 @@ from discord.ext import commands
 
 from .config import ID_CANAL_PAINEL, ID_CANAL_SOBRE
 from .views.control_view import PersistentControlView
-from .utils import SobreView
+from .views.sobre_view import SobreView
 
 log = logging.getLogger(__name__)
 
@@ -42,10 +42,15 @@ class ControlBot(commands.Bot):
         self.add_view(view)
         is_layout = isinstance(view, discord.ui.LayoutView)
 
+        # Delete old bot messages so the new view replaces them
         async for msg in channel.history(limit=20):
             if msg.author == self.user:
                 if is_layout or msg.embeds:
-                    return
+                    try:
+                        await msg.delete()
+                    except Exception:
+                        pass
+                    break
 
         if is_layout:
             await channel.send(view=view)
