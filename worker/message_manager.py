@@ -21,5 +21,5 @@ class MessageManager(
         self.cancelled = False
         self.paused = False
         self._current_task = None
+        self._unavailable_sources: set[tuple[str, int, str]] = set()
         self.config = MessageConfig()
-

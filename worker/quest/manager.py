@@ -1,255 +1,578 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import random
-import time
-from datetime import datetime
-from urllib.parse import parse_qs, urlparse
+import re
+from contextlib import suppress
+from datetime import datetime, timezone
+from urllib.parse import parse_qs, urlencode, urlparse
+
+import aiohttp
 
 from ..config import QuestConfig
-from ..ipc import emit_line
+from ..ipc import emit_line, sanitize_ipc_field
 from .api_client import QuestAPIClient
+from .constants import PLAY_TASKS, VIDEO_TASKS
 from .models import Quest
 from .webhook_dispatch import QuestWebhookDispatchMixin
 
 
+class QuestDataError(RuntimeError):
+    pass
+
+
 class QuestManager(QuestWebhookDispatchMixin):
+    """Quest completion adapted from Equicord Questify's execution model.
+
+    Work is sequential, cancellable, bounded, and only considered successful
+    after Discord returns a valid completed status or a final refresh confirms
+    completion.
+    """
+
     def __init__(self, client):
         self.client = client
         self.api = QuestAPIClient(client)
         self.config = QuestConfig()
         self.webhook_url: str | None = None
-        self.captcha_api_key: str | None = None
         self._webhook_session = None
+        self._activity_session: aiohttp.ClientSession | None = None
         self._progress_webhook_bucket: dict[str, int] = {}
         self._last_presence_detail: str | None = None
         self._active_quest_id: str | None = None
         self._cancelled = False
         self._task: asyncio.Task | None = None
-        self._sync_runtime_config_to_client()
+        self._background_tasks: set[asyncio.Task] = set()
+        self.enrollment_blocked_until: str | None = None
 
     @property
     def is_running(self) -> bool:
         return self._task is not None and not self._task.done()
 
-    def cancel(self):
+    @property
+    def active_quest_id(self) -> str | None:
+        return self._active_quest_id
+
+    def _spawn(self, coroutine, *, name: str) -> asyncio.Task:
+        task = asyncio.create_task(coroutine, name=name)
+        self._background_tasks.add(task)
+        task.add_done_callback(self._background_tasks.discard)
+        return task
+
+    async def cancel(self) -> bool:
         self._cancelled = True
-        if self._task and not self._task.done():
-            self._task.cancel()
+        task = self._task
+        was_running = task is not None and not task.done()
+        if was_running and task is not asyncio.current_task():
+            task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
         self._active_quest_id = None
+        self._last_presence_detail = None
+        return was_running
 
     async def shutdown(self):
-        self.cancel()
+        await self.cancel()
+        if self._background_tasks:
+            for task in tuple(self._background_tasks):
+                task.cancel()
+            await asyncio.gather(*self._background_tasks, return_exceptions=True)
+            self._background_tasks.clear()
+        if self._activity_session is not None and not self._activity_session.closed:
+            await self._activity_session.close()
+        self._activity_session = None
         await self.api.close()
         await self.close_webhook_session()
 
-    def _sync_runtime_config_to_client(self):
-        self.client._quest_webhook_url = self.webhook_url
-        self.client._quest_captcha_api_key = self.captcha_api_key
-
-    def _normalize_webhook_url(self, value) -> str | None:
+    @staticmethod
+    def _normalize_webhook_url(value) -> str | None:
         if not value:
             return None
         text = str(value).strip()
-        if not text:
+        try:
+            parsed = urlparse(text)
+        except ValueError:
             return None
-        if not text.startswith("https://discord.com/api/webhooks/"):
+        if (
+            parsed.scheme != "https"
+            or parsed.hostname not in {"discord.com", "discordapp.com"}
+            or parsed.port not in (None, 443)
+            or parsed.username is not None
+            or parsed.password is not None
+            or parsed.query
+            or parsed.fragment
+        ):
+            return None
+        if not re.fullmatch(
+            r"/api(?:/v\d+)?/webhooks/\d{5,25}/[A-Za-z0-9._-]{20,}",
+            parsed.path,
+        ):
             return None
         return text
-
-    def _normalize_captcha_key(self, value) -> str | None:
-        if not value:
-            return None
-        text = str(value).strip()
-        return text or None
 
     async def set_runtime_config(
         self,
         *,
         webhook_url: str | None,
-        captcha_api_key: str | None,
         request_id: str | None = None,
-    ):
+    ) -> dict:
         normalized_webhook = self._normalize_webhook_url(webhook_url)
         if webhook_url and not normalized_webhook:
-            emit_line("QUEST:ERRO:WEBHOOK_URL invalida", request_id)
-            return
+            result = {
+                "ok": False,
+                "code": "INVALID_WEBHOOK",
+                "message": "WEBHOOK_URL inválida.",
+            }
+            emit_line("QUEST:CONFIG_RESULT:" + self._json(result), request_id)
+            return result
 
         self.webhook_url = normalized_webhook
-        self.captcha_api_key = self._normalize_captcha_key(captcha_api_key)
-        self._sync_runtime_config_to_client()
-
         if not self.webhook_url and self._webhook_session is not None:
             await self.close_webhook_session()
 
-        emit_line(
-            (
-                "QUEST:CONFIG:"
-                f"webhook={'on' if self.webhook_url else 'off'}:"
-                f"captcha={'on' if self.captcha_api_key else 'off'}"
-            ),
-            request_id,
-        )
+        result = {
+            "ok": True,
+            "code": "CONFIG_UPDATED",
+            "webhook": bool(self.webhook_url),
+            "message": "Configuração de Quest atualizada.",
+        }
+        emit_line("QUEST:CONFIG_RESULT:" + self._json(result), request_id)
+        return result
+
+    @staticmethod
+    def _json(value: dict | list) -> str:
+        return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+
+    @staticmethod
+    def _safe_error(error: BaseException) -> str:
+        status = getattr(error, "status", None)
+        code = getattr(error, "code", None)
+        suffix = ""
+        if isinstance(status, int):
+            suffix += f" HTTP {status}"
+        if isinstance(code, int) and code:
+            suffix += f" (código {code})"
+        return f"{type(error).__name__}{suffix}"
+
+    @staticmethod
+    def _quest_label(quest: Quest) -> str:
+        return sanitize_ipc_field(quest.quest_name, limit=120)
+
+    def _emit_result(self, request_id: str | None, **payload) -> None:
+        emit_line("QUEST:RESULT:" + self._json(payload), request_id)
+
+    def _dispatch_background(self, coroutine, *, name: str) -> None:
+        self._spawn(coroutine, name=name)
 
     def _init_progress_bucket(self, quest_id: str, progress: float, target: int):
-        if target <= 0:
-            self._progress_webhook_bucket[quest_id] = -1
-            return
-        pct = min(100, int((progress / target) * 100))
+        pct = min(100, int((progress / target) * 100)) if target > 0 else 0
         self._progress_webhook_bucket[quest_id] = pct // 10
 
-    def _can_send_progress_webhook(self, quest_id: str, progress: int, target: int) -> bool:
+    def _can_send_progress_webhook(self, quest_id: str, progress: float, target: int) -> bool:
         if target <= 0:
             return False
-
-        pct = min(100, int((progress / target) * 100))
-        bucket = pct // 10
-        last_bucket = self._progress_webhook_bucket.get(quest_id, -1)
-
-        if bucket <= last_bucket:
+        bucket = min(100, int((progress / target) * 100)) // 10
+        if bucket <= self._progress_webhook_bucket.get(quest_id, -1):
             return False
-
         self._progress_webhook_bucket[quest_id] = bucket
         return True
 
     async def fetch_quests(self) -> list[Quest]:
+        data = await self.api.get("/quests/@me")
+        if isinstance(data, list):
+            raw_quests = data
+            self.enrollment_blocked_until = None
+        elif isinstance(data, dict):
+            raw_quests = data.get("quests")
+            self.enrollment_blocked_until = data.get("quest_enrollment_blocked_until")
+        else:
+            raise QuestDataError("Discord retornou um formato desconhecido para Quests")
+
+        if not isinstance(raw_quests, list):
+            raise QuestDataError("A resposta de Quests não contém uma lista válida")
+
+        quests: list[Quest] = []
+        for raw in raw_quests:
+            if not isinstance(raw, dict) or not raw.get("id"):
+                continue
+            with suppress(TypeError):
+                quests.append(Quest(raw))
+        return quests
+
+    async def _refresh_quest(self, quest: Quest) -> Quest | None:
+        quests = await self.fetch_quests()
+        fresh = next((item for item in quests if item.id == quest.id), None)
+        if fresh is not None:
+            quest.raw = fresh.raw
+            quest.config = fresh.config
+            quest.user_status = fresh.user_status
+        return fresh
+
+    async def _verify_completion(self, quest: Quest) -> bool:
+        if quest.is_completed:
+            return True
+        await asyncio.sleep(self.config.COMPLETION_VERIFY_DELAY_SECONDS)
         try:
-            data = await self.api.get("/quests/@me")
-            raw_quests = data if isinstance(data, list) else data.get("quests", [])
-            return [Quest(q) for q in raw_quests]
-        except Exception as exc:
-            emit_line(f"QUEST:ERRO:Falha ao buscar quests: {exc}")
-            return []
+            fresh = await self._refresh_quest(quest)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            return False
+        return bool(fresh and fresh.is_completed)
 
     async def accept_quest(self, quest: Quest, request_id=None) -> bool:
-        is_android = quest.is_mobile_video_only
-        try:
-            data = await self.api.post(
-                "/quests/{quest_id}/enroll",
-                {
-                    "location": 12 if is_android else 11,
-                    "is_targeted": False,
-                    "metadata_raw": None,
-                    "metadata_sealed": None,
-                },
-                quest_id=quest.id,
-                headers={"AndroidRequest": "true" if is_android else "false"},
-            )
-            quest.update_status(data)
-            emit_line(
-                f"QUEST:AUTO:Inscrito em '{quest.quest_name}' via {'Android' if is_android else 'Desktop'}.",
-                request_id,
-            )
-            task_name, _ = quest.get_task_info()
-            asyncio.create_task(
-                self.dispatch_quest_start(quest, task_name or "UNKNOWN")
-            )
-            return True
-        except Exception as exc:
-            emit_line(
-                f"QUEST:ERRO:Falha ao inscrever '{quest.quest_name}': {exc}",
-                request_id,
-            )
-            asyncio.create_task(
-                self.dispatch_quest_error(
-                    quest_name=quest.quest_name,
-                    detail=f"Falha ao inscrever: {exc}",
-                )
-            )
-            return False
+        emit_line(
+            f"QUEST:AUTO:Aceite '{self._quest_label(quest)}' manualmente no Discord e execute novamente.",
+            request_id,
+        )
+        return False
 
     async def claim_reward(self, quest: Quest, request_id=None) -> bool:
-        if quest.is_claimed:
-            return True
+        emit_line(
+            f"QUEST:AUTO:Recompensa de '{self._quest_label(quest)}' pronta para resgate manual no Discord.",
+            request_id,
+        )
+        return False
 
+    def _quest_record(self, quest: Quest) -> dict:
+        task_name, task = quest.get_task_info()
+        target = quest.task_target(task)
+        progress = quest.get_progress(task_name) if task_name else 0.0
+        if quest.is_claimed:
+            status = "CLAIMED"
+        elif quest.is_completed:
+            status = "COMPLETED"
+        elif quest.is_expired:
+            status = "EXPIRED"
+        elif quest.is_enrolled:
+            status = "ENROLLED"
+        else:
+            status = "AVAILABLE"
+        return {
+            "id": quest.id,
+            "name": quest.quest_name,
+            "application": quest.application_name,
+            "task": task_name or "UNKNOWN",
+            "status": status,
+            "progress": int(progress),
+            "target": target,
+            "auto_supported": quest.get_task_info(auto_only=True)[0] is not None,
+        }
+
+    async def list_quests(self) -> dict:
         try:
-            payload = {
-                "platform": (
-                    quest.config.get("rewards_config", {}).get("platforms", [0])[0]
-                    if quest.config.get("rewards_config")
-                    else 0
-                ),
-                "location": 11,
-                "is_targeted": False,
-                "metadata_raw": None,
-                "metadata_sealed": None,
-                "traffic_metadata_raw": quest.raw.get("traffic_metadata_raw"),
-                "traffic_metadata_sealed": quest.raw.get("traffic_metadata_sealed"),
+            quests = await self.fetch_quests()
+        except asyncio.CancelledError:
+            raise
+        except Exception as error:
+            return {
+                "ok": False,
+                "code": "FETCH_FAILED",
+                "message": "Falha ao buscar Quests: " + self._safe_error(error),
+                "quests": [],
             }
-            data = await asyncio.wait_for(
-                self.api.post(
-                    "/quests/{quest_id}/claim-reward", payload, quest_id=quest.id
-                ),
-                timeout=20.0,
+        return {
+            "ok": True,
+            "code": "QUESTS_LISTED",
+            "quests": [self._quest_record(quest) for quest in quests],
+            "enrollment_blocked_until": self.enrollment_blocked_until,
+        }
+
+    async def start_auto(self, request_id: str | None = None) -> dict:
+        if self.is_running:
+            return {
+                "ok": False,
+                "code": "ALREADY_RUNNING",
+                "message": "Já existe uma fila de Quests em execução.",
+                "active_quest_id": self._active_quest_id,
+            }
+        self._cancelled = False
+        self._task = asyncio.create_task(
+            self.auto_complete_all(request_id=request_id),
+            name="quest-auto-complete",
+        )
+        return {
+            "ok": True,
+            "code": "STARTED",
+            "message": "Fila de Quests iniciada.",
+        }
+
+    async def start_quest(
+        self, quest_id: str, request_id: str | None = None
+    ) -> dict:
+        """Reserve the execution slot before starting a single Quest.
+
+        The reservation prevents two IPC commands received in the same event
+        loop turn from both passing an `is_running` check.
+        """
+        if self.is_running:
+            return {
+                "ok": False,
+                "code": "ALREADY_RUNNING",
+                "message": "Já existe uma Quest em execução.",
+                "active_quest_id": self._active_quest_id,
+            }
+        self._cancelled = False
+        self._task = asyncio.create_task(
+            self.complete_quest(quest_id, request_id=request_id),
+            name=f"quest-complete-{quest_id}",
+        )
+        return {"ok": True, "code": "STARTED", "message": "Quest iniciada."}
+
+    async def auto_complete_all(self, request_id: str | None = None):
+        current = asyncio.current_task()
+        if self._task is None:
+            self._task = current
+        summary = {
+            "ok": True,
+            "code": "FINISHED",
+            "completed": 0,
+            "failed": 0,
+            "manual_enroll": 0,
+            "manual_claim": 0,
+            "unsupported": 0,
+            "message": "Todas as Quests foram processadas.",
+        }
+        try:
+            try:
+                quests = await self.fetch_quests()
+            except Exception as error:
+                summary.update(
+                    ok=False,
+                    code="FETCH_FAILED",
+                    message="Falha ao buscar Quests: " + self._safe_error(error),
+                )
+                emit_line("QUEST:ERRO:" + summary["message"], request_id)
+                return
+
+            if not quests:
+                summary.update(code="EMPTY", message="Nenhuma Quest encontrada.")
+                emit_line("QUEST:AUTO:Nenhuma Quest encontrada.", request_id)
+                return
+
+            actionable: list[tuple[Quest, str, dict, int, float]] = []
+            for quest in quests:
+                if quest.is_expired or quest.is_claimed:
+                    continue
+                if quest.is_completed:
+                    summary["manual_claim"] += 1
+                    emit_line(
+                        f"QUEST:AUTO:🎁 '{self._quest_label(quest)}' aguarda resgate manual.",
+                        request_id,
+                    )
+                    continue
+                if not quest.is_enrolled:
+                    summary["manual_enroll"] += 1
+                    emit_line(
+                        f"QUEST:AUTO:⏸️ Aceite '{self._quest_label(quest)}' manualmente no Discord.",
+                        request_id,
+                    )
+                    continue
+
+                task_name, task = quest.get_task_info(auto_only=True)
+                if not task_name or not task:
+                    summary["unsupported"] += 1
+                    known_name, _ = quest.get_task_info()
+                    emit_line(
+                        f"QUEST:AUTO:⏭️ '{self._quest_label(quest)}' requer execução manual ({known_name or 'tipo desconhecido'}).",
+                        request_id,
+                    )
+                    continue
+                target = quest.task_target(task)
+                progress = quest.get_progress(task_name)
+                if target <= 0:
+                    summary["unsupported"] += 1
+                    emit_line(
+                        f"QUEST:AUTO:⏭️ '{self._quest_label(quest)}' possui alvo inválido.",
+                        request_id,
+                    )
+                    continue
+                if progress >= target:
+                    if await self._verify_completion(quest):
+                        summary["manual_claim"] += 1
+                    else:
+                        summary["failed"] += 1
+                    continue
+                actionable.append((quest, task_name, task, target, progress))
+
+            actionable.sort(
+                key=lambda item: item[0].expires_at
+                or datetime.max.replace(tzinfo=timezone.utc)
             )
-            quest.update_status(data)
-            asyncio.create_task(self.dispatch_quest_reward(quest=quest, success=True))
-            return True
-        except asyncio.TimeoutError:
+            if not actionable:
+                if summary["manual_enroll"]:
+                    summary.update(
+                        code="MANUAL_ENROLL_REQUIRED",
+                        message="Aceite as Quests indicadas no Discord e execute novamente.",
+                    )
+                elif summary["manual_claim"]:
+                    summary.update(
+                        code="MANUAL_CLAIM_REQUIRED",
+                        message="As recompensas concluídas aguardam resgate manual.",
+                    )
+                else:
+                    summary.update(code="NOTHING_PENDING", message="Nenhuma Quest pendente compatível.")
+                return
+
             emit_line(
-                f"QUEST:AUTO:⚠️ Timeout ao resgatar {quest.id}. Possivel captcha — resgate manualmente no Discord.",
+                f"QUEST:AUTO:Processando {len(actionable)} Quest(s) em sequência...",
                 request_id,
             )
-            asyncio.create_task(
-                self.dispatch_quest_captcha(
-                    service="hcaptcha",
-                    sitekey=None,
-                    status="timeout-no-claim",
-                )
-            )
-            return False
-        except Exception as exc:
-            if "captcha" in str(exc).lower() or "403" in str(exc) or "400" in str(exc):
+            for quest, task_name, task, target, progress in actionable:
+                if self._cancelled:
+                    summary.update(ok=False, code="CANCELLED", message="Fila cancelada.")
+                    break
+                self._active_quest_id = quest.id
+                self._init_progress_bucket(quest.id, progress, target)
                 emit_line(
-                    f"QUEST:AUTO:⚠️ Captcha/bloqueio ao resgatar {quest.id}. Resgate manualmente no Discord.",
+                    f"QUEST:AUTO:{self._quest_label(quest)} [{task_name}] {int(progress)}/{target}",
                     request_id,
                 )
-                asyncio.create_task(
-                    self.dispatch_quest_captcha(
-                        service="hcaptcha",
-                        sitekey=None,
-                        status="blocked-on-claim",
+                self._dispatch_background(
+                    self.dispatch_quest_start(quest, task_name),
+                    name=f"quest-webhook-start-{quest.id}",
+                )
+
+                presence_token = None
+                if self.client.presence_manager:
+                    presence_token = await self.client.presence_manager.set_task(
+                        "Quest", self._quest_label(quest)
                     )
+                try:
+                    success = await self._run_task_logic(
+                        quest, task_name, task, target, request_id
+                    )
+                    if success:
+                        summary["completed"] += 1
+                        summary["manual_claim"] += 1
+                        emit_line(
+                            f"QUEST:AUTO:✅ '{self._quest_label(quest)}' concluída; resgate a recompensa no Discord.",
+                            request_id,
+                        )
+                        self._dispatch_background(
+                            self.dispatch_quest_complete(
+                                quest=quest, task_name=task_name
+                            ),
+                            name=f"quest-webhook-complete-{quest.id}",
+                        )
+                    else:
+                        summary["failed"] += 1
+                        if not self._cancelled:
+                            emit_line(
+                                f"QUEST:AUTO:❌ '{self._quest_label(quest)}' não foi confirmada pelo Discord.",
+                                request_id,
+                            )
+                except asyncio.CancelledError:
+                    summary.update(ok=False, code="CANCELLED", message="Fila cancelada.")
+                    raise
+                except Exception as error:
+                    summary["failed"] += 1
+                    emit_line(
+                        f"QUEST:ERRO:{self._quest_label(quest)}: {self._safe_error(error)}",
+                        request_id,
+                    )
+                finally:
+                    self._progress_webhook_bucket.pop(quest.id, None)
+                    self._active_quest_id = None
+                    self._last_presence_detail = None
+                    if self.client.presence_manager:
+                        if presence_token:
+                            await self.client.presence_manager.complete_task(presence_token)
+                        else:
+                            await self.client.presence_manager.set_main()
+
+            if summary["failed"]:
+                summary.update(
+                    ok=False,
+                    code="PARTIAL_FAILURE",
+                    message="Fila finalizada com uma ou mais Quests não confirmadas.",
                 )
-            else:
-                emit_line(f"QUEST:AUTO:⚠️ Erro ao resgatar: {exc}", request_id)
-            asyncio.create_task(
-                self.dispatch_quest_reward(
-                    quest=quest,
-                    success=False,
-                    detail=str(exc),
-                )
-            )
-            return False
+            elif summary["completed"]:
+                summary["message"] = "Quests concluídas; resgate as recompensas manualmente."
+        except asyncio.CancelledError:
+            summary.update(ok=False, code="CANCELLED", message="Fila cancelada.")
+        finally:
+            self._active_quest_id = None
+            self._last_presence_detail = None
+            self._emit_result(request_id, **summary)
+            if self._task is current:
+                self._task = None
 
-    async def list_quests(self, request_id: str | None = None):
-        quests = await self.fetch_quests()
-        if not quests:
-            emit_line("QUEST:LIST:EMPTY", request_id)
-            return
-
-        for quest in quests:
-            task_name, task_info = quest.get_task_info()
-            target = int(task_info.get("target", 0)) if task_info else 0
-            progress = quest.get_progress(task_name) if task_name else 0
-
-            if quest.is_claimed:
-                status = "CLAIMED"
-            elif quest.is_completed:
-                status = "COMPLETED"
-            elif quest.is_expired:
-                status = "EXPIRED"
-            elif quest.is_enrolled:
-                status = "ENROLLED"
-            else:
-                status = "AVAILABLE"
-
-            emit_line(
-                f"QUEST:LIST:{quest.id}|{quest.quest_name}|{quest.application_name}|{task_name or 'UNKNOWN'}|{status}|{int(progress)}/{target}",
+    async def complete_quest(self, quest_id: str, request_id: str | None = None):
+        current = asyncio.current_task()
+        presence_token = None
+        if self.is_running and self._task is not current:
+            self._emit_result(
                 request_id,
+                ok=False,
+                code="ALREADY_RUNNING",
+                message="Já existe uma Quest em execução.",
             )
-
-        emit_line(f"QUEST:LIST_END:{len(quests)}", request_id)
+            return
+        if self._task is None or self._task.done():
+            self._task = current
+        self._cancelled = False
+        try:
+            quests = await self.fetch_quests()
+            quest = next((item for item in quests if item.id == quest_id), None)
+            if quest is None:
+                self._emit_result(request_id, ok=False, code="NOT_FOUND", message="Quest não encontrada.")
+                return
+            if quest.is_expired:
+                self._emit_result(request_id, ok=False, code="EXPIRED", message="Quest expirada.")
+                return
+            if quest.is_completed:
+                self._emit_result(request_id, ok=True, code="ALREADY_COMPLETED", message="Quest já concluída; resgate manualmente.")
+                return
+            if not quest.is_enrolled:
+                self._emit_result(request_id, ok=False, code="MANUAL_ENROLL_REQUIRED", message="Aceite a Quest manualmente no Discord.")
+                return
+            task_name, task = quest.get_task_info(auto_only=True)
+            target = quest.task_target(task)
+            if not task_name or not task or target <= 0:
+                self._emit_result(request_id, ok=False, code="UNSUPPORTED", message="Tipo de Quest não suportado.")
+                return
+            self._active_quest_id = quest.id
+            progress = quest.get_progress(task_name)
+            self._init_progress_bucket(quest.id, progress, target)
+            if self.client.presence_manager:
+                presence_token = await self.client.presence_manager.set_task(
+                    "Quest", self._quest_label(quest)
+                )
+            self._dispatch_background(
+                self.dispatch_quest_start(quest, task_name),
+                name=f"quest-webhook-start-{quest.id}",
+            )
+            success = await self._run_task_logic(quest, task_name, task, target, request_id)
+            self._emit_result(
+                request_id,
+                ok=success,
+                code="COMPLETED" if success else "NOT_CONFIRMED",
+                message=(
+                    "Quest concluída; resgate manualmente."
+                    if success
+                    else "O Discord não confirmou a conclusão."
+                ),
+            )
+        except asyncio.CancelledError:
+            self._emit_result(request_id, ok=False, code="CANCELLED", message="Quest cancelada.")
+        except Exception as error:
+            self._emit_result(
+                request_id,
+                ok=False,
+                code="FAILED",
+                message="Falha: " + self._safe_error(error),
+            )
+        finally:
+            self._progress_webhook_bucket.pop(quest_id, None)
+            self._active_quest_id = None
+            self._last_presence_detail = None
+            if self.client.presence_manager:
+                if presence_token:
+                    await self.client.presence_manager.complete_task(presence_token)
+                else:
+                    await self.client.presence_manager.set_main()
+            if self._task is current:
+                self._task = None
 
     async def _update_presence(self, text: str):
         if self.client.presence_manager and self._active_quest_id:
@@ -258,563 +581,392 @@ class QuestManager(QuestWebhookDispatchMixin):
             self._last_presence_detail = text
             await self.client.presence_manager.update_detail(text)
 
-    async def auto_complete_all(self, request_id: str | None = None):
-        if self.is_running:
-            self.cancel()
-            await asyncio.sleep(1)
-
-        self._cancelled = False
-        self._task = asyncio.current_task()
-
-        try:
-            quests = await self.fetch_quests()
-            if not quests:
-                emit_line("QUEST:AUTO:Nenhuma quest encontrada.", request_id)
-                return
-
-            actionable = []
-            for quest in quests:
-                if quest.is_expired or quest.is_claimed:
-                    continue
-
-                if quest.is_completed and not quest.is_claimed:
-                    emit_line(
-                        f"QUEST:AUTO:Resgatando '{quest.quest_name}'...", request_id
-                    )
-                    if await self.claim_reward(quest, request_id):
-                        emit_line(
-                            f"QUEST:AUTO:✅ '{quest.quest_name}' resgatada!", request_id
-                        )
-                    continue
-
-                task_name, task_info = quest.get_task_info()
-                if not task_name:
-                    continue
-
-                if not quest.is_enrolled:
-                    if not await self.accept_quest(quest, request_id):
-                        continue
-
-                target = int(task_info.get("target", 0))
-                progress = quest.get_progress(task_name)
-                if progress < target:
-                    actionable.append((quest, task_name, target, progress))
-
-            if not actionable:
-                emit_line("QUEST:AUTO:Nenhuma quest pendente.", request_id)
-                return
-
-            emit_line(f"QUEST:AUTO:Completando {len(actionable)} quest(s)...", request_id)
-
-            for quest, task_name, target, progress in actionable:
-                if self._cancelled:
-                    emit_line("QUEST:AUTO:Cancelado.", request_id)
-                    return
-
-                self._init_progress_bucket(quest.id, progress, target)
-                self._active_quest_id = quest.id
-                emit_line(
-                    f"QUEST:AUTO:{quest.quest_name} [{task_name}] {int(progress)}/{target}",
-                    request_id,
-                )
-
-                presence_token = None
-                if self.client.presence_manager:
-                    presence_token = await self.client.presence_manager.set_task(
-                        "Quest", quest.quest_name
-                    )
-
-                try:
-                    success = await self._run_task_logic(quest, task_name, target, request_id)
-                    if success:
-                        emit_line(
-                            f"QUEST:AUTO:✅ '{quest.quest_name}' completa!", request_id
-                        )
-                        asyncio.create_task(
-                            self.dispatch_quest_complete(
-                                quest=quest,
-                                task_name=task_name,
-                            )
-                        )
-                        await asyncio.sleep(2)
-                        if await self.claim_reward(quest, request_id):
-                            emit_line(
-                                f"QUEST:AUTO:🎁 '{quest.quest_name}' resgatada!",
-                                request_id,
-                            )
-                    elif self._cancelled:
-                        emit_line(
-                            f"QUEST:AUTO:Cancelado em '{quest.quest_name}'.",
-                            request_id,
-                        )
-                        asyncio.create_task(
-                            self.dispatch_quest_error(
-                                quest_name=quest.quest_name,
-                                detail="Quest cancelada pelo usuario",
-                            )
-                        )
-                    else:
-                        emit_line(
-                            f"QUEST:AUTO:❌ '{quest.quest_name}' falhou.", request_id
-                        )
-                        asyncio.create_task(
-                            self.dispatch_quest_error(
-                                quest_name=quest.quest_name,
-                                detail="Falha no fluxo de tarefa",
-                            )
-                        )
-                except Exception as exc:
-                    emit_line(f"QUEST:ERRO:{quest.quest_name}: {exc}", request_id)
-                    asyncio.create_task(
-                        self.dispatch_quest_error(
-                            quest_name=quest.quest_name,
-                            detail=str(exc),
-                        )
-                    )
-                finally:
-                    self._active_quest_id = None
-                    self._last_presence_detail = None
-                    if self.client.presence_manager:
-                        if presence_token:
-                            await self.client.presence_manager.complete_task(
-                                presence_token
-                            )
-                        else:
-                            await self.client.presence_manager.set_main()
-
-            emit_line("QUEST:AUTO:Todas as quests processadas!", request_id)
-        finally:
-            if self._task is asyncio.current_task():
-                self._task = None
-
-    async def complete_quest(self, quest_id: str, request_id: str | None = None):
-        if self.is_running:
-            self.cancel()
-            await asyncio.sleep(1)
-
-        self._cancelled = False
-        self._active_quest_id = quest_id
-
-        quests = await self.fetch_quests()
-        quest = next((item for item in quests if item.id == quest_id), None)
-        if not quest:
-            emit_line(f"QUEST:ERRO:Quest {quest_id} nao encontrada", request_id)
-            return
-
-        if quest.is_expired:
-            emit_line(f"QUEST:ERRO:Quest {quest_id} expirada", request_id)
-            return
-
-        if quest.is_completed:
-            emit_line(
-                f"QUEST:ERRO:Quest '{quest.quest_name}' ja foi completada", request_id
-            )
-            return
-
-        if not quest.is_enrolled:
-            if not await self.accept_quest(quest, request_id):
-                return
-
-        task_name, task_info = quest.get_task_info()
-        if not task_name or not task_info:
-            emit_line(
-                f"QUEST:ERRO:Quest '{quest.quest_name}' nao possui tarefa reconhecida",
-                request_id,
-            )
-            return
-
-        target = int(task_info.get("target", 0))
-        current_progress = quest.get_progress(task_name)
-        self._init_progress_bucket(quest.id, current_progress, target)
-
-        emit_line(
-            f"QUEST:STARTING:{quest.quest_name}|{task_name}|{int(current_progress)}/{target}",
-            request_id,
-        )
-
-        presence_token = None
-        if self.client.presence_manager:
-            presence_token = await self.client.presence_manager.set_task(
-                "Quest Completer", quest.quest_name
-            )
-
-        self._task = asyncio.create_task(
-            self._run_single_quest(quest, task_name, target, presence_token, request_id)
-        )
-
-    async def _run_single_quest(
+    async def _emit_progress(
         self,
         quest: Quest,
         task_name: str,
+        progress: float,
         target: int,
-        presence_token,
-        request_id,
-    ):
-        try:
-            success = await self._run_task_logic(quest, task_name, target, request_id)
-            if success:
-                emit_line(f"QUEST:COMPLETE:{quest.quest_name}", request_id)
-                asyncio.create_task(
-                    self.dispatch_quest_complete(quest=quest, task_name=task_name)
-                )
-                if await self.claim_reward(quest, request_id):
-                    emit_line(f"QUEST:REWARD:{quest.quest_name}", request_id)
-            elif self._cancelled:
-                emit_line(f"QUEST:CANCELLED:{quest.quest_name}", request_id)
-                asyncio.create_task(
-                    self.dispatch_quest_error(
-                        quest_name=quest.quest_name,
-                        detail="Quest cancelada pelo usuario",
-                    )
-                )
-            else:
-                emit_line(f"QUEST:FAILED:{quest.quest_name}", request_id)
-                asyncio.create_task(
-                    self.dispatch_quest_error(
-                        quest_name=quest.quest_name,
-                        detail="Quest falhou",
-                    )
-                )
-        except Exception as exc:
-            emit_line(f"QUEST:ERRO:{quest.quest_name}: {exc}", request_id)
-            asyncio.create_task(
-                self.dispatch_quest_error(
-                    quest_name=quest.quest_name,
-                    detail=str(exc),
-                )
-            )
-        finally:
-            self._active_quest_id = None
-            self._task = None
-            self._last_presence_detail = None
-            if self.client.presence_manager and presence_token:
-                await self.client.presence_manager.complete_task(presence_token)
-
-    async def _run_task_logic(
-        self, quest: Quest, task_name: str, target: int, request_id
-    ) -> bool:
-        if task_name in ("WATCH_VIDEO", "WATCH_VIDEO_ON_MOBILE"):
-            return await self.doing_watch_video_quest(quest, task_name, target, request_id)
-
-        if task_name in (
-            "PLAY_ON_DESKTOP",
-            "PLAY_ON_DESKTOP_V2",
-            "PLAY_ON_XBOX",
-            "PLAY_ON_PLAYSTATION",
-        ):
-            return await self.doing_play_on_platform_quest(
-                quest, task_name, target, request_id
-            )
-
-        if task_name == "PLAY_ACTIVITY":
-            return await self.doing_play_activity_quest(quest, task_name, target, request_id)
-
-        if task_name == "ACHIEVEMENT_IN_ACTIVITY":
-            return await self.doing_achievement_in_activity_quest(quest, target, request_id)
-
-        if task_name == "STREAM_ON_DESKTOP":
-            emit_line(
-                f"QUEST:ERRO:Quest '{quest.quest_name}' usa STREAM_ON_DESKTOP que requer app desktop real.",
-                request_id,
-            )
-            return False
-
+        request_id: str | None,
+    ) -> None:
+        progress = min(float(target), max(0.0, progress))
+        pct = min(100, int((progress / target) * 100)) if target else 0
         emit_line(
-            f"QUEST:ERRO:Quest '{quest.quest_name}' usa tarefa nao suportada: {task_name}",
+            f"QUEST:PROGRESS:{int(progress)}/{target} ({pct}%)",
             request_id,
         )
+        await self._update_presence("Concluindo Quest")
+        if self._can_send_progress_webhook(quest.id, progress, target):
+            self._dispatch_background(
+                self.dispatch_quest_progress(
+                    quest=quest,
+                    task_name=task_name,
+                    progress=int(progress),
+                    target=target,
+                ),
+                name=f"quest-webhook-progress-{quest.id}",
+            )
+
+    async def _run_task_logic(
+        self,
+        quest: Quest,
+        task_name: str,
+        task: dict,
+        target: int,
+        request_id: str | None,
+    ) -> bool:
+        if task_name in VIDEO_TASKS:
+            return await self.doing_watch_video_quest(
+                quest, task_name, target, request_id
+            )
+        if task_name in PLAY_TASKS:
+            return await self.doing_play_on_platform_quest(
+                quest, task_name, task, target, request_id
+            )
+        if task_name == "ACHIEVEMENT_IN_ACTIVITY":
+            return await self.doing_achievement_in_activity_quest(
+                quest, task, target, request_id
+            )
+        emit_line(
+            f"QUEST:ERRO:'{self._quest_label(quest)}' requer execução manual ({task_name}).",
+            request_id,
+        )
+        return False
+
+    async def _post_status_with_retries(
+        self,
+        quest: Quest,
+        path: str,
+        payload: dict,
+        request_id: str | None,
+        label: str,
+    ) -> bool:
+        attempts = self.config.REQUEST_RETRY_ATTEMPTS
+        for attempt in range(1, attempts + 1):
+            try:
+                data = await self.api.post(path, payload, quest_id=quest.id)
+                if not quest.update_status(data):
+                    raise QuestDataError("resposta sem user_status")
+                return True
+            except asyncio.CancelledError:
+                raise
+            except Exception as error:
+                emit_line(
+                    f"QUEST:WARN:{label} tentativa {attempt}/{attempts}: {self._safe_error(error)}",
+                    request_id,
+                )
+                if attempt < attempts:
+                    await asyncio.sleep(
+                        self.config.REQUEST_RETRY_DELAY_SECONDS * attempt
+                    )
         return False
 
     async def doing_watch_video_quest(
         self, quest: Quest, task_name: str, target: int, request_id
     ) -> bool:
-        enrolled_ts = time.time()
-        enrolled_str = quest.user_status.get("enrolled_at")
-        if enrolled_str:
-            try:
-                enrolled_ts = datetime.fromisoformat(
-                    enrolled_str.replace("Z", "+00:00")
-                ).timestamp()
-            except Exception:
-                pass
+        enrolled_at = quest.enrolled_at
+        if enrolled_at is None:
+            emit_line("QUEST:ERRO:Quest de vídeo sem enrolled_at válido.", request_id)
+            return False
 
-        progress = quest.get_progress(task_name)
-        max_future = self.config.MAX_FUTURE_SECONDS
-        speed = 7
-        interval = 1.0
-        completed = False
-
+        progress = min(float(target), quest.get_progress(task_name))
+        deadline = asyncio.get_running_loop().time() + max(
+            120.0, (target - progress) + 180.0
+        )
         while progress < target and not self._cancelled:
-            max_allowed = (time.time() - enrolled_ts) + max_future
-            diff = max_allowed - progress
-            timestamp = progress + speed
+            if quest.is_expired or asyncio.get_running_loop().time() >= deadline:
+                return False
+            elapsed = max(
+                0.0,
+                (datetime.now(timezone.utc) - enrolled_at).total_seconds(),
+            )
+            maximum_allowed = min(
+                float(target), elapsed + self.config.MAX_FUTURE_SECONDS
+            )
+            step = random.uniform(
+                self.config.VIDEO_REPORT_MIN_SECONDS,
+                self.config.VIDEO_REPORT_MAX_SECONDS,
+            )
+            next_progress = min(float(target), progress + step, maximum_allowed)
+            if next_progress <= progress + 0.05:
+                await asyncio.sleep(min(1.0, max(0.1, progress - maximum_allowed + 0.1)))
+                continue
 
-            if diff >= speed:
-                new_progress = min(target, timestamp + random.random())
-                try:
-                    data = await self.api.post(
-                        "/quests/{quest_id}/video-progress",
-                        {"timestamp": new_progress},
-                        quest_id=quest.id,
-                    )
-                    quest.update_status(data)
-                    completed = bool(data.get("completed_at")) if data else False
-                    progress = min(target, timestamp)
+            reported = await self._post_status_with_retries(
+                quest,
+                "/quests/{quest_id}/video-progress",
+                {"timestamp": round(next_progress, 6)},
+                request_id,
+                "video-progress",
+            )
+            if not reported:
+                return False
+            server_progress = quest.get_progress(task_name)
+            progress = min(float(target), max(next_progress, server_progress))
+            await self._emit_progress(
+                quest, task_name, progress, target, request_id
+            )
+            if quest.is_completed:
+                return True
 
-                    pct = min(100, int((progress / target) * 100)) if target else 0
-                    await self._update_presence("Farmando quests")
-                    emit_line(
-                        f"QUEST:PROGRESS:{int(progress)}/{target} ({pct}%)",
-                        request_id,
-                    )
-                    if self._can_send_progress_webhook(quest.id, int(progress), target):
-                        asyncio.create_task(
-                            self.dispatch_quest_progress(
-                                quest=quest,
-                                task_name=task_name,
-                                progress=int(progress),
-                                target=target,
-                            )
-                        )
-
-                    if completed:
-                        return True
-                except Exception as exc:
-                    emit_line(f"QUEST:WARN:video-progress erro: {exc}", request_id)
-
-            if timestamp >= target:
+            if progress >= target:
                 break
 
-            await asyncio.sleep(interval)
-
-        if not self._cancelled and not completed:
-            try:
-                data = await self.api.post(
-                    "/quests/{quest_id}/video-progress",
-                    {"timestamp": target},
-                    quest_id=quest.id,
+            await asyncio.sleep(
+                random.uniform(
+                    self.config.VIDEO_REPORT_MIN_SECONDS,
+                    self.config.VIDEO_REPORT_MAX_SECONDS,
                 )
-                quest.update_status(data)
-                return True
-            except Exception:
-                return False
+            )
 
-        return not self._cancelled
+        if self._cancelled:
+            return False
+        return await self._verify_completion(quest)
+
+    def _resolve_stream_key(self) -> str | None:
+        user = getattr(self.client, "user", None)
+        user_id = getattr(user, "id", None)
+        if not user_id:
+            return None
+
+        voice_clients = list(getattr(self.client, "voice_clients", []) or [])
+        legacy_voice = getattr(self.client, "voice_client", None)
+        if legacy_voice is not None:
+            voice_clients.append(legacy_voice)
+        for voice_client in voice_clients:
+            channel = getattr(voice_client, "channel", None)
+            channel_id = getattr(channel, "id", None)
+            if not channel_id:
+                continue
+            guild_id = getattr(getattr(channel, "guild", None), "id", None)
+            if guild_id:
+                return f"guild:{guild_id}:{channel_id}:{user_id}"
+            return f"call:{channel_id}:{user_id}"
+
+        for channel in getattr(self.client, "private_channels", []) or []:
+            channel_id = getattr(channel, "id", None)
+            if channel_id:
+                return f"call:{channel_id}:{user_id}"
+        return None
 
     async def doing_play_on_platform_quest(
-        self, quest: Quest, task_name: str, target: int, request_id
+        self,
+        quest: Quest,
+        task_name: str,
+        task: dict,
+        target: int,
+        request_id,
     ) -> bool:
-        interval = 20.0
-        while not quest.is_completed and not self._cancelled:
-            progress = quest.get_progress(task_name)
-            try:
-                data = await self.api.post(
-                    "/quests/{quest_id}/heartbeat",
-                    {"application_id": quest.application_id, "terminal": False},
-                    quest_id=quest.id,
-                )
-                quest.update_status(data)
-                progress = quest.get_progress(task_name)
-                pct = min(100, int((progress / target) * 100)) if target else 0
-                await self._update_presence("Farmando quests")
+        application_id = quest.application_id_for(task_name, task)
+        if not application_id or not application_id.isdigit():
+            emit_line("QUEST:ERRO:Quest sem application_id válido.", request_id)
+            return False
+
+        payload: dict
+        if task_name == "PLAY_ACTIVITY":
+            stream_key = self._resolve_stream_key()
+            if not stream_key:
                 emit_line(
-                    f"QUEST:PROGRESS:{int(progress)}/{target} ({pct}%)",
+                    "QUEST:ERRO:PLAY_ACTIVITY requer um canal de voz/DM válido para formar o stream_key.",
                     request_id,
                 )
-                if self._can_send_progress_webhook(quest.id, int(progress), target):
-                    asyncio.create_task(
-                        self.dispatch_quest_progress(
-                            quest=quest,
-                            task_name=task_name,
-                            progress=int(progress),
-                            target=target,
-                        )
-                    )
-            except Exception as exc:
-                emit_line(f"QUEST:WARN:heartbeat erro: {exc}", request_id)
+                return False
+            payload = {"stream_key": stream_key}
+        else:
+            payload = {"application_id": application_id}
 
-            if progress >= target:
-                break
-
-            await asyncio.sleep(interval)
-
-        if self._cancelled:
-            return False
-
-        try:
-            data = await self.api.post(
+        progress = quest.get_progress(task_name)
+        stagnant = 0
+        deadline = asyncio.get_running_loop().time() + max(
+            180.0, (target - progress) + 300.0
+        )
+        while not self._cancelled:
+            if quest.is_expired or asyncio.get_running_loop().time() >= deadline:
+                return False
+            previous = progress
+            ok = await self._post_status_with_retries(
+                quest,
                 "/quests/{quest_id}/heartbeat",
-                {"application_id": quest.application_id, "terminal": True},
-                quest_id=quest.id,
+                {**payload, "terminal": False},
+                request_id,
+                "heartbeat",
             )
-            quest.update_status(data)
-            return True
-        except Exception:
-            return False
-
-    def _resolve_stream_key(self) -> str:
-        channel_id = None
-        voice_client = getattr(self.client, "voice_client", None)
-        if voice_client and getattr(voice_client, "channel", None):
-            channel_id = getattr(voice_client.channel, "id", None)
-
-        if channel_id is None:
-            for guild in getattr(self.client, "guilds", []):
-                me = getattr(guild, "me", None)
-                voice_state = getattr(me, "voice", None) if me else None
-                if voice_state and getattr(voice_state, "channel", None):
-                    channel_id = getattr(voice_state.channel, "id", None)
-                    break
-
-        if channel_id is None:
-            channel_id = "1"
-
-        return f"call:{channel_id}:1"
-
-    async def doing_play_activity_quest(
-        self, quest: Quest, task_name: str, target: int, request_id
-    ) -> bool:
-        interval = 20.0
-        stream_key = self._resolve_stream_key()
-
-        while not quest.is_completed and not self._cancelled:
+            if not ok:
+                return False
             progress = quest.get_progress(task_name)
-            try:
-                data = await self.api.post(
+            await self._emit_progress(
+                quest, task_name, progress, target, request_id
+            )
+            if quest.is_completed or progress >= target:
+                terminal_ok = await self._post_status_with_retries(
+                    quest,
                     "/quests/{quest_id}/heartbeat",
-                    {"stream_key": stream_key, "terminal": False},
-                    quest_id=quest.id,
+                    {**payload, "terminal": True},
+                    request_id,
+                    "heartbeat terminal",
                 )
-                quest.update_status(data)
-                progress = quest.get_progress(task_name)
-                pct = min(100, int((progress / target) * 100)) if target else 0
-                await self._update_presence("Farmando quests")
+                return terminal_ok and await self._verify_completion(quest)
+
+            stagnant = stagnant + 1 if progress <= previous else 0
+            if stagnant >= self.config.MAX_STAGNANT_HEARTBEATS:
                 emit_line(
-                    f"QUEST:PROGRESS:{int(progress)}/{target} ({pct}%)",
+                    "QUEST:WARN:O Discord não avançou o progresso após três heartbeats.",
                     request_id,
                 )
-                if self._can_send_progress_webhook(quest.id, int(progress), target):
-                    asyncio.create_task(
-                        self.dispatch_quest_progress(
-                            quest=quest,
-                            task_name=task_name,
-                            progress=int(progress),
-                            target=target,
-                        )
-                    )
-            except Exception as exc:
-                emit_line(f"QUEST:WARN:activity heartbeat erro: {exc}", request_id)
-
-            if progress >= target:
-                break
-
-            await asyncio.sleep(interval)
-
-        if self._cancelled:
-            return False
-
-        try:
-            data = await self.api.post(
-                "/quests/{quest_id}/heartbeat",
-                {"stream_key": stream_key, "terminal": True},
-                quest_id=quest.id,
+                return False
+            remaining = max(0.0, target - progress)
+            await asyncio.sleep(
+                min(self.config.HEARTBEAT_MAX_INTERVAL_SECONDS, remaining)
+                + self.config.HEARTBEAT_BUFFER_SECONDS
             )
-            quest.update_status(data)
-            return True
-        except Exception:
-            return False
+        return False
+
+    async def _get_activity_session(self) -> aiohttp.ClientSession:
+        if self._activity_session is None or self._activity_session.closed:
+            self._activity_session = aiohttp.ClientSession(
+                timeout=aiohttp.ClientTimeout(total=25.0)
+            )
+        return self._activity_session
+
+    async def _activity_post(
+        self,
+        application_id: str,
+        endpoint: str,
+        payload: dict,
+        headers: dict,
+    ) -> tuple[bool, dict | None]:
+        if not application_id.isdigit() or endpoint not in ("authorize", "quest/progress"):
+            raise ValueError("Invalid Discord Activity request")
+        session = await self._get_activity_session()
+        url = f"https://{application_id}.discordsays.com/.proxy/acf/{endpoint}"
+        async with session.post(url, json=payload, headers=headers) as response:
+            try:
+                data = await response.json(content_type=None)
+            except Exception:
+                data = None
+            return response.status < 400, data if isinstance(data, dict) else None
 
     async def doing_achievement_in_activity_quest(
-        self, quest: Quest, target: int, request_id
+        self,
+        quest: Quest,
+        task: dict,
+        target: int,
+        request_id,
     ) -> bool:
+        application_id = quest.application_id_for("ACHIEVEMENT_IN_ACTIVITY", task)
+        if not application_id or not application_id.isdigit():
+            emit_line("QUEST:ERRO:Achievement sem application_id válido.", request_id)
+            return False
+
+        auth_code: str | None = None
+        token_id: str | None = None
+        existing_token_ids: set[str] | None = None
         try:
-            query = {
-                "response_type": "code",
-                "client_id": quest.application_id,
-                "scope": "identify applications.commands applications.entitlements",
-                "state": "",
-            }
+            # Preserve grants the user already had. Only the temporary grant
+            # created by this run is eligible for cleanup.
+            try:
+                existing_tokens = await self.api.get("/oauth2/tokens")
+                if isinstance(existing_tokens, list):
+                    existing_token_ids = {
+                        str(entry.get("id"))
+                        for entry in existing_tokens
+                        if isinstance(entry, dict) and entry.get("id") is not None
+                    }
+            except Exception:
+                existing_token_ids = None
+
             auth_response = await self.api.post(
                 "/oauth2/authorize",
-                {
-                    "permissions": "0",
-                    "authorize": True,
-                    "integration_type": 1,
-                    "location_context": {
-                        "guild_id": "10000",
-                        "channel_id": "10000",
-                        "channel_type": 10000,
-                    },
+                {"authorize": True},
+                query={
+                    "client_id": application_id,
+                    "response_type": "code",
+                    "scope": "identify applications.entitlements",
+                    "state": "",
                 },
-                query=query,
             )
-
-            location = (auth_response or {}).get("location")
-            if not location:
-                emit_line(
-                    f"QUEST:ERRO:Quest '{quest.quest_name}' nao recebeu location do /authorize.",
-                    request_id,
-                )
-                return False
-
-            parsed = urlparse(location)
-            auth_code = parse_qs(parsed.query).get("code", [None])[0]
+            location = auth_response.get("location") if isinstance(auth_response, dict) else None
+            if location:
+                auth_code = parse_qs(urlparse(str(location)).query).get("code", [None])[0]
             if not auth_code:
-                emit_line(
-                    f"QUEST:ERRO:Quest '{quest.quest_name}' nao recebeu auth code.",
-                    request_id,
+                raise QuestDataError("Discord não retornou o código OAuth")
+
+            ticket_response = await self.api.post(
+                "/applications/{application_id}/proxy-tickets",
+                {},
+                application_id=application_id,
+            )
+            ticket = ticket_response.get("ticket") if isinstance(ticket_response, dict) else None
+            if not ticket:
+                raise QuestDataError("Discord não retornou proxy ticket")
+
+            referrer = (
+                f"https://{application_id}.discordsays.com/?"
+                + urlencode(
+                    {
+                        "instance_id": "example-cl-instance",
+                        "platform": "desktop",
+                        "discord_proxy_ticket": ticket,
+                    }
                 )
-                return False
+            )
+            user_agent = getattr(getattr(self.client, "http", None), "user_agent", "")
+            base_headers = {
+                "Content-Type": "application/json",
+                "X-Discord-Quest-ID": quest.id,
+                "Referer": referrer,
+            }
+            if user_agent:
+                base_headers["User-Agent"] = user_agent
 
-            progress_token = None
-            session = await self.api._get_session()
-            async with session.post(
-                f"https://{quest.application_id}.discordsays.com/.proxy/acf/authorize",
-                json={"code": auth_code},
-                headers={
-                    "Content-Type": "application/json",
-                    "Origin": "https://discord.com",
-                    "Referer": "https://discord.com/channels/@me",
-                    "User-Agent": (
-                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                        "AppleWebKit/537.36 (KHTML, like Gecko) "
-                        "Chrome/138.0.0.0 Safari/537.36"
-                    ),
-                },
-            ) as response:
-                body = await response.json(content_type=None)
-                if isinstance(body, dict):
-                    progress_token = body.get("token")
+            authorized, authorize_data = await self._activity_post(
+                application_id,
+                "authorize",
+                {"code": auth_code},
+                {**base_headers, "X-Auth-Token": ""},
+            )
+            progress_token = authorize_data.get("token") if authorize_data else None
+            if not authorized or not isinstance(progress_token, str) or not progress_token:
+                raise QuestDataError("Activity recusou a autorização")
 
-            if not progress_token:
-                emit_line(
-                    f"QUEST:ERRO:Quest '{quest.quest_name}' nao recebeu token Discord Says.",
-                    request_id,
-                )
-                return False
-
-            async with session.post(
-                f"https://{quest.application_id}.discordsays.com/.proxy/acf/quest/progress",
-                json={"progress": target},
-                headers={
-                    "Content-Type": "application/json",
-                    "x-auth-token": progress_token,
-                    "Origin": "https://discord.com",
-                    "Referer": "https://discord.com/channels/@me",
-                    "User-Agent": (
-                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                        "AppleWebKit/537.36 (KHTML, like Gecko) "
-                        "Chrome/138.0.0.0 Safari/537.36"
-                    ),
-                },
-            ) as response:
-                if response.status >= 400:
-                    raise RuntimeError(f"Discord Says retornou HTTP {response.status}")
-
-            return True
-        except Exception as exc:
+            progressed, _ = await self._activity_post(
+                application_id,
+                "quest/progress",
+                {"progress": target},
+                {**base_headers, "X-Auth-Token": progress_token},
+            )
+            if not progressed:
+                raise QuestDataError("Activity recusou o progresso")
+            await self._emit_progress(
+                quest, "ACHIEVEMENT_IN_ACTIVITY", target, target, request_id
+            )
+            return await self._verify_completion(quest)
+        except asyncio.CancelledError:
+            raise
+        except Exception as error:
             emit_line(
-                f"QUEST:ERRO:Quest '{quest.quest_name}' falhou no fluxo Discord Says: {exc}",
+                "QUEST:ERRO:Achievement não concluído: " + self._safe_error(error),
                 request_id,
             )
             return False
+        finally:
+            # Match Questify: remove the temporary OAuth grant even if progress
+            # verification fails.
+            try:
+                tokens = await self.api.get("/oauth2/tokens")
+                if isinstance(tokens, list):
+                    for entry in tokens:
+                        application = entry.get("application", {}) if isinstance(entry, dict) else {}
+                        candidate_id = str(entry.get("id", ""))
+                        if (
+                            str(application.get("id", "")) == application_id
+                            and candidate_id
+                            and existing_token_ids is not None
+                            and candidate_id not in existing_token_ids
+                        ):
+                            token_id = candidate_id
+                            break
+                if token_id:
+                    await self.api.delete("/oauth2/tokens/{token_id}", token_id=token_id)
+            except Exception:
+                pass

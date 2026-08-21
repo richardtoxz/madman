@@ -1,9 +1,42 @@
-import asyncio
+import re
 import discord
 from discord import ui
 from ..views.progress_view import ProgressView
 from ..shared.helpers import generate_progress_bar
 from ..shared.stealth_dm import send_stealth_dm
+from ..shared.stealth_dm import schedule_stealth_cleanup
+from ..shared.tasks import create_panel_task
+
+
+_DELETE_COUNTS = re.compile(
+    r"Deletadas\s+(?P<deleted>\d+)(?:\s+de\s+(?P<total>\d+))?",
+    re.IGNORECASE,
+)
+
+
+def _cleanup_summary(result: str, fallback_total: int = 0) -> tuple[str, int, int]:
+    text = (result or "ERRO:Sem resposta do worker").strip()
+    match = _DELETE_COUNTS.search(text)
+    deleted = int(match.group("deleted")) if match else 0
+    total = (
+        int(match.group("total"))
+        if match and match.group("total") is not None
+        else max(fallback_total, deleted)
+    )
+
+    normalized = text.casefold()
+    if normalized.startswith("cancelado:"):
+        outcome = "cancelled"
+    elif normalized.startswith(("erro:", "abortado:")) or any(
+        marker in normalized
+        for marker in ("timeout", "nao conectado", "não conectado")
+    ):
+        outcome = "error"
+    elif normalized.startswith("parcial:"):
+        outcome = "partial"
+    else:
+        outcome = "complete"
+    return outcome, deleted, total
 
 
 class CleanDMModal(ui.Modal, title="Limpar Mensagens (DM/Canal)"):
@@ -11,9 +44,13 @@ class CleanDMModal(ui.Modal, title="Limpar Mensagens (DM/Canal)"):
         label="ID do Usuário ou Canal", placeholder="Insira o ID aqui...", min_length=15
     )
 
-    def __init__(self, manager):
+    def __init__(self, manager, user_id: int):
         super().__init__()
         self.manager = manager
+        self.user_id = int(user_id)
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        return interaction.user.id == self.user_id
 
     async def on_submit(self, interaction: discord.Interaction):
         raw_id = self.target_id.value.strip()
@@ -38,11 +75,7 @@ class CleanDMModal(ui.Modal, title="Limpar Mensagens (DM/Canal)"):
         view = ProgressView(user_id, self.manager)
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
-        from ..shared.stealth_dm import cleanup_stealth_messages
-
-        asyncio.create_task(
-            cleanup_stealth_messages(interaction.user, interaction.client.user.id)
-        )
+        schedule_stealth_cleanup(interaction.user, interaction.client.user.id)
 
         view.channel_info = {"name": str(target_id_val), "total": 0}
 
@@ -95,48 +128,36 @@ class CleanDMModal(ui.Modal, title="Limpar Mensagens (DM/Canal)"):
             except Exception:
                 pass
 
-        asyncio.create_task(
+        create_panel_task(
+            interaction.client,
             self._run_cleanup(
                 user_id, target_id_val, update_progress, view, interaction
-            )
+            ),
+            name=f"panel-clean-target-{user_id}-{target_id_val}",
         )
 
     async def _run_cleanup(self, user_id, target_id, callback, view, interaction):
         result = await self.manager.send_command(
             user_id, target_id, update_callback=callback
         )
-
-        is_error = any(
-            kw in result.lower()
-            for kw in ["erro", "error", "não encontrado", "timeout", "sem permissão"]
+        outcome, deleted_count, total_count = _cleanup_summary(
+            result, int(view.channel_info.get("total", 0) or 0)
         )
-
-        deleted_count = "0"
-        total_count = str(view.channel_info.get("total", "0"))
-
-        if "Deletadas " in result:
-            try:
-                after_del = result.split("Deletadas ")[1]
-                deleted_count = after_del.split(" ")[0].strip()
-
-                if "/" in after_del:
-                    total_count = after_del.split("/")[1].split()[0].strip()
-                else:
-                    pre_total = int(view.channel_info.get("total", 0) or 0)
-                    del_int = int(deleted_count) if deleted_count.isdigit() else 0
-                    total_count = str(max(pre_total, del_int))
-            except Exception:
-                pass
 
         target_name = view.channel_info.get("name", str(target_id))
         mention = (
             f"<#{target_id}>" if view.target_type == "channel" else f"<@{target_id}>"
         )
 
-        if is_error:
+        if outcome == "error":
             final_text = f"❌ **Erro na limpeza do alvo ({mention}):**\n{result}"
-        elif view.cancelled_by_user:
+        elif view.cancelled_by_user or outcome == "cancelled":
             final_text = f"⏹️ **Processo interrompido**\n**{deleted_count}** de **{total_count}** apagadas de **{target_name}** ({mention})"
+        elif outcome == "partial":
+            final_text = (
+                f"⚠️ **Limpeza parcial em {target_name} ({mention})**\n"
+                f"**{deleted_count}** de **{total_count}** apagadas.\n{result}"
+            )
         else:
             final_text = f"✅ **{target_name} ({mention}) apagada com sucesso**\nTotal: **{deleted_count}** de **{total_count}**"
 
@@ -153,14 +174,11 @@ class CleanDMModal(ui.Modal, title="Limpar Mensagens (DM/Canal)"):
             )
 
         try:
-            await interaction.delete_original_response()
-        except Exception:
-            try:
-                await interaction.edit_original_response(
-                    content=final_text, embed=None, view=None
-                )
-            except Exception:
-                pass
+            await interaction.edit_original_response(
+                content=final_text, embed=None, view=None
+            )
+        except discord.HTTPException:
+            pass
 
 
 class CleanGuildModal(ui.Modal, title="Limpar Mensagens em Servidor"):
@@ -171,9 +189,13 @@ class CleanGuildModal(ui.Modal, title="Limpar Mensagens em Servidor"):
         max_length=21,
     )
 
-    def __init__(self, manager):
+    def __init__(self, manager, user_id: int):
         super().__init__()
         self.manager = manager
+        self.user_id = int(user_id)
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        return interaction.user.id == self.user_id
 
     async def on_submit(self, interaction: discord.Interaction):
         try:
@@ -247,27 +269,19 @@ class CleanGuildModal(ui.Modal, title="Limpar Mensagens em Servidor"):
             except Exception:
                 pass
 
-        asyncio.create_task(
-            self._run(user_id, guild_id, update_progress, view, interaction)
+        create_panel_task(
+            interaction.client,
+            self._run(user_id, guild_id, update_progress, view, interaction),
+            name=f"panel-clean-guild-{user_id}-{guild_id}",
         )
 
     async def _run(self, user_id, guild_id, callback, view, interaction):
         result = await self.manager.clean_guild_messages(
             user_id, guild_id, update_callback=callback
         )
-
-        deleted_count = "0"
-        total_count = str(view.channel_info.get("total", "0"))
-        if "Deletadas " in result:
-            try:
-                after_del = result.split("Deletadas ")[1]
-                deleted_count = after_del.split(" ")[0].strip()
-                if "/" in after_del:
-                    total_count = after_del.split("/")[1].split(" ")[0].strip()
-                elif deleted_count.isdigit():
-                    total_count = deleted_count
-            except Exception:
-                pass
+        outcome, deleted_count, total_count = _cleanup_summary(
+            result, int(view.channel_info.get("total", 0) or 0)
+        )
 
         name = view.channel_info.get("name", str(guild_id))
 
@@ -278,10 +292,15 @@ class CleanGuildModal(ui.Modal, title="Limpar Mensagens em Servidor"):
         else:
             mention = f"ID `{guild_id}`"
 
-        if view.cancelled_by_user:
+        if view.cancelled_by_user or outcome == "cancelled":
             final = f"⏹️ **Interrompido**\n**{deleted_count}** de **{total_count}** apagadas em **{name}** ({mention})"
-        elif "erro" in result.lower():
+        elif outcome == "error":
             final = f"❌ **Erro:** {result}"
+        elif outcome == "partial":
+            final = (
+                f"⚠️ **Limpeza parcial em {name} ({mention})**\n"
+                f"**{deleted_count}** de **{total_count}** deletadas.\n{result}"
+            )
         else:
             final = f"✅ **Guild {name} ({mention}) limpa**\n**{deleted_count}** de **{total_count}** deletadas"
 
@@ -298,11 +317,8 @@ class CleanGuildModal(ui.Modal, title="Limpar Mensagens em Servidor"):
             )
 
         try:
-            await interaction.delete_original_response()
-        except Exception:
-            try:
-                await interaction.edit_original_response(
-                    content=final, embed=None, view=None
-                )
-            except Exception:
-                pass
+            await interaction.edit_original_response(
+                content=final, embed=None, view=None
+            )
+        except discord.HTTPException:
+            pass

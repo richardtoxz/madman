@@ -17,7 +17,15 @@ def keep_alive():
             return "Madman Bot is running!"
 
         def run_server():
-            port = int(os.environ.get("PORT", 8080))
+            raw_port = os.environ.get("PORT", "8080").strip()
+            try:
+                port = int(raw_port)
+            except ValueError:
+                print(f"⚠️ PORT inválida: {raw_port!r}. Keep-alive desabilitado.")
+                return
+            if not 1 <= port <= 65535:
+                print(f"⚠️ PORT fora do intervalo: {port}. Keep-alive desabilitado.")
+                return
             import logging
 
             log = logging.getLogger("werkzeug")

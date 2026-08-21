@@ -22,6 +22,9 @@ async def handle_disconnect(interaction: discord.Interaction, manager, user_id: 
     success, msg = await manager.disconnect(user_id)
 
     if success:
+        settings = getattr(interaction.client, "_settings_state", None)
+        if settings is not None:
+            settings.pop(user_id, None)
         await interaction.followup.send(f"{msg}", ephemeral=True)
     else:
         await interaction.followup.send(f"{msg}", ephemeral=True)

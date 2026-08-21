@@ -1,56 +1,506 @@
-from .bulk_executor import safe_bulk_execute
+from __future__ import annotations
+
+import asyncio
+import random
+from collections.abc import Awaitable, Callable
+from typing import Any
+
+import discord
+
+from .config import BulkConfig
+from .ipc import emit_line
 
 
 class GuildManager:
+    """Operacoes de servidor baseadas em uma fotografia REST atual da conta."""
+
+    MAX_TRANSIENT_ATTEMPTS = 3
+
     def __init__(self, client):
         self.client = client
         self.cancelled = False
+        self._bulk_lock = asyncio.Lock()
+
+    @staticmethod
+    def _error_code(error: Exception | None) -> str:
+        if isinstance(error, discord.CaptchaRequired):
+            return "CAPTCHA"
+        if isinstance(error, discord.RateLimited):
+            return "RATE_LIMIT_LONGO"
+        if isinstance(error, discord.Forbidden):
+            return "SEM_PERMISSAO"
+        if isinstance(error, discord.NotFound):
+            return "NAO_ENCONTRADO"
+        if isinstance(error, discord.HTTPException):
+            status = int(getattr(error, "status", 0) or 0)
+            return f"HTTP_{status}" if status else "HTTP"
+        return type(error).__name__.upper()[:40] if error else "DESCONHECIDO"
+
+    @staticmethod
+    def _warning_for(code: str | None) -> str | None:
+        if not code:
+            return None
+        messages = {
+            "CAPTCHA": "O Discord exigiu CAPTCHA ao atualizar os servidores.",
+            "RATE_LIMIT_LONGO": "O Discord solicitou uma espera longa ao atualizar os servidores.",
+            "SEM_PERMISSAO": "O Discord recusou a consulta atualizada dos servidores.",
+        }
+        return messages.get(
+            code, "Nao foi possivel confirmar a lista atual; exibindo o cache local."
+        )
+
+    @staticmethod
+    def _ipc_label(value: Any, limit: int = 80) -> str:
+        text = " ".join(str(value or "Servidor desconhecido").split())
+        text = text.replace("||REQ:", "REQ:").replace(":", "：")
+        return text[:limit] or "Servidor desconhecido"
+
+    @staticmethod
+    def _page(items: list[Any], page: int, page_size: int) -> tuple[list[Any], int, int]:
+        page_size = max(1, min(int(page_size), 25))
+        pages = max(1, (len(items) + page_size - 1) // page_size)
+        page = max(0, min(int(page), pages - 1))
+        start = page * page_size
+        return items[start : start + page_size], page, pages
+
+    async def _sleep_interruptibly(self, seconds: float) -> bool:
+        deadline = asyncio.get_running_loop().time() + max(0.0, seconds)
+        while not self.cancelled:
+            remaining = deadline - asyncio.get_running_loop().time()
+            if remaining <= 0:
+                return True
+            await asyncio.sleep(min(remaining, 0.5))
+        return False
+
+    async def _guild_snapshot(
+        self, *, allow_cache: bool = True
+    ) -> tuple[tuple[Any, ...], bool, str | None]:
+        """Busca todos os UserGuild; cache e somente fallback para leitura."""
+
+        last_error: Exception | None = None
+        for attempt in range(2):
+            try:
+                guilds = await self.client.fetch_guilds(with_counts=True)
+                return tuple(guilds), True, None
+            except asyncio.CancelledError:
+                raise
+            except (discord.CaptchaRequired, discord.RateLimited) as error:
+                last_error = error
+                break
+            except discord.HTTPException as error:
+                last_error = error
+                status = int(getattr(error, "status", 0) or 0)
+                if attempt == 0 and status >= 500:
+                    await asyncio.sleep(1.0)
+                    continue
+                break
+            except Exception as error:
+                last_error = error
+                break
+
+        code = self._error_code(last_error)
+        if not allow_cache:
+            return (), False, code
+        try:
+            return tuple(self.client.guilds), False, code
+        except Exception:
+            return (), False, code
+
+    def _cached_guild(self, guild_id: int):
+        try:
+            return self.client.get_guild(int(guild_id))
+        except (AttributeError, TypeError, ValueError):
+            return next(
+                (
+                    guild
+                    for guild in getattr(self.client, "guilds", ())
+                    if int(getattr(guild, "id", 0)) == int(guild_id)
+                ),
+                None,
+            )
+
+    def _is_owner(self, guild: Any, *, fresh: bool) -> bool:
+        if fresh:
+            return bool(getattr(guild, "owner", False))
+        current_user_id = int(getattr(getattr(self.client, "user", None), "id", 0))
+        return bool(
+            current_user_id
+            and int(getattr(guild, "owner_id", 0) or 0) == current_user_id
+        )
+
+    @staticmethod
+    def _fully_muted(settings: Any) -> bool:
+        try:
+            return bool(settings.muted) and all(
+                (
+                    settings.level == discord.NotificationLevel.nothing,
+                    bool(settings.suppress_everyone),
+                    bool(settings.suppress_roles),
+                    not bool(settings.mobile_push),
+                    bool(settings.mute_scheduled_events),
+                    settings.notify_highlights == discord.HighlightLevel.disabled,
+                )
+            )
+        except (AttributeError, TypeError, ValueError):
+            return False
+
+    @staticmethod
+    def _icon_url(guild: Any) -> str | None:
+        icon = getattr(guild, "icon", None)
+        if not icon:
+            return None
+        try:
+            return str(icon.with_size(64).url)
+        except (AttributeError, TypeError, ValueError):
+            return str(getattr(icon, "url", icon))
+
+    def _guild_info(self, guild: Any, *, fresh: bool) -> dict[str, Any]:
+        guild_id = int(guild.id)
+        cached = self._cached_guild(guild_id)
+        settings = getattr(cached, "notification_settings", None) if cached else None
+        return {
+            "id": guild_id,
+            "name": str(getattr(guild, "name", None) or f"Servidor {guild_id}"),
+            "owner": self._is_owner(guild, fresh=fresh),
+            "muted": self._fully_muted(settings) if settings is not None else None,
+            "unavailable": bool(getattr(cached, "unavailable", False)) if cached else False,
+            "member_count": getattr(guild, "approximate_member_count", None),
+            "presence_count": getattr(guild, "approximate_presence_count", None),
+            "icon_url": self._icon_url(guild),
+        }
 
     async def get_stats(self):
-        return {"total": len(self.client.guilds)}
+        guilds, fresh, error_code = await self._guild_snapshot()
+        items = [self._guild_info(guild, fresh=fresh) for guild in guilds]
+        return {
+            "total": len(items),
+            "owners": sum(item["owner"] for item in items),
+            "muted": sum(item["muted"] is True for item in items),
+            "mute_unknown": sum(item["muted"] is None for item in items),
+            "unavailable": sum(item["unavailable"] for item in items),
+            "guild_ids": [item["id"] for item in items],
+            "owner_ids": [item["id"] for item in items if item["owner"]],
+            "fresh": fresh,
+            "warning": self._warning_for(error_code),
+        }
+
+    async def get_guilds_page(self, page: int = 0, page_size: int = 20):
+        guilds, fresh, error_code = await self._guild_snapshot()
+        items = [self._guild_info(guild, fresh=fresh) for guild in guilds]
+        items.sort(key=lambda item: (item["name"].casefold(), item["id"]))
+        page_items, page, pages = self._page(items, page, page_size)
+        return {
+            "items": page_items,
+            "total": len(items),
+            "page": page,
+            "pages": pages,
+            "fresh": fresh,
+            "warning": self._warning_for(error_code),
+        }
+
+    async def _resolve_guild(self, guild_id: int):
+        cached = self._cached_guild(guild_id)
+        if cached is not None and not bool(getattr(cached, "unavailable", False)):
+            return cached
+
+        fetched = await self.client.fetch_guild(int(guild_id), with_counts=False)
+        if bool(getattr(fetched, "unavailable", False)):
+            raise RuntimeError("servidor indisponivel")
+        return fetched
+
+    async def _mute_guild(self, guild: Any) -> str:
+        guild_id = int(guild.id)
+        try:
+            resolved = await self._resolve_guild(guild_id)
+        except discord.NotFound:
+            # Se ele sumiu entre a fotografia e a acao, nao ha mais notificacao
+            # para silenciar. Se ainda aparece na API, e uma falha real.
+            current, fresh, _ = await self._guild_snapshot(allow_cache=False)
+            if fresh and guild_id not in {int(item.id) for item in current}:
+                return "already"
+            raise RuntimeError("servidor ainda listado, mas nao pode ser acessado")
+
+        settings = resolved.notification_settings
+        if self._fully_muted(settings):
+            return "already"
+
+        updated = await settings.edit(
+            muted_until=True,
+            level=discord.NotificationLevel.nothing,
+            suppress_everyone=True,
+            suppress_roles=True,
+            mobile_push=False,
+            mute_scheduled_events=True,
+            notify_highlights=discord.HighlightLevel.disabled,
+        )
+        if updated is None or not self._fully_muted(updated):
+            raise RuntimeError("configuracao nao confirmada pelo Discord")
+        return "success"
+
+    async def _verify_left(self, target_ids: set[int]) -> tuple[int | None, str | None]:
+        guilds, fresh, error_code = await self._guild_snapshot(allow_cache=False)
+        if not fresh:
+            return None, error_code
+        current_ids = {int(guild.id) for guild in guilds}
+        return len(target_ids & current_ids), None
+
+    @staticmethod
+    def _empty_result(status: str = "ABORTADO") -> dict[str, Any]:
+        return {
+            "status": status,
+            "processed": 0,
+            "total": 0,
+            "success": 0,
+            "already_done": 0,
+            "failed": 0,
+            "remaining": None,
+            "rate_limits": 0,
+            "duration": 0.0,
+        }
+
+    async def _run_bulk(
+        self,
+        *,
+        guilds: list[Any],
+        operation: Callable[[Any], Awaitable[str | None]],
+        prefix: str,
+        request_id: str | None,
+        verify: Callable[[set[int]], Awaitable[tuple[int | None, str | None]]] | None,
+        protected_owners: int,
+        whitelisted: int,
+        config: BulkConfig | None = None,
+    ) -> dict[str, Any]:
+        config = config or BulkConfig()
+        total = len(guilds)
+        target_ids = {int(guild.id) for guild in guilds}
+        succeeded = already_done = failed = processed = rate_limits = 0
+        cancelled = aborted = False
+        abort_reason = ""
+        started_at = asyncio.get_running_loop().time()
+
+        emit_line(f"{prefix}_START:{total}", request_id)
+
+        for guild in guilds:
+            if self.cancelled:
+                cancelled = True
+                break
+
+            if processed and processed % config.BATCH_SIZE == 0:
+                pause = random.uniform(config.BATCH_PAUSE_MIN, config.BATCH_PAUSE_MAX)
+                emit_line(
+                    f"{prefix}_BATCH_PAUSE:{pause:.0f}:{processed}:{total}", request_id
+                )
+                if not await self._sleep_interruptibly(pause):
+                    cancelled = True
+                    break
+
+            outcome = "failed"
+            for attempt in range(self.MAX_TRANSIENT_ATTEMPTS):
+                if self.cancelled:
+                    cancelled = True
+                    break
+                try:
+                    outcome = await operation(guild) or "success"
+                    break
+                except asyncio.CancelledError:
+                    raise
+                except discord.NotFound:
+                    outcome = "already"
+                    break
+                except discord.CaptchaRequired:
+                    aborted = True
+                    abort_reason = "CAPTCHA exigido pelo Discord"
+                    break
+                except discord.RateLimited as error:
+                    rate_limits += 1
+                    retry_after = max(0.0, float(error.retry_after))
+                    aborted = True
+                    abort_reason = f"espera longa solicitada ({retry_after:.0f}s)"
+                    emit_line(
+                        f"{prefix}_RATELIMIT:{rate_limits}:{retry_after:.0f}", request_id
+                    )
+                    break
+                except discord.Forbidden:
+                    outcome = "failed"
+                    break
+                except discord.HTTPException as error:
+                    status = int(getattr(error, "status", 0) or 0)
+                    can_retry = attempt + 1 < self.MAX_TRANSIENT_ATTEMPTS
+                    if status == 429:
+                        rate_limits += 1
+                        retry_after = max(
+                            1.0, float(getattr(error, "retry_after", 1.0) or 1.0)
+                        )
+                        emit_line(
+                            f"{prefix}_RATELIMIT:{rate_limits}:{retry_after:.0f}",
+                            request_id,
+                        )
+                        if can_retry and retry_after <= config.MAX_BACKOFF:
+                            if not await self._sleep_interruptibly(retry_after):
+                                cancelled = True
+                                break
+                            continue
+                        aborted = True
+                        abort_reason = "rate limit persistente"
+                        break
+                    if can_retry and status >= 500:
+                        wait = min(
+                            config.INITIAL_BACKOFF * (2**attempt), config.MAX_BACKOFF
+                        )
+                        emit_line(
+                            f"{prefix}_ERROR:{self._error_code(error)}:RETRY:{wait:.0f}",
+                            request_id,
+                        )
+                        if not await self._sleep_interruptibly(wait):
+                            cancelled = True
+                            break
+                        continue
+                    outcome = "failed"
+                    break
+                except Exception:
+                    outcome = "failed"
+                    break
+
+            if cancelled:
+                break
+
+            processed += 1
+            label = self._ipc_label(f"{getattr(guild, 'name', 'servidor')} ({guild.id})")
+            if outcome == "success":
+                succeeded += 1
+                emit_line(f"{prefix}_PROGRESS:{processed}:{total}:{label}", request_id)
+            elif outcome == "already":
+                already_done += 1
+                emit_line(f"{prefix}_PROGRESS:{processed}:{total}:{label}", request_id)
+            else:
+                failed += 1
+                emit_line(f"{prefix}_FAILED:{processed}:{total}:{label}", request_id)
+
+            if aborted:
+                break
+
+            if processed < total and outcome == "success":
+                delay = random.uniform(config.MIN_DELAY, config.MAX_DELAY)
+                if not await self._sleep_interruptibly(delay):
+                    cancelled = True
+                    break
+
+        remaining: int | None = None
+        verification_error: str | None = None
+        if not cancelled and not aborted:
+            if verify is None:
+                # Cada mute bem-sucedido e validado pelo GuildSettings retornado.
+                remaining = failed
+            else:
+                remaining, verification_error = await verify(target_ids)
+
+        if cancelled:
+            status = "CANCELADO"
+        elif aborted:
+            status = "ABORTADO"
+        elif failed or remaining is None or remaining:
+            status = "PARCIAL"
+        else:
+            status = "COMPLETADO"
+
+        duration = asyncio.get_running_loop().time() - started_at
+        details = [
+            f"processados {processed}/{total}",
+            f"sucesso {succeeded}",
+            f"ja ajustados {already_done}",
+            f"falhas {failed}",
+        ]
+        if remaining is not None:
+            details.append(f"restantes {remaining}")
+        else:
+            details.append("verificacao indisponivel")
+        if protected_owners:
+            details.append(f"proprios protegidos {protected_owners}")
+        if whitelisted:
+            details.append(f"whitelist {whitelisted}")
+        if abort_reason:
+            details.append(abort_reason)
+        elif verification_error:
+            details.append(f"verificacao {verification_error.lower()}")
+        details.append(f"tempo {duration:.0f}s")
+
+        summary = "; ".join(details)
+        emit_line(f"{prefix}_RESULT:{status}:{summary}", request_id)
+        return {
+            "status": status,
+            "processed": processed,
+            "total": total,
+            "success": succeeded,
+            "already_done": already_done,
+            "failed": failed,
+            "remaining": remaining,
+            "rate_limits": rate_limits,
+            "duration": duration,
+        }
+
+    async def _bulk_from_fresh_snapshot(
+        self,
+        *,
+        action: str,
+        whitelist: set[int],
+        prefix: str,
+        request_id: str | None,
+    ) -> dict[str, Any]:
+        if self._bulk_lock.locked():
+            summary = "outra operacao de servidores ja esta em andamento nesta conta"
+            emit_line(f"{prefix}_RESULT:ABORTADO:{summary}", request_id)
+            return self._empty_result()
+
+        async with self._bulk_lock:
+            self.cancelled = False
+            guilds, fresh, error_code = await self._guild_snapshot(allow_cache=False)
+            if not fresh:
+                summary = (
+                    "lista atualizada indisponivel; nenhuma alteracao foi realizada "
+                    f"({(error_code or 'erro').lower()})"
+                )
+                emit_line(f"{prefix}_RESULT:ABORTADO:{summary}", request_id)
+                return self._empty_result()
+
+            whitelisted = sum(int(guild.id) in whitelist for guild in guilds)
+            protected_owners = 0
+            selected = []
+            for guild in guilds:
+                if int(guild.id) in whitelist:
+                    continue
+                if action == "LEAVE" and self._is_owner(guild, fresh=True):
+                    protected_owners += 1
+                    continue
+                selected.append(guild)
+
+            operation = (
+                (lambda guild: guild.leave())
+                if action == "LEAVE"
+                else self._mute_guild
+            )
+            verify = self._verify_left if action == "LEAVE" else None
+            return await self._run_bulk(
+                guilds=selected,
+                operation=operation,
+                prefix=prefix,
+                request_id=request_id,
+                verify=verify,
+                protected_owners=protected_owners,
+                whitelisted=whitelisted,
+            )
 
     async def leave_all_guilds(self, whitelist, request_id: str | None = None):
-        guilds = [g for g in self.client.guilds if g.id not in whitelist]
-        self.cancelled = False
-        return await safe_bulk_execute(
-            guilds,
-            lambda g: g.leave(),
-            lambda g: g.name,
-            lambda: self.cancelled,
-            "GUILD_LEAVE",
+        return await self._bulk_from_fresh_snapshot(
+            action="LEAVE",
+            whitelist={int(guild_id) for guild_id in whitelist},
+            prefix="GUILD_LEAVE",
             request_id=request_id,
         )
 
     async def mute_all_guilds(self, whitelist, request_id: str | None = None):
-        guilds = [g for g in self.client.guilds if g.id not in whitelist]
-        self.cancelled = False
-
-        async def mute_guild(guild):
-            from discord.enums import NotificationLevel
-
-            settings = guild.notification_settings
-            is_muted = settings.muted.muted
-            is_level_none = (
-                settings.level == NotificationLevel.nothing
-                or settings.level == NotificationLevel.none
-            )
-            is_suppress_all = settings.suppress_everyone and settings.suppress_roles
-
-            if is_muted and is_level_none and is_suppress_all:
-                return "SKIPPED"
-
-            await guild.notification_settings.edit(
-                muted_until=True,
-                level=NotificationLevel.nothing,
-                suppress_everyone=True,
-                suppress_roles=True,
-            )
-
-        return await safe_bulk_execute(
-            guilds,
-            mute_guild,
-            lambda g: g.name,
-            lambda: self.cancelled,
-            "GUILD_MUTE",
+        return await self._bulk_from_fresh_snapshot(
+            action="MUTE",
+            whitelist={int(guild_id) for guild_id in whitelist},
+            prefix="GUILD_MUTE",
             request_id=request_id,
         )

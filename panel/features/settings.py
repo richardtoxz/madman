@@ -14,20 +14,17 @@ async def handle_settings(interaction: discord.Interaction, manager, user_id: in
     state = getattr(interaction.client, "_settings_state", {})
     user_state = state.get(user_id, {})
     webhook_on = bool(user_state.get("webhook_url"))
-    captcha_on = bool(user_state.get("has_captcha_key"))
 
     webhook_status = "🟢 Configurado" if webhook_on else "🔴 Não configurado"
-    captcha_status = "🟢 Configurado" if captcha_on else "🔴 Não configurado"
 
     embed = discord.Embed(
         title="⚙️ Configurações Globais",
         description=(
             "Configurações compartilhadas entre Tracker e Quest Completer.\n\n"
-            f"**Webhook:** {webhook_status}\n"
-            f"**YesCaptcha:** {captcha_status}\n\n"
+            f"**Webhook:** {webhook_status}\n\n"
             "**Para que serve cada campo?**\n"
-            "• `Webhook URL` — Envia logs e notificações (usado por Tracker e Quest).\n"
-            "• `YesCaptcha API Key` — Resolve captcha automaticamente no resgate de quests."
+            "• `Webhook URL` — Envia logs e notificações (usado por Tracker e Quest).\n\n"
+            "Aceite e resgate de Quests permanecem manuais no Discord."
         ),
         color=0x2B2D31,
     )

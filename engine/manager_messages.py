@@ -72,7 +72,10 @@ class MessagesMixin:
 
             elif "RESULT:" in text:
                 parts = text.split(":", 2)
-                last_result = parts[-1] if len(parts) >= 2 else text
+                if len(parts) == 3:
+                    last_result = f"{parts[1]}:{parts[2]}"
+                else:
+                    last_result = parts[-1]
                 break
 
         return last_result
@@ -216,15 +219,24 @@ class MessagesMixin:
     async def close_single_dm(self, user_id: int, channel_id: int):
         p = self._get_proc(user_id)
         if not p:
-            return
-        await p.send(f"DM_CLOSE:{channel_id}")
+            return False, "Nao conectado"
+        raw = await p.send_and_wait(
+            f"DM_CLOSE:{channel_id}", "DM_CLOSE_RESULT:", timeout=30.0
+        )
+        if raw and raw.startswith("OK:"):
+            return True, "DM fechada"
+        return False, (raw or "Tempo limite ao fechar a DM")
 
     async def close_all_dms(self, user_id: int, update_callback=None):
         return await self._run_bulk_stream(
-            user_id, "DM_CLOSE_ALL", ["DM_CLOSE_ALL_"], update_callback, timeout=300
+            user_id, "DM_CLOSE_ALL", ["DM_CLOSE_ALL_"], update_callback, timeout=1800
         )
 
     async def leave_all_group_dms(self, user_id: int, update_callback=None):
         return await self._run_bulk_stream(
-            user_id, "GROUP_DM_LEAVE_ALL", ["GROUP_DM_LEAVE_ALL_"], update_callback, timeout=300
+            user_id,
+            "GROUP_DM_LEAVE_ALL",
+            ["GROUP_DM_LEAVE_ALL_"],
+            update_callback,
+            timeout=1800,
         )

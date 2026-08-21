@@ -1,278 +1,260 @@
-import aiohttp
+from __future__ import annotations
+
 import discord
 
-from .ipc import emit_line
+
+def _clip(value, limit: int, fallback: str = "") -> str:
+    text = str(value or fallback).replace("\x00", "").strip()
+    if len(text) <= limit:
+        return text
+    return text[: max(0, limit - 1)] + "…"
+
+
+def _asset_url(value) -> str | None:
+    return str(value) if value else None
 
 
 class TrackerDispatchMixin:
-    def _format_activity(self, act) -> str:
-        match act:
-            case discord.CustomActivity():
-                return f"> 💭 `{act.name}`"
-            case discord.Spotify():
-                return f"> 🎵 Ouvindo **{act.title}** de *{act.artist}*"
-            case _:
-                a_type = getattr(act, "type", None)
-                if a_type == discord.ActivityType.playing:
-                    return f"> 🎮 Jogando **{act.name}**"
-                if a_type == discord.ActivityType.streaming:
-                    return f"> 🎥 Transmitindo **{act.name}**"
-                if a_type == discord.ActivityType.listening:
-                    return f"> 🎧 Ouvindo **{act.name}**"
-                if a_type == discord.ActivityType.watching:
-                    return f"> 📺 Assistindo **{act.name}**"
-                if a_type == discord.ActivityType.competing:
-                    return f"> 🏆 Competindo em **{act.name}**"
-                return f"> 🕹️ Atividade: **{act.name}**"
+    def _format_activity(self, activity) -> str:
+        if isinstance(activity, discord.CustomActivity):
+            emoji = str(getattr(activity, "emoji", "") or "💭")
+            return _clip(f"> {emoji} {_clip(activity.name, 180, 'Status personalizado')}", 250)
+        if isinstance(activity, discord.Spotify):
+            return _clip(
+                f"> 🎵 Ouvindo **{activity.title}** de *{activity.artist}*", 250
+            )
+        if isinstance(activity, getattr(discord, "HangActivity", ())):
+            return _clip(f"> 🫂 Hang: **{getattr(activity, 'text', '') or 'Ativo'}**", 250)
+
+        activity_type = getattr(activity, "type", None)
+        labels = {
+            discord.ActivityType.playing: "🎮 Jogando",
+            discord.ActivityType.streaming: "🎥 Transmitindo",
+            discord.ActivityType.listening: "🎧 Ouvindo",
+            discord.ActivityType.watching: "📺 Assistindo",
+            discord.ActivityType.competing: "🏆 Competindo em",
+            getattr(discord.ActivityType, "hang", None): "🫂 Hang",
+        }
+        label = labels.get(activity_type, "🕹️ Atividade")
+        name = _clip(getattr(activity, "name", None), 150, "Desconhecida")
+        detail = _clip(getattr(activity, "details", None), 100)
+        suffix = f" — {detail}" if detail else ""
+        return _clip(f"> {label} **{name}**{suffix}", 250)
 
     async def _dispatch_voice_embed(
         self,
         title: str,
         color: int,
-        member: discord.Member,
-        channel: discord.VoiceChannel | None,
-        guild: discord.Guild,
+        member,
+        channel,
+        guild,
     ):
-        if not self.enabled or not self.webhook_url:
+        if not self.enabled:
             return
-
         embed = discord.Embed(
-            title=title, color=color, timestamp=discord.utils.utcnow()
+            title=_clip(title, 256), color=color, timestamp=discord.utils.utcnow()
         )
-        embed.set_author(name=member.name, icon_url=member.display_avatar.url)
-
-        embed.add_field(name="👤 Usuário", value=f"`{member.id}`", inline=False)
+        embed.set_author(
+            name=_clip(getattr(member, "name", None), 256, "Usuario"),
+            icon_url=_asset_url(getattr(member, "display_avatar", None)),
+        )
+        embed.add_field(name="👤 Usuario", value=f"`{member.id}`", inline=False)
 
         if channel:
             embed.add_field(
                 name="🏠 Servidor",
-                value=f"**{guild.name}**\n`{guild.id}`",
+                value=f"**{_clip(guild.name, 200)}**\n`{guild.id}`",
                 inline=True,
             )
             embed.add_field(
                 name="🔊 Canal de voz",
-                value=f"**{channel.name}**\n`{channel.id}`",
+                value=f"**{_clip(channel.name, 200)}**\n`{channel.id}`",
                 inline=True,
             )
-
-            others = [m for m in channel.members if m.id != member.id]
-            member_list = (
-                "\n".join(f"• `{m.id}`" for m in others) if others else "*Vazio*"
+            others = [item for item in getattr(channel, "members", []) if item.id != member.id]
+            visible = others[:25]
+            member_list = "\n".join(
+                f"• {_clip(getattr(item, 'display_name', item.name), 45)} (`{item.id}`)"
+                for item in visible
             )
+            if len(others) > len(visible):
+                member_list += f"\n• … e mais {len(others) - len(visible)}"
             embed.add_field(
-                name=f"👥 Usuários no canal ({len(others)})",
-                value=member_list,
+                name=f"👥 Usuarios no canal ({len(others)})",
+                value=_clip(member_list, 1024, "*Vazio*"),
                 inline=False,
             )
-
-            link = f"https://discord.com/channels/{guild.id}/{channel.id}"
             embed.add_field(
-                name="🔗 Link Do Canal",
-                value=f"[Clique para acessar]({link})",
+                name="🔗 Link do canal",
+                value=f"[Clique para acessar](https://discord.com/channels/{guild.id}/{channel.id})",
                 inline=False,
             )
         else:
             embed.add_field(
                 name="🏠 Servidor",
-                value=f"**{guild.name}**\n`{guild.id}`",
+                value=f"**{_clip(guild.name, 200)}**\n`{guild.id}`",
                 inline=False,
             )
-
         embed.set_footer(text="Madman Tracker")
-
-        try:
-            session = await self._get_webhook_session()
-            webhook = discord.Webhook.from_url(self.webhook_url, session=session)
-            await webhook.send(embed=embed, username="Madman Tracker")
-        except Exception as e:
-            emit_line(f"TRACKER:WEBHOOK_ERROR:{e}")
+        self._queue_webhook(embed, "voice")
 
     async def _dispatch_server_embed(
         self,
         title: str,
         color: int,
-        user: discord.User | discord.Member,
+        user,
         guild_name: str,
         guild_id: int,
     ):
-        if not self.enabled or not self.webhook_url:
+        if not self.enabled:
             return
-
         embed = discord.Embed(
-            title=title, color=color, timestamp=discord.utils.utcnow()
+            title=_clip(title, 256), color=color, timestamp=discord.utils.utcnow()
         )
-        embed.set_author(name=user.name, icon_url=user.display_avatar.url)
-
+        embed.set_author(
+            name=_clip(getattr(user, "name", None), 256, "Usuario"),
+            icon_url=_asset_url(getattr(user, "display_avatar", None)),
+        )
         embed.add_field(
-            name="👤 Usuário",
-            value=f"`{user.name} ({user.id})`",
+            name="👤 Usuario",
+            value=f"`{_clip(getattr(user, 'name', None), 100)} ({user.id})`",
             inline=False,
         )
         embed.add_field(
             name="🏠 Servidor",
-            value=f"**{guild_name}**\n`{guild_id}`",
+            value=f"**{_clip(guild_name, 200)}**\n`{guild_id}`",
             inline=False,
         )
-
         embed.set_footer(text="Madman Tracker")
+        self._queue_webhook(embed, "server")
 
-        try:
-            session = await self._get_webhook_session()
-            webhook = discord.Webhook.from_url(self.webhook_url, session=session)
-            await webhook.send(embed=embed, username="Madman Tracker")
-        except Exception as e:
-            emit_line(f"TRACKER:WEBHOOK_ERROR:{e}")
-
-    async def _dispatch_initial_state(self, member: discord.Member):
-        changes = []
-
-        status_str = str(member.status)
+    async def _dispatch_initial_state(self, member):
+        status = str(member.status)
         status_emojis = {"online": "🟢", "idle": "🌙", "dnd": "⛔", "offline": "⚫"}
-        emoji = status_emojis.get(status_str, "⚪")
-        changes.append(("Situação Atual", f"{emoji} `{status_str.title()}`"))
-        self.state.status = status_str
+        changes = [("Situacao atual", f"{status_emojis.get(status, '⚪')} `{status.title()}`")]
+        self.state.status = status
 
-        current_acts = [self._format_activity(act) for act in member.activities]
-        if current_acts:
-            acts_text = "\n".join(current_acts)
-            changes.append(("Atividades", acts_text))
-            self.state.activities_repr = current_acts
+        activities = [self._format_activity(activity) for activity in member.activities]
+        if activities:
+            changes.append(("Atividades", "\n".join(activities)))
+        self.state.activities_repr = activities
+        devices = self._device_statuses(member)
+        self.state.devices_repr = devices
+        if devices:
+            changes.append(("Dispositivos", " • ".join(devices)))
 
         await self._dispatch_log(
-            title="🔍 Tracker Iniciado",
+            title="📡 Estado Inicial Detectado",
             color=0xD4A5A5,
-            description="O alvo está no momento:",
             changes=changes,
             user=member,
         )
-
-        vs = member.voice
-        if vs and vs.channel:
-            self.state.in_voice_channel_id = vs.channel.id
-            self.tracked_voice_channels.add(vs.channel.id)
-
+        voice_state = member.voice
+        if voice_state and voice_state.channel:
+            self.state.in_voice_channel_id = voice_state.channel.id
+            self.tracked_voice_channels.add(voice_state.channel.id)
             await self._dispatch_voice_embed(
                 title="🔊 Conectado no Canal de Voz",
                 color=0x9DF9EF,
                 member=member,
-                channel=vs.channel,
+                channel=voice_state.channel,
                 guild=member.guild,
             )
 
-    async def _get_webhook_session(self):
-        if self._webhook_session is None or self._webhook_session.closed:
-            self._webhook_session = aiohttp.ClientSession()
-        return self._webhook_session
-
     async def _dispatch_log(
         self,
-        title: str,
-        color: int,
-        changes: list = None,
-        description: str = None,
-        user: discord.User = None,
-        footer: str = None,
+        title: str = "Madman Tracker",
+        color: int = 0x95A5A6,
+        changes: list | None = None,
+        description: str | None = None,
+        user=None,
+        footer: str | None = None,
+        event_type: str = "general",
     ):
-        if not self.enabled or not self.webhook_url:
+        if not self.enabled:
             return
-
         embed = discord.Embed(
-            title=title,
+            title=_clip(title, 256),
             color=color,
-            description=description,
+            description=_clip(description, 4096) or None,
             timestamp=discord.utils.utcnow(),
         )
-
         if user:
-            embed.set_author(name=user.name, icon_url=user.display_avatar.url)
-
-        if changes:
-            for name, value in changes:
-                embed.add_field(name=name, value=value, inline=False)
-
-        f_text = "Madman Tracker"
-        if footer:
-            f_text = f"{footer} • {f_text}"
-        embed.set_footer(text=f_text)
-
-        try:
-            session = await self._get_webhook_session()
-            webhook = discord.Webhook.from_url(self.webhook_url, session=session)
-            await webhook.send(embed=embed, username="Madman Tracker")
-        except Exception as e:
-            emit_line(f"TRACKER:WEBHOOK_ERROR:{e}")
+            embed.set_author(
+                name=_clip(getattr(user, "name", None), 256, "Usuario"),
+                icon_url=_asset_url(getattr(user, "display_avatar", None)),
+            )
+        for name, value in (changes or [])[:25]:
+            embed.add_field(
+                name=_clip(name, 256, "Alteracao"),
+                value=_clip(value, 1024, "—"),
+                inline=False,
+            )
+        footer_text = f"{_clip(footer, 1950)} • Madman Tracker" if footer else "Madman Tracker"
+        embed.set_footer(text=footer_text)
+        self._queue_webhook(embed, event_type)
 
     async def _on_buffer_flush(self, channel_id: int, messages: list[dict]):
-        if not self.enabled or not self.webhook_url or not messages:
+        if not self.enabled or not messages:
             return
-
-        ch = self.client.get_channel(channel_id)
-        channel_name = getattr(ch, "name", "DM") if ch else "DM"
-        guild_name = (
-            getattr(ch.guild, "name", "DM")
-            if ch and hasattr(ch, "guild") and ch.guild
-            else "DM"
-        )
-
-        image_exts = (".png", ".jpg", ".jpeg", ".gif", ".webp")
+        channel = self.client.get_channel(channel_id)
+        channel_name = getattr(channel, "name", "DM") if channel else "DM"
+        guild = getattr(channel, "guild", None) if channel else None
+        guild_name = getattr(guild, "name", "DM")
         first_image_url = None
         lines = []
 
-        for m in messages:
-            ts = m.get("timestamp", "")
-            content = m.get("content", "")
-            attachments = m.get("attachments", [])
-            stickers = m.get("stickers", [])
+        for message in messages:
+            line_parts = [f"`{message.get('timestamp', '')}`"]
+            reply = message.get("reply") or {}
+            if reply:
+                reply_author = _clip(reply.get("author_name"), 40, "mensagem")
+                reply_content = _clip(reply.get("content"), 140, "sem cache")
+                line_parts.append(f"↪️ Em resposta a **{reply_author}**: {reply_content}")
+            content = _clip(message.get("content"), 900)
+            if content:
+                line_parts.append(content)
 
-            line = f"`{ts}` {content}" if content else f"`{ts}`"
-
-            for url in attachments:
-                clean = url.split("?")[0]
-                if clean.lower().endswith(image_exts) and first_image_url is None:
+            for attachment in message.get("attachments", []):
+                url = attachment.get("url", "")
+                content_type = str(attachment.get("content_type") or "")
+                filename = _clip(attachment.get("filename"), 100, "arquivo")
+                if content_type.startswith("image/") and first_image_url is None:
                     first_image_url = url
-                else:
-                    filename = clean.rsplit("/", 1)[-1]
-                    line += f"\n> 📎 `{filename}`"
+                line_parts.append(f"> 📎 `{filename}` ({attachment.get('size', 0)} bytes)")
+            for sticker in message.get("stickers", []):
+                if sticker.get("url") and first_image_url is None:
+                    first_image_url = sticker["url"]
+                line_parts.append(f"> 🎭 Sticker: **{_clip(sticker.get('name'), 80)}**")
+            for item in message.get("embeds", [])[:2]:
+                summary = _clip(item.get("title") or item.get("description"), 180)
+                if summary:
+                    line_parts.append(f"> 🧩 Embed: {summary}")
+            poll = message.get("poll")
+            if poll:
+                line_parts.append(f"> 📊 Enquete: **{_clip(poll.get('question'), 180)}**")
+            if len(line_parts) == 1:
+                line_parts.append("*[mensagem sem texto]*")
+            lines.append("\n".join(line_parts))
 
-            for s in stickers:
-                s_url = s.get("url")
-                if s_url and first_image_url is None:
-                    first_image_url = s_url
-                else:
-                    label = f"> 🎭 **[{s['name']}]**" + (
-                        " *(Lottie)*" if not s_url else ""
-                    )
-                    line += f"\n{label}"
-
-            lines.append(line)
-
-        content_text = "\n".join(lines)
-        if len(content_text) > 3500:
-            content_text = content_text[:3500] + "\n\n*... [histórico truncado]*"
-
-        first_msg = messages[0]
+        content_text = _clip("\n\n".join(lines), 3800)
+        first = messages[0]
         embed = discord.Embed(
-            title="Mensagem Recebida",
+            title="Mensagem Enviada",
             color=0xA8E6CF,
             description=content_text,
             timestamp=discord.utils.utcnow(),
         )
         embed.set_author(
-            name=first_msg.get("author_name", "Unknown"),
-            icon_url=first_msg.get("author_avatar", "") or None,
+            name=_clip(first.get("author_name"), 256, "Usuario"),
+            icon_url=first.get("author_avatar") or None,
         )
         embed.add_field(
-            name="📍 Local", value=f"`{guild_name}` ➔ `#{channel_name}`", inline=False
+            name="📍 Local",
+            value=f"`{_clip(guild_name, 150)}` ➔ `#{_clip(channel_name, 150)}`",
+            inline=False,
         )
-
         if first_image_url:
             embed.set_image(url=first_image_url)
-
-        embed.set_footer(text="Madman Tracker")
-
-        try:
-            session = await self._get_webhook_session()
-            webhook = discord.Webhook.from_url(self.webhook_url, session=session)
-            await webhook.send(embed=embed, username="Madman Tracker")
-        except Exception as e:
-            emit_line(f"TRACKER:WEBHOOK_ERROR:message_batch:{e}")
+        embed.set_footer(text=f"{len(messages)} mensagem(ns) • Madman Tracker")
+        self._queue_webhook(embed, "message_batch")

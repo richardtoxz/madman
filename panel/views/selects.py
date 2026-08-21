@@ -86,8 +86,8 @@ class SessionCleanSelect(BaseSelect):
                 value="clean_dm",
             ),
             discord.SelectOption(
-                label="Limpar Todas DMs",
-                description="Deletar em todas as DMs.",
+                label="Limpar Conversas Privadas",
+                description="Deletar em DMs e grupos.",
                 emoji="<:cleanall:1472006170624659580>",
                 value="clean_all_dms",
             ),
@@ -124,6 +124,12 @@ class SocialServersSelect(BaseSelect):
                 description="Sair de todos os servers.",
                 emoji="<:guild:1472004351039111228>",
                 value="leave_servers",
+            ),
+            discord.SelectOption(
+                label="Whitelist de Servidores",
+                description="Escolher servidores protegidos.",
+                emoji="🛡️",
+                value="guild_whitelist",
             ),
             discord.SelectOption(
                 label="Pedidos Pendentes",
@@ -166,8 +172,14 @@ class ToolsSelect(BaseSelect):
                 value="voice_follow",
             ),
             discord.SelectOption(
+                label="Controle de Voz",
+                description="Ver estado, sair ou parar follow.",
+                emoji="🎙️",
+                value="voice_control",
+            ),
+            discord.SelectOption(
                 label="Proteções",
-                description="Ativar proteções (Anti-raid/DM).",
+                description="Configurar protecoes anti-raid/DM.",
                 emoji="<:protection:1475141240420044901>",
                 value="protection",
             ),
@@ -194,8 +206,8 @@ class SettingsSelect(BaseSelect):
     def __init__(self, manager, *, custom_id: str | None = None):
         options = [
             discord.SelectOption(
-                label="Webhook & Captcha",
-                description="Configurar webhook e YesCaptcha API key.",
+                label="Webhook",
+                description="Configurar logs do Tracker e Quest Completer.",
                 emoji="<:configquest:1484293909923233824>",
                 value="settings",
             ),

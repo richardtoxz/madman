@@ -6,8 +6,9 @@ from .social import (
     handle_unblock_all,
     handle_mute_servers,
     handle_leave_servers,
+    handle_guild_whitelist,
 )
-from .voice import handle_voice_afk, handle_voice_follow
+from .voice import handle_voice_afk, handle_voice_control, handle_voice_follow
 from .protection import handle_protection
 from .tracker import handle_tracker
 from .quest import handle_quest
@@ -22,11 +23,13 @@ HANDLER_MAP = {
     "close_dms": handle_close_dms,
     "mute_servers": handle_mute_servers,
     "leave_servers": handle_leave_servers,
+    "guild_whitelist": handle_guild_whitelist,
     "pending": handle_pending_requests,
     "clean_friends": handle_clean_friends,
     "unblock": handle_unblock_all,
     "voice_afk": handle_voice_afk,
     "voice_follow": handle_voice_follow,
+    "voice_control": handle_voice_control,
     "protection": handle_protection,
     "tracker": handle_tracker,
     "quest": handle_quest,

@@ -1,44 +1,77 @@
+"""Instala as dependencias do Madman em ambientes de importacao isolados."""
+
+from __future__ import annotations
+
+import shutil
 import subprocess
-import os
 import sys
+import tempfile
+from pathlib import Path
 
 
-def install_libs():
-    print("Installing official discord.py for the Control Bot...")
-    subprocess.run(
-        [sys.executable, "-m", "pip", "install", "discord.py", "-t", "panel/lib"]
+PROJECT_ROOT = Path(__file__).resolve().parent
+
+
+def _pip_install(requirements: Path, target: Path | None = None) -> None:
+    command = [
+        sys.executable,
+        "-m",
+        "pip",
+        "install",
+        "--upgrade",
+        "-r",
+        str(requirements),
+    ]
+    if target is not None:
+        command.extend(("--target", str(target)))
+    subprocess.run(command, cwd=PROJECT_ROOT, check=True)
+
+
+def _replace_isolated_environment(requirements_name: str, target_name: str) -> None:
+    """Instala em staging e so substitui o ambiente antigo apos sucesso."""
+
+    requirements = PROJECT_ROOT / requirements_name
+    target = PROJECT_ROOT / target_name
+    target.parent.mkdir(parents=True, exist_ok=True)
+    staged = Path(
+        tempfile.mkdtemp(prefix=f".{target.name}-staging-", dir=target.parent)
     )
+    backup = target.with_name(f".{target.name}-backup")
 
-    print("\nInstalling discord.py-self for the Selfbot...")
+    try:
+        _pip_install(requirements, staged)
+        if backup.exists():
+            shutil.rmtree(backup)
+        if target.exists():
+            target.replace(backup)
+        staged.replace(target)
+    except Exception:
+        if not target.exists() and backup.exists():
+            backup.replace(target)
+        shutil.rmtree(staged, ignore_errors=True)
+        raise
+    else:
+        shutil.rmtree(backup, ignore_errors=True)
 
-    subprocess.run(
-        [sys.executable, "-m", "pip", "install", "discord.py-self", "-t", "worker/lib"]
-    )
 
-    print("\nConcluído! Use 'python -m panel.main' para iniciar.")
+def install_libs() -> None:
+    if sys.prefix == sys.base_prefix:
+        raise SystemExit(
+            "Ative o ambiente virtual antes de instalar: source .venv/bin/activate"
+        )
 
-    print("\nPatching Python 3.13 audioop compatibility...")
-    patch_audioop()
+    print("[1/3] Instalando dependencias compartilhadas...")
+    _pip_install(PROJECT_ROOT / "requirements.txt")
 
+    print("\n[2/3] Instalando discord.py do painel em panel/lib...")
+    _replace_isolated_environment("requirements-panel.txt", "panel/lib")
 
-def patch_audioop():
-    paths = ["panel/lib/discord/player.py", "worker/lib/discord/player.py"]
-    for p in paths:
-        if os.path.exists(p):
-            with open(p, "r", encoding="utf-8") as f:
-                content = f.read()
+    print("\n[3/3] Instalando discord.py-self do worker em worker/lib...")
+    _replace_isolated_environment("requirements-worker.txt", "worker/lib")
 
-            if (
-                "import audioop" in content
-                and "try:\n    import audioop" not in content
-            ):
-                content = content.replace(
-                    "import audioop",
-                    "try:\n    import audioop\nexcept ImportError:\n    audioop = None",
-                )
-                with open(p, "w", encoding="utf-8") as f:
-                    f.write(content)
-                print(f"Patched: {p}")
+    print("\nInstalacao concluida.")
+    print(f"Valide com: {sys.executable} scripts/check_environment.py")
+    print("Inicie com: python -m panel.main")
 
 
 if __name__ == "__main__":

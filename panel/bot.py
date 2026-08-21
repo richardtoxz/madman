@@ -6,6 +6,8 @@ from discord.ext import commands
 from .config import ID_CANAL_PAINEL, ID_CANAL_SOBRE
 from .views.control_view import PersistentControlView
 from .views.sobre_view import SobreView
+from .shared.stealth_dm import shutdown_stealth_tasks
+from .shared.tasks import cancel_panel_tasks
 
 log = logging.getLogger(__name__)
 
@@ -79,3 +81,18 @@ class ControlBot(commands.Bot):
                 await self._setup_static_channel(channel_id, view, label)
             except Exception:
                 log.exception("[%s] Falha ao configurar painel.", label)
+
+    async def close(self):
+        shutdown = getattr(self.manager, "shutdown", None)
+        try:
+            if shutdown is not None:
+                await shutdown()
+        finally:
+            try:
+                await cancel_panel_tasks(self)
+                await shutdown_stealth_tasks()
+                sessions = getattr(self, "_quest_sessions", None)
+                if sessions is not None:
+                    sessions.clear()
+            finally:
+                await super().close()

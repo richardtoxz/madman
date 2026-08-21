@@ -36,16 +36,24 @@ class QuestWebhookDispatchMixin:
         )
         if fields:
             for name, value, inline in fields:
-                embed.add_field(name=name, value=value, inline=inline)
+                embed.add_field(
+                    name=str(name)[:256],
+                    value=str(value)[:1024] or "-",
+                    inline=inline,
+                )
 
         embed.set_footer(text="Madman Quest Logger")
 
         try:
             session = await self._get_webhook_session()
             webhook = discord.Webhook.from_url(self.webhook_url, session=session)
-            await webhook.send(embed=embed, username="Madman Quest")
+            await webhook.send(
+                embed=embed,
+                username="Madman Quest",
+                allowed_mentions=discord.AllowedMentions.none(),
+            )
         except Exception as exc:
-            emit_line(f"QUEST:WEBHOOK_ERROR:{exc}")
+            emit_line(f"QUEST:WEBHOOK_ERROR:{type(exc).__name__}")
 
     async def dispatch_quest_start(self, quest, task_name: str):
         await self._dispatch_webhook_embed(
@@ -84,29 +92,6 @@ class QuestWebhookDispatchMixin:
             fields=[
                 ("Quest", f"{quest.quest_name}\n`{quest.id}`", False),
                 ("Tipo", task_name, True),
-            ],
-        )
-
-    async def dispatch_quest_reward(self, *, quest, success: bool, detail: str | None = None):
-        await self._dispatch_webhook_embed(
-            title="Resgate de Recompensa",
-            color=0x57F287 if success else 0xED4245,
-            description=detail,
-            fields=[
-                ("Quest", f"{quest.quest_name}\n`{quest.id}`", False),
-                ("Status", "Sucesso" if success else "Falha", True),
-            ],
-        )
-
-    async def dispatch_quest_captcha(self, *, service: str, sitekey: str | None, status: str):
-        site = sitekey or "n/a"
-        await self._dispatch_webhook_embed(
-            title="Captcha em Quest",
-            color=0xED4245,
-            fields=[
-                ("Servico", service, True),
-                ("Status", status, True),
-                ("Sitekey", f"`{site}`", False),
             ],
         )
 

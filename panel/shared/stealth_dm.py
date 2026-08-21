@@ -6,6 +6,14 @@ import time
 from .sweeper import GHOST_SIGNATURE, sweep_orphaned_messages
 
 logger = logging.getLogger(__name__)
+_background_tasks: set[asyncio.Task] = set()
+
+
+def _track(coroutine, *, name: str) -> asyncio.Task:
+    task = asyncio.create_task(coroutine, name=name)
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
+    return task
 
 
 async def cleanup_stealth_messages(user: discord.User, bot_id: int):
@@ -19,10 +27,30 @@ async def send_stealth_dm(
     color: int = 0x2B2D31,
     delay: int = 120,
 ):
-    user = interaction.user
-    bot_id = interaction.client.user.id
+    return await send_stealth_dm_to_user(
+        interaction.user,
+        interaction.client.user.id,
+        title,
+        description,
+        color=color,
+        delay=delay,
+    )
 
-    asyncio.create_task(cleanup_stealth_messages(user, bot_id))
+
+async def send_stealth_dm_to_user(
+    user: discord.User,
+    bot_id: int,
+    title: str,
+    description: str,
+    color: int = 0x2B2D31,
+    delay: int = 120,
+):
+    """Send a temporary DM without retaining the originating interaction."""
+
+    _track(
+        cleanup_stealth_messages(user, bot_id),
+        name=f"stealth-sweep-{getattr(user, 'id', 0)}",
+    )
 
     target_timestamp = int(time.time() + delay)
 
@@ -44,10 +72,34 @@ async def send_stealth_dm(
             except Exception as e:
                 logger.error(f"Erro ao deletar mensagem stealth: {e}")
 
-        asyncio.create_task(delete_after())
+        _track(
+            delete_after(),
+            name=f"stealth-delete-{getattr(dm_message, 'id', 0)}",
+        )
         return True
     except discord.Forbidden:
         return False
     except Exception as e:
         logger.error(f"Erro ao enviar DM stealth: {e}")
         return False
+
+
+def schedule_stealth_cleanup(user: discord.User, bot_id: int) -> asyncio.Task:
+    return _track(
+        cleanup_stealth_messages(user, bot_id),
+        name=f"stealth-sweep-{getattr(user, 'id', 0)}",
+    )
+
+
+async def shutdown_stealth_tasks() -> None:
+    current = asyncio.current_task()
+    pending = [
+        task
+        for task in tuple(_background_tasks)
+        if task is not current and not task.done()
+    ]
+    for task in pending:
+        task.cancel()
+    if pending:
+        await asyncio.gather(*pending, return_exceptions=True)
+    _background_tasks.clear()
