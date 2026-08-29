@@ -43,9 +43,10 @@ class MessageCleanupMixin:
 
     def _result_text(self, stats: dict, remaining: int, initial_total: int) -> str:
         failures = int(stats["falhas"]) + int(stats["proibidas"])
+        ignored = int(stats["ignoradas"])
         unavailable = len(self._unavailable_sources)
         observed_total = max(
-            initial_total,
+            initial_total - ignored,
             int(stats["deletadas"])
             + int(stats["ausentes"])
             + failures
@@ -62,7 +63,8 @@ class MessageCleanupMixin:
 
         return (
             f"RESULT:{status}:Deletadas {stats['deletadas']} de {observed_total}. "
-            f"Ja ausentes {stats['ausentes']}; falhas {failures}; "
+            f"Ja ausentes {stats['ausentes']}; ignoradas {ignored}; "
+            f"falhas {failures}; "
             f"restantes {remaining}; fontes indisponiveis {unavailable}."
         )
 
@@ -79,7 +81,9 @@ class MessageCleanupMixin:
         emit_line(f"INFO:TARGET_TYPE:{target_type}", request_id)
         emit_line("STATUS:CONTANDO_SEARCH", request_id)
 
-        total = await self._count_destination_messages(channel, request_id)
+        # A confirmacao usa apenas a primeira pagina da busca. Se o indice ainda
+        # estiver incompleto, a cobertura via history acontece depois do START.
+        total = await self._get_quick_count(channel, request_id)
         emit_line(f"TOTAL:{total}", request_id)
         emit_line("STATUS:WAITING_START", request_id)
         if not await self._wait_for_start():
@@ -178,9 +182,10 @@ class MessageCleanupMixin:
                     break
 
         failures = int(grand_stats["falhas"]) + int(grand_stats["proibidas"])
+        ignored = int(grand_stats["ignoradas"])
         unavailable = len(self._unavailable_sources)
         observed_total = max(
-            grand_initial_total,
+            grand_initial_total - ignored,
             int(grand_stats["deletadas"])
             + int(grand_stats["ausentes"])
             + failures
@@ -198,7 +203,7 @@ class MessageCleanupMixin:
         emit_line(
             f"MSG_CLEAN_ALL_DMS_RESULT:{status}:Deletadas "
             f"{grand_stats['deletadas']} de {observed_total}; "
-            f"falhas {failures}; restantes {grand_remaining}; "
+            f"ignoradas {ignored}; falhas {failures}; restantes {grand_remaining}; "
             f"fontes indisponiveis {unavailable}; conversas {total_dms}.",
             request_id,
         )

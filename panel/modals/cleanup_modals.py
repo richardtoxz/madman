@@ -96,7 +96,12 @@ class CleanDMModal(ui.Modal, title="Limpar Mensagens (DM/Canal)"):
             elif status == "WAITING_START":
                 if total is not None:
                     channel_info["total"] = total
-                embed.description = f"**Alvo:** {channel_info['name']}\n**Total encontrado:** {channel_info['total']} mensagens.\n\nClique abaixo para iniciar a limpeza."
+                embed.description = (
+                    f"**Alvo:** {channel_info['name']}\n"
+                    f"**Estimativa inicial:** {channel_info['total']} mensagens.\n"
+                    "O total pode ser ajustado durante a limpeza.\n\n"
+                    "Clique abaixo para iniciar."
+                )
                 embed.color = 0xF1C40F
                 view.total_ready = True
                 view.update_buttons()

@@ -3,10 +3,28 @@ from __future__ import annotations
 import asyncio
 import random
 from collections.abc import AsyncIterable, Iterable
+from dataclasses import dataclass
 
 import discord
 
 from .ipc import emit_line
+
+
+@dataclass(slots=True)
+class _SearchScanState:
+    expected: int | None = None
+    returned: int = 0
+    indexing: bool = False
+    failed: bool = False
+
+    @property
+    def complete(self) -> bool:
+        return (
+            not self.failed
+            and self.expected is not None
+            and not self.indexing
+            and self.returned >= self.expected
+        )
 
 
 class MessageStateMixin:
@@ -284,30 +302,36 @@ class MessageLookupMixin:
         return code
 
     async def _count_search_messages(
-        self, destination, request_id: str | None = None
+        self,
+        destination,
+        request_id: str | None = None,
+        *,
+        empty_is_zero: bool = False,
+        allow_incomplete: bool = False,
     ) -> int | None:
-        expected: int | None = None
-        returned = 0
-        deletable = 0
-        indexing = False
-
         try:
             async for message in destination.search(
-                authors=[self.client.user], limit=None, oldest_first=False
+                authors=[self.client.user], limit=1, oldest_first=False
             ):
                 if self.cancelled:
-                    return deletable
-                returned += 1
-                if expected is None:
-                    value = getattr(message, "total_results", None)
-                    expected = int(value) if value is not None else None
-                indexing = indexing or bool(
+                    return 0
+
+                value = getattr(message, "total_results", None)
+                expected = int(value) if value is not None else None
+                indexing = bool(
                     getattr(message, "doing_deep_historical_index", False)
                 )
-                if self._is_deletable_message(message):
-                    deletable += 1
-                if returned % 100 == 0:
-                    emit_line(f"COUNT_PROGRESS:{deletable}", request_id)
+                if expected is None or indexing:
+                    reason = "INDEXING" if indexing else "INCOMPLETE"
+                    emit_line(f"INFO:SEARCH_FALLBACK:{reason}", request_id)
+                    if allow_incomplete and expected is not None:
+                        return expected
+                    return None
+
+                # A API inclui o total da consulta em cada resultado. Consumir os
+                # demais itens apenas para contar transformava esta etapa em uma
+                # varredura completa antes de a limpeza sequer ser autorizada.
+                return expected
         except (discord.HTTPException, discord.RateLimited, TypeError, ValueError) as error:
             emit_line(
                 f"INFO:SEARCH_FALLBACK:{self._lookup_error_code(error)}", request_id
@@ -321,13 +345,13 @@ class MessageLookupMixin:
             )
             return None
 
-        # Sem primeiro resultado nao ha como distinguir busca vazia de indice ainda
-        # indisponivel. O historico completo faz essa verificacao sem suposicoes.
-        if expected is None or indexing or returned < expected:
-            reason = "INDEXING" if indexing else "INCOMPLETE"
-            emit_line(f"INFO:SEARCH_FALLBACK:{reason}", request_id)
-            return None
-        return deletable
+        # Na verificacao final, a ausencia de resultados significa que nao restou
+        # mensagem indexada. Na contagem inicial, mantemos o fallback conservador
+        # para nao ignorar uma conversa cujo indice ainda nao tenha resultados.
+        if empty_is_zero or allow_incomplete:
+            return 0
+        emit_line("INFO:SEARCH_FALLBACK:INCOMPLETE", request_id)
+        return None
 
     async def _count_channel_history(
         self, channel, request_id: str | None = None
@@ -504,16 +528,34 @@ class MessageLookupMixin:
             return False
         return await self._channel_history_has_message(destination, request_id)
 
-    async def _iter_search_messages(self, destination, request_id: str | None = None):
+    async def _iter_search_messages(
+        self,
+        destination,
+        request_id: str | None = None,
+        *,
+        state: _SearchScanState | None = None,
+    ):
+        state = state or _SearchScanState()
         try:
             async for message in destination.search(
                 authors=[self.client.user], limit=None, oldest_first=False
             ):
                 if self.cancelled:
                     return
-                if self._is_deletable_message(message):
+                state.returned += 1
+                if state.expected is None:
+                    value = getattr(message, "total_results", None)
+                    state.expected = int(value) if value is not None else None
+                state.indexing = state.indexing or bool(
+                    getattr(message, "doing_deep_historical_index", False)
+                )
+                # A consulta ja esta filtrada pelo usuario. Encaminhar tambem os
+                # eventos de sistema permite que o progresso alcance total_results
+                # e que o resumo os desconte como itens nao apagaveis.
+                if self._is_my_message(message):
                     yield message
         except (discord.HTTPException, discord.RateLimited, TypeError, ValueError) as error:
+            state.failed = True
             emit_line(
                 f"INFO:SEARCH_DELETE_FALLBACK:{self._lookup_error_code(error)}",
                 request_id,
@@ -521,6 +563,7 @@ class MessageLookupMixin:
         except asyncio.CancelledError:
             raise
         except Exception as error:
+            state.failed = True
             emit_line(
                 f"INFO:SEARCH_DELETE_FALLBACK:{type(error).__name__}", request_id
             )
@@ -532,7 +575,7 @@ class MessageLookupMixin:
             async for message in channel.history(limit=None, oldest_first=False):
                 if self.cancelled:
                     return
-                if self._is_deletable_message(message):
+                if self._is_my_message(message):
                     yield message
         except (discord.Forbidden, discord.NotFound, discord.HTTPException, discord.RateLimited) as error:
             code = self._mark_unavailable(
@@ -558,18 +601,38 @@ class MessageLookupMixin:
     async def _iter_destination_messages(
         self, destination, request_id: str | None = None, *, guild: bool = False
     ):
-        # Search encontra rapidamente mensagens antigas e de threads. Depois de
-        # apaga-las, history(limit=None) percorre apenas o que restou e cobre
-        # indexacao incompleta, anexos, stickers e qualquer conteudo/data.
-        async for message in self._iter_search_messages(destination, request_id):
+        # Search encontra rapidamente apenas as mensagens do usuario. Quando a
+        # propria resposta confirma que todos os resultados foram percorridos,
+        # repetir a conversa inteira via history() seria uma segunda varredura.
+        search_state = _SearchScanState()
+        seen_ids: set[int] = set()
+        async for message in self._iter_search_messages(
+            destination, request_id, state=search_state
+        ):
+            message_id = getattr(message, "id", None)
+            if message_id is not None:
+                seen_ids.add(int(message_id))
             yield message
 
+        if self.cancelled:
+            return
+        if search_state.complete:
+            emit_line("STATUS:SEARCH_COMPLETO", request_id)
+            return
+
+        # Mantem a garantia de cobertura quando a busca falha, esta indexando ou
+        # retorna menos itens que total_results.
         emit_line("STATUS:VERIFICANDO_HISTORY_COMPLETO", request_id)
         if guild:
             async for target in self._iter_guild_targets(destination, request_id):
                 async for message in self._iter_channel_history_messages(
                     target, request_id
                 ):
+                    message_id = getattr(message, "id", None)
+                    if message_id is not None and int(message_id) in seen_ids:
+                        continue
+                    if message_id is not None:
+                        seen_ids.add(int(message_id))
                     yield message
                 if self.cancelled:
                     return
@@ -577,12 +640,23 @@ class MessageLookupMixin:
             async for message in self._iter_channel_history_messages(
                 destination, request_id
             ):
+                message_id = getattr(message, "id", None)
+                if message_id is not None and int(message_id) in seen_ids:
+                    continue
+                if message_id is not None:
+                    seen_ids.add(int(message_id))
                 yield message
 
     async def _get_quick_count(
         self, channel, request_id: str | None = None
     ) -> int:
-        return await self._count_destination_messages(channel, request_id)
+        count = await self._count_search_messages(
+            channel,
+            request_id,
+            empty_is_zero=True,
+            allow_incomplete=True,
+        )
+        return count or 0
 
     async def _resolve_channel(self, target_id: int):
         channel = self.client.get_channel(target_id)
@@ -636,6 +710,11 @@ class MessageLookupMixin:
     async def _verify_clean(
         self, destination, request_id: str | None = None, *, guild: bool = False
     ) -> int:
-        return await self._count_destination_messages(
-            destination, request_id, guild=guild
+        count = await self._count_search_messages(
+            destination, request_id, empty_is_zero=True
         )
+        if count is not None:
+            return count
+        if guild:
+            return await self._count_guild_history(destination, request_id)
+        return await self._count_channel_history(destination, request_id)
