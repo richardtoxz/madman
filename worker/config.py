@@ -10,11 +10,11 @@ class ControlState:
 
 
 class MessageConfig:
-    BASE_DELAY = 0.4
-    MIN_DELAY = 0.3
+    BASE_DELAY = 0.07
+    MIN_DELAY = 0.07
     MAX_DELAY = 4.0
     BACKOFF_MULTIPLIER = 2.0
-    COOLDOWN_STEP = 0.10
+    COOLDOWN_STEP = 0.0
     COOLDOWN_AFTER = 5
     MAX_429_CONSECUTIVE = 5
 
