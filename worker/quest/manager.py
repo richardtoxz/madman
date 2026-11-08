@@ -6,12 +6,13 @@ import random
 import re
 from contextlib import suppress
 from datetime import datetime, timezone
+from typing import NamedTuple
 from urllib.parse import parse_qs, urlencode, urlparse
 
 import aiohttp
 
-from ..config import QuestConfig
-from ..ipc import emit_line, sanitize_ipc_field
+from ..core.config import QuestConfig
+from ..core.ipc import emit_line, sanitize_ipc_field
 from .api_client import QuestAPIClient
 from .constants import PLAY_TASKS, VIDEO_TASKS
 from .models import Quest
@@ -20,6 +21,16 @@ from .webhook_dispatch import QuestWebhookDispatchMixin
 
 class QuestDataError(RuntimeError):
     pass
+
+
+class _QueuedQuest(NamedTuple):
+    """Uma Quest que a fila automática vai executar, com a tarefa escolhida."""
+
+    quest: Quest
+    task_name: str
+    task: dict
+    target: int
+    progress: float
 
 
 class QuestManager(QuestWebhookDispatchMixin):
@@ -296,9 +307,7 @@ class QuestManager(QuestWebhookDispatchMixin):
             "message": "Fila de Quests iniciada.",
         }
 
-    async def start_quest(
-        self, quest_id: str, request_id: str | None = None
-    ) -> dict:
+    async def start_quest(self, quest_id: str, request_id: str | None = None) -> dict:
         """Reserve the execution slot before starting a single Quest.
 
         The reservation prevents two IPC commands received in the same event
@@ -349,136 +358,20 @@ class QuestManager(QuestWebhookDispatchMixin):
                 emit_line("QUEST:AUTO:Nenhuma Quest encontrada.", request_id)
                 return
 
-            actionable: list[tuple[Quest, str, dict, int, float]] = []
-            for quest in quests:
-                if quest.is_expired or quest.is_claimed:
-                    continue
-                if quest.is_completed:
-                    summary["manual_claim"] += 1
-                    emit_line(
-                        f"QUEST:AUTO:🎁 '{self._quest_label(quest)}' aguarda resgate manual.",
-                        request_id,
-                    )
-                    continue
-                if not quest.is_enrolled:
-                    summary["manual_enroll"] += 1
-                    emit_line(
-                        f"QUEST:AUTO:⏸️ Aceite '{self._quest_label(quest)}' manualmente no Discord.",
-                        request_id,
-                    )
-                    continue
-
-                task_name, task = quest.get_task_info(auto_only=True)
-                if not task_name or not task:
-                    summary["unsupported"] += 1
-                    known_name, _ = quest.get_task_info()
-                    emit_line(
-                        f"QUEST:AUTO:⏭️ '{self._quest_label(quest)}' requer execução manual ({known_name or 'tipo desconhecido'}).",
-                        request_id,
-                    )
-                    continue
-                target = quest.task_target(task)
-                progress = quest.get_progress(task_name)
-                if target <= 0:
-                    summary["unsupported"] += 1
-                    emit_line(
-                        f"QUEST:AUTO:⏭️ '{self._quest_label(quest)}' possui alvo inválido.",
-                        request_id,
-                    )
-                    continue
-                if progress >= target:
-                    if await self._verify_completion(quest):
-                        summary["manual_claim"] += 1
-                    else:
-                        summary["failed"] += 1
-                    continue
-                actionable.append((quest, task_name, task, target, progress))
-
-            actionable.sort(
-                key=lambda item: item[0].expires_at
-                or datetime.max.replace(tzinfo=timezone.utc)
-            )
+            actionable = await self._triage_quests(quests, summary, request_id)
             if not actionable:
-                if summary["manual_enroll"]:
-                    summary.update(
-                        code="MANUAL_ENROLL_REQUIRED",
-                        message="Aceite as Quests indicadas no Discord e execute novamente.",
-                    )
-                elif summary["manual_claim"]:
-                    summary.update(
-                        code="MANUAL_CLAIM_REQUIRED",
-                        message="As recompensas concluídas aguardam resgate manual.",
-                    )
-                else:
-                    summary.update(code="NOTHING_PENDING", message="Nenhuma Quest pendente compatível.")
+                self._close_empty_queue(summary)
                 return
 
             emit_line(
                 f"QUEST:AUTO:Processando {len(actionable)} Quest(s) em sequência...",
                 request_id,
             )
-            for quest, task_name, task, target, progress in actionable:
+            for item in actionable:
                 if self._cancelled:
                     summary.update(ok=False, code="CANCELLED", message="Fila cancelada.")
                     break
-                self._active_quest_id = quest.id
-                self._init_progress_bucket(quest.id, progress, target)
-                emit_line(
-                    f"QUEST:AUTO:{self._quest_label(quest)} [{task_name}] {int(progress)}/{target}",
-                    request_id,
-                )
-                self._dispatch_background(
-                    self.dispatch_quest_start(quest, task_name),
-                    name=f"quest-webhook-start-{quest.id}",
-                )
-
-                presence_token = None
-                if self.client.presence_manager:
-                    presence_token = await self.client.presence_manager.set_task(
-                        "Quest", self._quest_label(quest)
-                    )
-                try:
-                    success = await self._run_task_logic(
-                        quest, task_name, task, target, request_id
-                    )
-                    if success:
-                        summary["completed"] += 1
-                        summary["manual_claim"] += 1
-                        emit_line(
-                            f"QUEST:AUTO:✅ '{self._quest_label(quest)}' concluída; resgate a recompensa no Discord.",
-                            request_id,
-                        )
-                        self._dispatch_background(
-                            self.dispatch_quest_complete(
-                                quest=quest, task_name=task_name
-                            ),
-                            name=f"quest-webhook-complete-{quest.id}",
-                        )
-                    else:
-                        summary["failed"] += 1
-                        if not self._cancelled:
-                            emit_line(
-                                f"QUEST:AUTO:❌ '{self._quest_label(quest)}' não foi confirmada pelo Discord.",
-                                request_id,
-                            )
-                except asyncio.CancelledError:
-                    summary.update(ok=False, code="CANCELLED", message="Fila cancelada.")
-                    raise
-                except Exception as error:
-                    summary["failed"] += 1
-                    emit_line(
-                        f"QUEST:ERRO:{self._quest_label(quest)}: {self._safe_error(error)}",
-                        request_id,
-                    )
-                finally:
-                    self._progress_webhook_bucket.pop(quest.id, None)
-                    self._active_quest_id = None
-                    self._last_presence_detail = None
-                    if self.client.presence_manager:
-                        if presence_token:
-                            await self.client.presence_manager.complete_task(presence_token)
-                        else:
-                            await self.client.presence_manager.set_main()
+                await self._run_queued_quest(item, summary, request_id)
 
             if summary["failed"]:
                 summary.update(
@@ -497,6 +390,135 @@ class QuestManager(QuestWebhookDispatchMixin):
             if self._task is current:
                 self._task = None
 
+    async def _triage_quests(self, quests: list[Quest], summary: dict, request_id: str | None) -> list[_QueuedQuest]:
+        """Separa as Quests que a fila executa, contando e anunciando as que ficam de fora."""
+        actionable: list[_QueuedQuest] = []
+        for quest in quests:
+            if quest.is_expired or quest.is_claimed:
+                continue
+            if quest.is_completed:
+                summary["manual_claim"] += 1
+                emit_line(
+                    f"QUEST:AUTO:🎁 '{self._quest_label(quest)}' aguarda resgate manual.",
+                    request_id,
+                )
+                continue
+            if not quest.is_enrolled:
+                summary["manual_enroll"] += 1
+                emit_line(
+                    f"QUEST:AUTO:⏸️ Aceite '{self._quest_label(quest)}' manualmente no Discord.",
+                    request_id,
+                )
+                continue
+
+            task_name, task = quest.get_task_info(auto_only=True)
+            if not task_name or not task:
+                summary["unsupported"] += 1
+                known_name, _ = quest.get_task_info()
+                emit_line(
+                    f"QUEST:AUTO:⏭️ '{self._quest_label(quest)}' requer execução manual ({known_name or 'tipo desconhecido'}).",
+                    request_id,
+                )
+                continue
+            target = quest.task_target(task)
+            progress = quest.get_progress(task_name)
+            if target <= 0:
+                summary["unsupported"] += 1
+                emit_line(
+                    f"QUEST:AUTO:⏭️ '{self._quest_label(quest)}' possui alvo inválido.",
+                    request_id,
+                )
+                continue
+            if progress >= target:
+                if await self._verify_completion(quest):
+                    summary["manual_claim"] += 1
+                else:
+                    summary["failed"] += 1
+                continue
+            actionable.append(_QueuedQuest(quest, task_name, task, target, progress))
+
+        actionable.sort(key=lambda item: item.quest.expires_at or datetime.max.replace(tzinfo=timezone.utc))
+        return actionable
+
+    @staticmethod
+    def _close_empty_queue(summary: dict) -> None:
+        if summary["manual_enroll"]:
+            summary.update(
+                code="MANUAL_ENROLL_REQUIRED",
+                message="Aceite as Quests indicadas no Discord e execute novamente.",
+            )
+        elif summary["manual_claim"]:
+            summary.update(
+                code="MANUAL_CLAIM_REQUIRED",
+                message="As recompensas concluídas aguardam resgate manual.",
+            )
+        else:
+            summary.update(code="NOTHING_PENDING", message="Nenhuma Quest pendente compatível.")
+
+    async def _run_queued_quest(
+        self,
+        item: _QueuedQuest,
+        summary: dict,
+        request_id: str | None,
+    ) -> None:
+        quest, task_name, task, target, progress = item
+        self._active_quest_id = quest.id
+        self._init_progress_bucket(quest.id, progress, target)
+        emit_line(
+            f"QUEST:AUTO:{self._quest_label(quest)} [{task_name}] {int(progress)}/{target}",
+            request_id,
+        )
+        self._dispatch_background(
+            self.dispatch_quest_start(quest, task_name),
+            name=f"quest-webhook-start-{quest.id}",
+        )
+
+        presence_token = None
+        if self.client.presence_manager:
+            presence_token = await self.client.presence_manager.set_task("Quest", self._quest_label(quest))
+        try:
+            success = await self._run_task_logic(quest, task_name, task, target, request_id)
+            if success:
+                summary["completed"] += 1
+                summary["manual_claim"] += 1
+                emit_line(
+                    f"QUEST:AUTO:✅ '{self._quest_label(quest)}' concluída; resgate a recompensa no Discord.",
+                    request_id,
+                )
+                self._dispatch_background(
+                    self.dispatch_quest_complete(quest=quest, task_name=task_name),
+                    name=f"quest-webhook-complete-{quest.id}",
+                )
+            else:
+                summary["failed"] += 1
+                if not self._cancelled:
+                    emit_line(
+                        f"QUEST:AUTO:❌ '{self._quest_label(quest)}' não foi confirmada pelo Discord.",
+                        request_id,
+                    )
+        except asyncio.CancelledError:
+            summary.update(ok=False, code="CANCELLED", message="Fila cancelada.")
+            raise
+        except Exception as error:
+            summary["failed"] += 1
+            emit_line(
+                f"QUEST:ERRO:{self._quest_label(quest)}: {self._safe_error(error)}",
+                request_id,
+            )
+        finally:
+            await self._release_quest_run(quest.id, presence_token)
+
+    async def _release_quest_run(self, quest_id: str, presence_token) -> None:
+        """Libera o que uma Quest em execução ocupava e devolve a presença ao estado anterior."""
+        self._progress_webhook_bucket.pop(quest_id, None)
+        self._active_quest_id = None
+        self._last_presence_detail = None
+        if self.client.presence_manager:
+            if presence_token:
+                await self.client.presence_manager.complete_task(presence_token)
+            else:
+                await self.client.presence_manager.set_main()
+
     async def complete_quest(self, quest_id: str, request_id: str | None = None):
         current = asyncio.current_task()
         presence_token = None
@@ -514,17 +536,9 @@ class QuestManager(QuestWebhookDispatchMixin):
         try:
             quests = await self.fetch_quests()
             quest = next((item for item in quests if item.id == quest_id), None)
-            if quest is None:
-                self._emit_result(request_id, ok=False, code="NOT_FOUND", message="Quest não encontrada.")
-                return
-            if quest.is_expired:
-                self._emit_result(request_id, ok=False, code="EXPIRED", message="Quest expirada.")
-                return
-            if quest.is_completed:
-                self._emit_result(request_id, ok=True, code="ALREADY_COMPLETED", message="Quest já concluída; resgate manualmente.")
-                return
-            if not quest.is_enrolled:
-                self._emit_result(request_id, ok=False, code="MANUAL_ENROLL_REQUIRED", message="Aceite a Quest manualmente no Discord.")
+            blocker = self._quest_start_blocker(quest)
+            if blocker:
+                self._emit_result(request_id, **blocker)
                 return
             task_name, task = quest.get_task_info(auto_only=True)
             target = quest.task_target(task)
@@ -535,9 +549,7 @@ class QuestManager(QuestWebhookDispatchMixin):
             progress = quest.get_progress(task_name)
             self._init_progress_bucket(quest.id, progress, target)
             if self.client.presence_manager:
-                presence_token = await self.client.presence_manager.set_task(
-                    "Quest", self._quest_label(quest)
-                )
+                presence_token = await self.client.presence_manager.set_task("Quest", self._quest_label(quest))
             self._dispatch_background(
                 self.dispatch_quest_start(quest, task_name),
                 name=f"quest-webhook-start-{quest.id}",
@@ -548,9 +560,7 @@ class QuestManager(QuestWebhookDispatchMixin):
                 ok=success,
                 code="COMPLETED" if success else "NOT_CONFIRMED",
                 message=(
-                    "Quest concluída; resgate manualmente."
-                    if success
-                    else "O Discord não confirmou a conclusão."
+                    "Quest concluída; resgate manualmente." if success else "O Discord não confirmou a conclusão."
                 ),
             )
         except asyncio.CancelledError:
@@ -563,16 +573,22 @@ class QuestManager(QuestWebhookDispatchMixin):
                 message="Falha: " + self._safe_error(error),
             )
         finally:
-            self._progress_webhook_bucket.pop(quest_id, None)
-            self._active_quest_id = None
-            self._last_presence_detail = None
-            if self.client.presence_manager:
-                if presence_token:
-                    await self.client.presence_manager.complete_task(presence_token)
-                else:
-                    await self.client.presence_manager.set_main()
+            await self._release_quest_run(quest_id, presence_token)
             if self._task is current:
                 self._task = None
+
+    @staticmethod
+    def _quest_start_blocker(quest: Quest | None) -> dict | None:
+        """O resultado que impede iniciar a Quest, ou None quando ela pode rodar."""
+        if quest is None:
+            return {"ok": False, "code": "NOT_FOUND", "message": "Quest não encontrada."}
+        if quest.is_expired:
+            return {"ok": False, "code": "EXPIRED", "message": "Quest expirada."}
+        if quest.is_completed:
+            return {"ok": True, "code": "ALREADY_COMPLETED", "message": "Quest já concluída; resgate manualmente."}
+        if not quest.is_enrolled:
+            return {"ok": False, "code": "MANUAL_ENROLL_REQUIRED", "message": "Aceite a Quest manualmente no Discord."}
+        return None
 
     async def _update_presence(self, text: str):
         if self.client.presence_manager and self._active_quest_id:
@@ -616,17 +632,11 @@ class QuestManager(QuestWebhookDispatchMixin):
         request_id: str | None,
     ) -> bool:
         if task_name in VIDEO_TASKS:
-            return await self.doing_watch_video_quest(
-                quest, task_name, target, request_id
-            )
+            return await self.doing_watch_video_quest(quest, task_name, target, request_id)
         if task_name in PLAY_TASKS:
-            return await self.doing_play_on_platform_quest(
-                quest, task_name, task, target, request_id
-            )
+            return await self.doing_play_on_platform_quest(quest, task_name, task, target, request_id)
         if task_name == "ACHIEVEMENT_IN_ACTIVITY":
-            return await self.doing_achievement_in_activity_quest(
-                quest, task, target, request_id
-            )
+            return await self.doing_achievement_in_activity_quest(quest, task, target, request_id)
         emit_line(
             f"QUEST:ERRO:'{self._quest_label(quest)}' requer execução manual ({task_name}).",
             request_id,
@@ -656,23 +666,17 @@ class QuestManager(QuestWebhookDispatchMixin):
                     request_id,
                 )
                 if attempt < attempts:
-                    await asyncio.sleep(
-                        self.config.REQUEST_RETRY_DELAY_SECONDS * attempt
-                    )
+                    await asyncio.sleep(self.config.REQUEST_RETRY_DELAY_SECONDS * attempt)
         return False
 
-    async def doing_watch_video_quest(
-        self, quest: Quest, task_name: str, target: int, request_id
-    ) -> bool:
+    async def doing_watch_video_quest(self, quest: Quest, task_name: str, target: int, request_id) -> bool:
         enrolled_at = quest.enrolled_at
         if enrolled_at is None:
             emit_line("QUEST:ERRO:Quest de vídeo sem enrolled_at válido.", request_id)
             return False
 
         progress = min(float(target), quest.get_progress(task_name))
-        deadline = asyncio.get_running_loop().time() + max(
-            120.0, (target - progress) + 180.0
-        )
+        deadline = asyncio.get_running_loop().time() + max(120.0, (target - progress) + 180.0)
         while progress < target and not self._cancelled:
             if quest.is_expired or asyncio.get_running_loop().time() >= deadline:
                 return False
@@ -680,9 +684,7 @@ class QuestManager(QuestWebhookDispatchMixin):
                 0.0,
                 (datetime.now(timezone.utc) - enrolled_at).total_seconds(),
             )
-            maximum_allowed = min(
-                float(target), elapsed + self.config.MAX_FUTURE_SECONDS
-            )
+            maximum_allowed = min(float(target), elapsed + self.config.MAX_FUTURE_SECONDS)
             step = random.uniform(
                 self.config.VIDEO_REPORT_MIN_SECONDS,
                 self.config.VIDEO_REPORT_MAX_SECONDS,
@@ -703,9 +705,7 @@ class QuestManager(QuestWebhookDispatchMixin):
                 return False
             server_progress = quest.get_progress(task_name)
             progress = min(float(target), max(next_progress, server_progress))
-            await self._emit_progress(
-                quest, task_name, progress, target, request_id
-            )
+            await self._emit_progress(quest, task_name, progress, target, request_id)
             if quest.is_completed:
                 return True
 
@@ -777,9 +777,7 @@ class QuestManager(QuestWebhookDispatchMixin):
 
         progress = quest.get_progress(task_name)
         stagnant = 0
-        deadline = asyncio.get_running_loop().time() + max(
-            180.0, (target - progress) + 300.0
-        )
+        deadline = asyncio.get_running_loop().time() + max(180.0, (target - progress) + 300.0)
         while not self._cancelled:
             if quest.is_expired or asyncio.get_running_loop().time() >= deadline:
                 return False
@@ -794,9 +792,7 @@ class QuestManager(QuestWebhookDispatchMixin):
             if not ok:
                 return False
             progress = quest.get_progress(task_name)
-            await self._emit_progress(
-                quest, task_name, progress, target, request_id
-            )
+            await self._emit_progress(quest, task_name, progress, target, request_id)
             if quest.is_completed or progress >= target:
                 terminal_ok = await self._post_status_with_retries(
                     quest,
@@ -816,16 +812,13 @@ class QuestManager(QuestWebhookDispatchMixin):
                 return False
             remaining = max(0.0, target - progress)
             await asyncio.sleep(
-                min(self.config.HEARTBEAT_MAX_INTERVAL_SECONDS, remaining)
-                + self.config.HEARTBEAT_BUFFER_SECONDS
+                min(self.config.HEARTBEAT_MAX_INTERVAL_SECONDS, remaining) + self.config.HEARTBEAT_BUFFER_SECONDS
             )
         return False
 
     async def _get_activity_session(self) -> aiohttp.ClientSession:
         if self._activity_session is None or self._activity_session.closed:
-            self._activity_session = aiohttp.ClientSession(
-                timeout=aiohttp.ClientTimeout(total=25.0)
-            )
+            self._activity_session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=25.0))
         return self._activity_session
 
     async def _activity_post(
@@ -858,66 +851,13 @@ class QuestManager(QuestWebhookDispatchMixin):
             emit_line("QUEST:ERRO:Achievement sem application_id válido.", request_id)
             return False
 
-        auth_code: str | None = None
-        token_id: str | None = None
         existing_token_ids: set[str] | None = None
         try:
             # Preserve grants the user already had. Only the temporary grant
             # created by this run is eligible for cleanup.
-            try:
-                existing_tokens = await self.api.get("/oauth2/tokens")
-                if isinstance(existing_tokens, list):
-                    existing_token_ids = {
-                        str(entry.get("id"))
-                        for entry in existing_tokens
-                        if isinstance(entry, dict) and entry.get("id") is not None
-                    }
-            except Exception:
-                existing_token_ids = None
-
-            auth_response = await self.api.post(
-                "/oauth2/authorize",
-                {"authorize": True},
-                query={
-                    "client_id": application_id,
-                    "response_type": "code",
-                    "scope": "identify applications.entitlements",
-                    "state": "",
-                },
-            )
-            location = auth_response.get("location") if isinstance(auth_response, dict) else None
-            if location:
-                auth_code = parse_qs(urlparse(str(location)).query).get("code", [None])[0]
-            if not auth_code:
-                raise QuestDataError("Discord não retornou o código OAuth")
-
-            ticket_response = await self.api.post(
-                "/applications/{application_id}/proxy-tickets",
-                {},
-                application_id=application_id,
-            )
-            ticket = ticket_response.get("ticket") if isinstance(ticket_response, dict) else None
-            if not ticket:
-                raise QuestDataError("Discord não retornou proxy ticket")
-
-            referrer = (
-                f"https://{application_id}.discordsays.com/?"
-                + urlencode(
-                    {
-                        "instance_id": "example-cl-instance",
-                        "platform": "desktop",
-                        "discord_proxy_ticket": ticket,
-                    }
-                )
-            )
-            user_agent = getattr(getattr(self.client, "http", None), "user_agent", "")
-            base_headers = {
-                "Content-Type": "application/json",
-                "X-Discord-Quest-ID": quest.id,
-                "Referer": referrer,
-            }
-            if user_agent:
-                base_headers["User-Agent"] = user_agent
+            existing_token_ids = await self._existing_oauth_token_ids()
+            auth_code = await self._authorize_oauth_code(application_id)
+            base_headers = await self._activity_headers(quest, application_id)
 
             authorized, authorize_data = await self._activity_post(
                 application_id,
@@ -937,9 +877,7 @@ class QuestManager(QuestWebhookDispatchMixin):
             )
             if not progressed:
                 raise QuestDataError("Activity recusou o progresso")
-            await self._emit_progress(
-                quest, "ACHIEVEMENT_IN_ACTIVITY", target, target, request_id
-            )
+            await self._emit_progress(quest, "ACHIEVEMENT_IN_ACTIVITY", target, target, request_id)
             return await self._verify_completion(quest)
         except asyncio.CancelledError:
             raise
@@ -952,21 +890,84 @@ class QuestManager(QuestWebhookDispatchMixin):
         finally:
             # Match Questify: remove the temporary OAuth grant even if progress
             # verification fails.
-            try:
-                tokens = await self.api.get("/oauth2/tokens")
-                if isinstance(tokens, list):
-                    for entry in tokens:
-                        application = entry.get("application", {}) if isinstance(entry, dict) else {}
-                        candidate_id = str(entry.get("id", ""))
-                        if (
-                            str(application.get("id", "")) == application_id
-                            and candidate_id
-                            and existing_token_ids is not None
-                            and candidate_id not in existing_token_ids
-                        ):
-                            token_id = candidate_id
-                            break
-                if token_id:
-                    await self.api.delete("/oauth2/tokens/{token_id}", token_id=token_id)
-            except Exception:
-                pass
+            await self._revoke_new_oauth_grant(application_id, existing_token_ids)
+
+    async def _existing_oauth_token_ids(self) -> set[str] | None:
+        try:
+            existing_tokens = await self.api.get("/oauth2/tokens")
+            if not isinstance(existing_tokens, list):
+                return None
+            return {
+                str(entry.get("id"))
+                for entry in existing_tokens
+                if isinstance(entry, dict) and entry.get("id") is not None
+            }
+        except Exception:
+            return None
+
+    async def _authorize_oauth_code(self, application_id: str) -> str:
+        auth_response = await self.api.post(
+            "/oauth2/authorize",
+            {"authorize": True},
+            query={
+                "client_id": application_id,
+                "response_type": "code",
+                "scope": "identify applications.entitlements",
+                "state": "",
+            },
+        )
+        location = auth_response.get("location") if isinstance(auth_response, dict) else None
+        auth_code = parse_qs(urlparse(str(location)).query).get("code", [None])[0] if location else None
+        if not auth_code:
+            raise QuestDataError("Discord não retornou o código OAuth")
+        return auth_code
+
+    async def _activity_headers(self, quest: Quest, application_id: str) -> dict[str, str]:
+        """Cabeçalhos da Activity, com o proxy ticket que o Discord emite para a aplicação."""
+        ticket_response = await self.api.post(
+            "/applications/{application_id}/proxy-tickets",
+            {},
+            application_id=application_id,
+        )
+        ticket = ticket_response.get("ticket") if isinstance(ticket_response, dict) else None
+        if not ticket:
+            raise QuestDataError("Discord não retornou proxy ticket")
+
+        referrer = f"https://{application_id}.discordsays.com/?" + urlencode(
+            {
+                "instance_id": "example-cl-instance",
+                "platform": "desktop",
+                "discord_proxy_ticket": ticket,
+            }
+        )
+        user_agent = getattr(getattr(self.client, "http", None), "user_agent", "")
+        headers = {
+            "Content-Type": "application/json",
+            "X-Discord-Quest-ID": quest.id,
+            "Referer": referrer,
+        }
+        if user_agent:
+            headers["User-Agent"] = user_agent
+        return headers
+
+    async def _revoke_new_oauth_grant(self, application_id: str, existing_token_ids: set[str] | None) -> None:
+        """Remove o grant criado por esta execução; nunca toca nos que o usuário já tinha."""
+        try:
+            token_id = None
+            tokens = await self.api.get("/oauth2/tokens")
+            if isinstance(tokens, list):
+                for entry in tokens:
+                    application = entry.get("application", {}) if isinstance(entry, dict) else {}
+                    candidate_id = str(entry.get("id", ""))
+                    if (
+                        str(application.get("id", "")) == application_id
+                        and candidate_id
+                        and existing_token_ids is not None
+                        and candidate_id not in existing_token_ids
+                    ):
+                        token_id = candidate_id
+                        break
+            if token_id:
+                await self.api.delete("/oauth2/tokens/{token_id}", token_id=token_id)
+        except Exception:
+            pass

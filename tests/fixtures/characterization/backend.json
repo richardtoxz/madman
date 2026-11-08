@@ -1,0 +1,889 @@
+{
+ "stream PROGRESS_JSON:{\"current\": 1, \"total\": 3, \"status\": \"X\", \"name\": \"n\"}": {
+  "log": [
+   [
+    "cb",
+    1,
+    3,
+    "X",
+    "n"
+   ]
+  ],
+  "result": "fim"
+ },
+ "stream PROGRESS_JSON:nao-json": {
+  "log": [],
+  "result": "fim"
+ },
+ "stream RESULT_JSON:{\"text\": \"pronto\"}": {
+  "log": [],
+  "result": "pronto"
+ },
+ "stream RESULT_JSON:{\"ok\": true}": {
+  "log": [],
+  "result": "{\"ok\": true}"
+ },
+ "stream RESULT_JSON:nao-json": {
+  "log": [],
+  "result": "fim"
+ },
+ "stream START:7": {
+  "log": [
+   [
+    "cb",
+    0,
+    7,
+    "WAITING_START",
+    ""
+   ]
+  ],
+  "result": "fim"
+ },
+ "stream START:x": {
+  "log": [],
+  "result": "fim"
+ },
+ "stream PROGRESS:1:3:nome": {
+  "log": [
+   [
+    "cb",
+    1,
+    3,
+    "CLEANING",
+    "nome"
+   ]
+  ],
+  "result": "fim"
+ },
+ "stream PROGRESS:1:3": {
+  "log": [
+   [
+    "cb",
+    1,
+    3,
+    "CLEANING",
+    ""
+   ]
+  ],
+  "result": "fim"
+ },
+ "stream PROGRESS:a:b": {
+  "log": [],
+  "result": "fim"
+ },
+ "stream FAILED:2:3:nome": {
+  "log": [
+   [
+    "cb",
+    2,
+    3,
+    "ERROR",
+    "nome"
+   ]
+  ],
+  "result": "fim"
+ },
+ "stream BATCH_PAUSE:30:2:3": {
+  "log": [
+   [
+    "cb",
+    2,
+    3,
+    "BATCH_PAUSE",
+    "Pausa (30s)"
+   ]
+  ],
+  "result": "fim"
+ },
+ "stream BATCH_PAUSE:30:2": {
+  "log": [],
+  "result": "fim"
+ },
+ "stream REL_RATELIMIT:1:5": {
+  "log": [
+   [
+    "cb",
+    null,
+    null,
+    "RATE_LIMITED",
+    "REL_RATELIMIT:1:5"
+   ]
+  ],
+  "result": "fim"
+ },
+ "stream RESULT:ok": {
+  "log": [],
+  "result": "ok"
+ },
+ "stream CANCELLED": {
+  "log": [],
+  "result": "CANCELADO"
+ },
+ "stream REL_ABORT_CAPTCHA": {
+  "log": [],
+  "result": "ABORTADO: REL_ABORT_CAPTCHA"
+ },
+ "stream ERROR:x": {
+  "log": [
+   [
+    "cb",
+    null,
+    null,
+    "ERROR",
+    "REL_ERROR:x"
+   ]
+  ],
+  "result": "fim"
+ },
+ "stream DESCONHECIDA:1": {
+  "log": [],
+  "result": "fim"
+ },
+ "stream REL_RESULT:ABORTADO:x": {
+  "log": [],
+  "result": "ABORTADO:x"
+ },
+ "stream REL_PROGRESS:1:2:RATELIMIT": {
+  "log": [
+   [
+    "cb",
+    1,
+    2,
+    "CLEANING",
+    "RATELIMIT"
+   ]
+  ],
+  "result": "fim"
+ },
+ "stream REL_ERROR:ABORT": {
+  "log": [],
+  "result": "ABORTADO: REL_ERROR:ABORT"
+ },
+ "stream REL_RATELIMIT_ABORT": {
+  "log": [
+   [
+    "cb",
+    null,
+    null,
+    "RATE_LIMITED",
+    "REL_RATELIMIT_ABORT"
+   ]
+  ],
+  "result": "fim"
+ },
+ "stream two_prefixes": {
+  "log": [
+   [
+    "cb",
+    0,
+    2,
+    "WAITING_START",
+    ""
+   ],
+   [
+    "cb",
+    1,
+    2,
+    "CLEANING",
+    "x"
+   ]
+  ],
+  "result": "ok"
+ },
+ "stream timeout": {
+  "log": [
+   [
+    "cb",
+    0,
+    2,
+    "WAITING_START",
+    ""
+   ]
+  ],
+  "result": "ERRO: Timeout"
+ },
+ "stream ipc_error": {
+  "log": [],
+  "result": "ERRO: Falha de IPC com o runner"
+ },
+ "stream lines_after_result": {
+  "log": [],
+  "result": "primeiro"
+ },
+ "stream no_result": {
+  "log": [
+   [
+    "cb",
+    0,
+    2,
+    "WAITING_START",
+    ""
+   ]
+  ],
+  "result": "Iniciando..."
+ },
+ "stream no_process": {
+  "log": [],
+  "result": "❌ Não autenticado"
+ },
+ "stream callback_raises START:2": {
+  "log": [
+   [
+    "cb",
+    0,
+    2,
+    "WAITING_START",
+    ""
+   ]
+  ],
+  "result": "fim"
+ },
+ "stream callback_raises PROGRESS:1:2:x": {
+  "log": [
+   [
+    "cb",
+    1,
+    2,
+    "CLEANING",
+    "x"
+   ]
+  ],
+  "result": "fim"
+ },
+ "stream callback_raises FAILED:1:2:x": {
+  "log": [
+   [
+    "cb",
+    1,
+    2,
+    "ERROR",
+    "x"
+   ]
+  ],
+  "result": "fim"
+ },
+ "stream callback_raises BATCH_PAUSE:3:1:2": {
+  "log": [
+   [
+    "cb",
+    1,
+    2,
+    "BATCH_PAUSE",
+    "Pausa (3s)"
+   ]
+  ],
+  "result": "fim"
+ },
+ "stream callback_raises PROGRESS_JSON:{\"current\": 1}": {
+  "log": [
+   [
+    "cb",
+    1,
+    0,
+    "CLEANING",
+    ""
+   ]
+  ],
+  "raised": "RuntimeError"
+ },
+ "stream callback_raises RATELIMIT:1:2": {
+  "log": [
+   [
+    "cb",
+    null,
+    null,
+    "RATE_LIMITED",
+    "REL_RATELIMIT:1:2"
+   ]
+  ],
+  "raised": "RuntimeError"
+ },
+ "stream callback_raises ERROR:x": {
+  "log": [
+   [
+    "cb",
+    null,
+    null,
+    "ERROR",
+    "REL_ERROR:x"
+   ]
+  ],
+  "raised": "RuntimeError"
+ },
+ "supervise restart_ok_all_restored": {
+  "log": [
+   [
+    "exit",
+    "p1"
+   ],
+   [
+    "event",
+    "p1",
+    "PROCESS:EXIT:UNEXPECTED"
+   ],
+   [
+    "close",
+    "p1"
+   ],
+   [
+    "log",
+    "WARNING",
+    "SELFBOT_AUTO_RESTART:user=1:backoff=2.0s"
+   ],
+   [
+    "sleep",
+    2.0
+   ],
+   [
+    "spawn",
+    "token"
+   ],
+   [
+    "attach",
+    "p2"
+   ],
+   [
+    "restore",
+    "protection",
+    "p2"
+   ],
+   [
+    "restore",
+    "tracker",
+    "p2"
+   ],
+   [
+    "restore",
+    "quest",
+    "p2"
+   ],
+   [
+    "event",
+    "p2",
+    "PROCESS:RESTARTED:OK"
+   ],
+   [
+    "exit",
+    "p2"
+   ]
+  ],
+  "state": {
+   "_session_tokens": false,
+   "_event_subscriptions": true,
+   "_protection_listeners": true,
+   "_protection_enabled_users": true,
+   "_tracker_settings": true,
+   "_quest_settings": true,
+   "_settings_state": true,
+   "_quest_sessions": true,
+   "_user_bulk_locks": true,
+   "user_whitelists": true,
+   "user_guild_whitelists": true
+  },
+  "active": "p2"
+ },
+ "supervise restart_ok_protection_failed": {
+  "log": [
+   [
+    "exit",
+    "p1"
+   ],
+   [
+    "event",
+    "p1",
+    "PROCESS:EXIT:UNEXPECTED"
+   ],
+   [
+    "close",
+    "p1"
+   ],
+   [
+    "log",
+    "WARNING",
+    "SELFBOT_AUTO_RESTART:user=1:backoff=2.0s"
+   ],
+   [
+    "sleep",
+    2.0
+   ],
+   [
+    "spawn",
+    "token"
+   ],
+   [
+    "attach",
+    "p2"
+   ],
+   [
+    "restore",
+    "protection",
+    "p2"
+   ],
+   [
+    "log",
+    "WARNING",
+    "Falha ao restaurar protecoes apos reinicio: user=1"
+   ],
+   [
+    "event",
+    "p2",
+    "PROCESS:STATE_RESTORE_FAILED:PROTECTION"
+   ],
+   [
+    "restore",
+    "tracker",
+    "p2"
+   ],
+   [
+    "restore",
+    "quest",
+    "p2"
+   ],
+   [
+    "event",
+    "p2",
+    "PROCESS:RESTARTED:OK"
+   ],
+   [
+    "exit",
+    "p2"
+   ]
+  ],
+  "state": {
+   "_session_tokens": false,
+   "_event_subscriptions": true,
+   "_protection_listeners": true,
+   "_protection_enabled_users": true,
+   "_tracker_settings": true,
+   "_quest_settings": true,
+   "_settings_state": true,
+   "_quest_sessions": true,
+   "_user_bulk_locks": true,
+   "user_whitelists": true,
+   "user_guild_whitelists": true
+  },
+  "active": "p2"
+ },
+ "supervise restart_ok_tracker_failed": {
+  "log": [
+   [
+    "exit",
+    "p1"
+   ],
+   [
+    "event",
+    "p1",
+    "PROCESS:EXIT:UNEXPECTED"
+   ],
+   [
+    "close",
+    "p1"
+   ],
+   [
+    "log",
+    "WARNING",
+    "SELFBOT_AUTO_RESTART:user=1:backoff=2.0s"
+   ],
+   [
+    "sleep",
+    2.0
+   ],
+   [
+    "spawn",
+    "token"
+   ],
+   [
+    "attach",
+    "p2"
+   ],
+   [
+    "restore",
+    "protection",
+    "p2"
+   ],
+   [
+    "restore",
+    "tracker",
+    "p2"
+   ],
+   [
+    "log",
+    "WARNING",
+    "Falha ao restaurar Tracker apos reinicio: user=1"
+   ],
+   [
+    "event",
+    "p2",
+    "PROCESS:STATE_RESTORE_FAILED:TRACKER"
+   ],
+   [
+    "restore",
+    "quest",
+    "p2"
+   ],
+   [
+    "event",
+    "p2",
+    "PROCESS:RESTARTED:OK"
+   ],
+   [
+    "exit",
+    "p2"
+   ]
+  ],
+  "state": {
+   "_session_tokens": false,
+   "_event_subscriptions": true,
+   "_protection_listeners": true,
+   "_protection_enabled_users": true,
+   "_tracker_settings": true,
+   "_quest_settings": true,
+   "_settings_state": true,
+   "_quest_sessions": true,
+   "_user_bulk_locks": true,
+   "user_whitelists": true,
+   "user_guild_whitelists": true
+  },
+  "active": "p2"
+ },
+ "supervise restart_ok_quest_failed": {
+  "log": [
+   [
+    "exit",
+    "p1"
+   ],
+   [
+    "event",
+    "p1",
+    "PROCESS:EXIT:UNEXPECTED"
+   ],
+   [
+    "close",
+    "p1"
+   ],
+   [
+    "log",
+    "WARNING",
+    "SELFBOT_AUTO_RESTART:user=1:backoff=2.0s"
+   ],
+   [
+    "sleep",
+    2.0
+   ],
+   [
+    "spawn",
+    "token"
+   ],
+   [
+    "attach",
+    "p2"
+   ],
+   [
+    "restore",
+    "protection",
+    "p2"
+   ],
+   [
+    "restore",
+    "tracker",
+    "p2"
+   ],
+   [
+    "restore",
+    "quest",
+    "p2"
+   ],
+   [
+    "log",
+    "WARNING",
+    "Falha ao restaurar configuração de Quest após reinício: user=1"
+   ],
+   [
+    "event",
+    "p2",
+    "PROCESS:STATE_RESTORE_FAILED:QUEST"
+   ],
+   [
+    "event",
+    "p2",
+    "PROCESS:RESTARTED:OK"
+   ],
+   [
+    "exit",
+    "p2"
+   ]
+  ],
+  "state": {
+   "_session_tokens": false,
+   "_event_subscriptions": true,
+   "_protection_listeners": true,
+   "_protection_enabled_users": true,
+   "_tracker_settings": true,
+   "_quest_settings": true,
+   "_settings_state": true,
+   "_quest_sessions": true,
+   "_user_bulk_locks": true,
+   "user_whitelists": true,
+   "user_guild_whitelists": true
+  },
+  "active": "p2"
+ },
+ "supervise restart_failed_backoff": {
+  "log": [
+   [
+    "exit",
+    "p1"
+   ],
+   [
+    "event",
+    "p1",
+    "PROCESS:EXIT:UNEXPECTED"
+   ],
+   [
+    "close",
+    "p1"
+   ],
+   [
+    "log",
+    "WARNING",
+    "SELFBOT_AUTO_RESTART:user=1:backoff=2.0s"
+   ],
+   [
+    "sleep",
+    2.0
+   ],
+   [
+    "spawn",
+    "token"
+   ],
+   [
+    "log",
+    "ERROR",
+    "SELFBOT_AUTO_RESTART_FAILED:user=1:error=erro x"
+   ],
+   [
+    "log",
+    "WARNING",
+    "SELFBOT_AUTO_RESTART:user=1:backoff=4.0s"
+   ],
+   [
+    "sleep",
+    4.0
+   ],
+   [
+    "spawn",
+    "token"
+   ],
+   [
+    "log",
+    "ERROR",
+    "SELFBOT_AUTO_RESTART_FAILED:user=1:error=erro x"
+   ],
+   [
+    "log",
+    "WARNING",
+    "SELFBOT_AUTO_RESTART:user=1:backoff=8.0s"
+   ],
+   [
+    "sleep",
+    8.0
+   ],
+   [
+    "spawn",
+    "token"
+   ],
+   [
+    "log",
+    "ERROR",
+    "SELFBOT_AUTO_RESTART_FAILED:user=1:error=erro x"
+   ],
+   [
+    "log",
+    "WARNING",
+    "SELFBOT_AUTO_RESTART:user=1:backoff=16.0s"
+   ],
+   [
+    "sleep",
+    16.0
+   ],
+   [
+    "spawn",
+    "token"
+   ],
+   [
+    "log",
+    "ERROR",
+    "SELFBOT_AUTO_RESTART_FAILED:user=1:error=erro x"
+   ],
+   [
+    "log",
+    "WARNING",
+    "SELFBOT_AUTO_RESTART:user=1:backoff=32.0s"
+   ],
+   [
+    "sleep",
+    32.0
+   ],
+   [
+    "spawn",
+    "token"
+   ],
+   [
+    "log",
+    "ERROR",
+    "SELFBOT_AUTO_RESTART_FAILED:user=1:error=erro x"
+   ],
+   [
+    "log",
+    "WARNING",
+    "SELFBOT_AUTO_RESTART:user=1:backoff=60.0s"
+   ],
+   [
+    "sleep",
+    60.0
+   ],
+   [
+    "spawn",
+    "token"
+   ],
+   [
+    "log",
+    "ERROR",
+    "SELFBOT_AUTO_RESTART_FAILED:user=1:error=erro x"
+   ]
+  ],
+  "state": {
+   "_session_tokens": false,
+   "_event_subscriptions": true,
+   "_protection_listeners": true,
+   "_protection_enabled_users": true,
+   "_tracker_settings": true,
+   "_quest_settings": true,
+   "_settings_state": true,
+   "_quest_sessions": true,
+   "_user_bulk_locks": true,
+   "user_whitelists": true,
+   "user_guild_whitelists": true
+  },
+  "active": null
+ },
+ "supervise restart_invalid_token": {
+  "log": [
+   [
+    "exit",
+    "p1"
+   ],
+   [
+    "event",
+    "p1",
+    "PROCESS:EXIT:UNEXPECTED"
+   ],
+   [
+    "close",
+    "p1"
+   ],
+   [
+    "log",
+    "WARNING",
+    "SELFBOT_AUTO_RESTART:user=1:backoff=2.0s"
+   ],
+   [
+    "sleep",
+    2.0
+   ],
+   [
+    "spawn",
+    "token"
+   ],
+   [
+    "log",
+    "ERROR",
+    "SELFBOT_AUTO_RESTART_FAILED:user=1:error=Token inválido ou revogado."
+   ]
+  ],
+  "state": {
+   "_session_tokens": false,
+   "_event_subscriptions": false,
+   "_protection_listeners": false,
+   "_protection_enabled_users": false,
+   "_tracker_settings": false,
+   "_quest_settings": false,
+   "_settings_state": false,
+   "_quest_sessions": false,
+   "_user_bulk_locks": false,
+   "user_whitelists": false,
+   "user_guild_whitelists": false
+  },
+  "active": null
+ },
+ "supervise manual_disconnect_before": {
+  "log": [],
+  "state": {
+   "_session_tokens": true,
+   "_event_subscriptions": true,
+   "_protection_listeners": true,
+   "_protection_enabled_users": true,
+   "_tracker_settings": true,
+   "_quest_settings": true,
+   "_settings_state": true,
+   "_quest_sessions": true,
+   "_user_bulk_locks": true,
+   "user_whitelists": true,
+   "user_guild_whitelists": true
+  },
+  "active": "p1"
+ },
+ "supervise token_missing": {
+  "log": [
+   [
+    "exit",
+    "p1"
+   ],
+   [
+    "event",
+    "p1",
+    "PROCESS:EXIT:UNEXPECTED"
+   ],
+   [
+    "close",
+    "p1"
+   ]
+  ],
+  "state": {
+   "_session_tokens": true,
+   "_event_subscriptions": true,
+   "_protection_listeners": true,
+   "_protection_enabled_users": true,
+   "_tracker_settings": true,
+   "_quest_settings": true,
+   "_settings_state": true,
+   "_quest_sessions": true,
+   "_user_bulk_locks": true,
+   "user_whitelists": true,
+   "user_guild_whitelists": true
+  },
+  "active": null
+ },
+ "supervise manual_disconnect_after_wait": {
+  "log": [
+   [
+    "exit",
+    "p1"
+   ]
+  ],
+  "state": {
+   "_session_tokens": true,
+   "_event_subscriptions": true,
+   "_protection_listeners": true,
+   "_protection_enabled_users": true,
+   "_tracker_settings": true,
+   "_quest_settings": true,
+   "_settings_state": true,
+   "_quest_sessions": true,
+   "_user_bulk_locks": true,
+   "user_whitelists": true,
+   "user_guild_whitelists": true
+  },
+  "active": "p1"
+ }
+}

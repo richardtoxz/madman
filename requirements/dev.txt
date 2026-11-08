@@ -1,0 +1,2 @@
+# Ferramentas de desenvolvimento (lint e formatação). Configuração em ruff.toml.
+ruff==0.17.3

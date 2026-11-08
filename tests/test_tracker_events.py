@@ -5,13 +5,18 @@ import time
 import unittest
 from types import SimpleNamespace
 
-from worker.tracker_events import TrackerEventMixin
-from worker.tracker_support import TrackerState
+from worker.tracker.events import TrackerEventMixin
+from worker.tracker.support import TrackerState
 
 
 class _Client:
     def get_channel(self, channel_id):
-        return SimpleNamespace(id=channel_id, name="geral", guild=SimpleNamespace(name="Guild"))
+        return SimpleNamespace(
+            id=channel_id,
+            name="geral",
+            guild=SimpleNamespace(id=20, name="Guild", me=object()),
+            permissions_for=lambda _: SimpleNamespace(view_channel=True, read_message_history=True),
+        )
 
 
 class _EventTracker(TrackerEventMixin):
@@ -110,8 +115,18 @@ class TrackerEventTests(unittest.IsolatedAsyncioTestCase):
         status, _, _ = tracker._select_effective_presence()
         self.assertEqual(status, "offline")
 
+    def test_recent_but_older_online_snapshot_does_not_override_new_offline(self):
+        tracker = _EventTracker()
+        now = time.monotonic()
+        tracker.state.guild_presence = {
+            1: {"status": "online", "activities": (), "devices": (), "updated_at": now - 1},
+            2: {"status": "offline", "activities": (), "devices": (), "updated_at": now},
+        }
+        self.assertEqual(tracker._select_effective_presence()[0], "offline")
+
     async def test_poll_vote_and_private_call_are_captured_for_target(self):
         tracker = _EventTracker()
+        tracker.config.INCLUDE_PRIVATE_CHANNELS = True
         tracker._msg_cache[100] = {
             "poll": {
                 "question": "Escolha",

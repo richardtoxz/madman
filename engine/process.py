@@ -444,9 +444,11 @@ class SelfbotProcess:
                 await asyncio.gather(*tasks, return_exceptions=True)
 
             if self.process.stdin is not None:
-                with suppress(Exception):
+                try:
                     self.process.stdin.close()
                     await self.process.stdin.wait_closed()
+                except Exception:
+                    log.debug("Falha ao fechar stdin do worker", exc_info=True)
 
             self._redactions = ()
             self._closed = True

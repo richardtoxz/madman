@@ -1,0 +1,9 @@
+target-version = "py310"
+line-length = 120
+# Bibliotecas de terceiros vendorizadas: não são código do projeto.
+extend-exclude = ["panel/lib", "worker/lib"]
+
+[lint]
+# Sem "I" (ordenação de imports): panel/__init__.py e worker/__init__.py põem os libs
+# vendorizados no sys.path, então `import aiohttp`/`import discord` dependem de vir depois.
+select = ["E4", "E7", "E9", "F"]

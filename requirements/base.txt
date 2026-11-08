@@ -1,0 +1,3 @@
+# Dependencias do processo principal. As bibliotecas Discord ficam em
+# panel.txt e worker.txt, isoladas, porque ambas expoem o pacote `discord`.
+python-dotenv==1.2.3

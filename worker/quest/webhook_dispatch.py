@@ -3,7 +3,7 @@ from __future__ import annotations
 import aiohttp
 import discord
 
-from ..ipc import emit_line
+from ..core.ipc import emit_line
 
 
 class QuestWebhookDispatchMixin:

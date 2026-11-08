@@ -9,12 +9,12 @@ class RelationshipMixin:
         )
 
     async def get_friends_list(
-        self, user_id: int, page: int = 0, page_size: int = 20
+        self, user_id: int, page: int = 0, page_size: int = 20, sort: str = "status"
     ):
         p = self._get_proc(user_id)
         command = self._json_command(
             "REL_FRIENDS_PAGE_JSON:",
-            {"page": int(page), "page_size": int(page_size)},
+            {"page": int(page), "page_size": int(page_size), "sort": str(sort)},
         )
         return (
             (await p.send_and_wait_json(command, "REL_FRIENDS_RESULT:"))
@@ -36,6 +36,16 @@ class RelationshipMixin:
                 "warning": "Conta nao autenticada.",
             }
         )
+
+    async def get_closest_friends(self, user_id: int, limit: int = 10) -> dict:
+        p = self._get_proc(user_id)
+        if not p:
+            return {"ok": False, "code": "NOT_CONNECTED", "message": "Conta nao autenticada."}
+        command = self._json_command("REL_CLOSEST_JSON:", {"limit": int(limit)})
+        result = await p.send_and_wait_json(command, "REL_CLOSEST_RESULT:", timeout=20.0)
+        if isinstance(result, dict):
+            return result
+        return {"ok": False, "code": "NO_RESPONSE", "message": "Worker sem resposta."}
 
     async def get_pending_requests(
         self, user_id: int, page: int = 0, page_size: int = 10

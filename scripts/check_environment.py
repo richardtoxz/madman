@@ -14,7 +14,6 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 MINIMUM_PYTHON = (3, 10)
 EXPECTED_SHARED = {
-    "Flask": "3.1.3",
     "python-dotenv": "1.2.3",
 }
 
@@ -112,7 +111,7 @@ def main() -> int:
         _check_isolated_import(
             "panel",
             "panel/lib",
-            {"discord": "2.7.1", "aiohttp": "3.14.3"},
+            {"discord": "2.7.1", "aiohttp": "3.14.4"},
         )
     )
     checks.append(
@@ -121,7 +120,7 @@ def main() -> int:
             "worker/lib",
             {
                 "discord": "2.1.0",
-                "aiohttp": "3.14.3",
+                "aiohttp": "3.14.4",
                 "curl_cffi": "0.16.0",
             },
         )

@@ -1,11 +1,12 @@
+import asyncio
 import logging
 
 import discord
 from discord.ext import commands
 
 from .config import ID_CANAL_PAINEL, ID_CANAL_SOBRE
-from .views.control_view import PersistentControlView
-from .views.sobre_view import SobreView
+from .control_panel.control_view import PersistentControlView
+from .control_panel.sobre_view import SobreView
 from .shared.stealth_dm import shutdown_stealth_tasks
 from .shared.tasks import cancel_panel_tasks
 
@@ -21,10 +22,28 @@ class ControlBot(commands.Bot):
 
         super().__init__(command_prefix=[], intents=intents)
         self.manager = manager
+        self._enable_web_server = False
+        self._web_port: int | None = None
+        self._web_runner = None
+        self._signal_close_task: asyncio.Task | None = None
 
     async def setup_hook(self):
-        await self.load_extension("panel.cogs.panel_cog")
+        from .main import install_shutdown_handler, start_web_server
+
+        # SIGTERM (deploy no Render, docker stop) passa pelo close(): desliga as contas, o site e as DMs.
+        install_shutdown_handler(asyncio.get_running_loop(), self._close_on_signal)
+        if self._enable_web_server and self._web_runner is None:
+            self._web_runner = await start_web_server(
+                manager=self.manager,
+                bot=self,
+                port=self._web_port,
+            )
+        await self.load_extension("panel.control_panel.cog")
         await self.tree.sync()
+
+    def _close_on_signal(self) -> None:
+        if self._signal_close_task is None:
+            self._signal_close_task = asyncio.ensure_future(self.close())
 
     async def _setup_static_channel(
         self,
@@ -51,7 +70,11 @@ class ControlBot(commands.Bot):
                     try:
                         await msg.delete()
                     except Exception:
-                        pass
+                        log.debug(
+                            "[%s] Falha ao remover mensagem antiga do painel.",
+                            label,
+                            exc_info=True,
+                        )
                     break
 
         if is_layout:
@@ -89,6 +112,9 @@ class ControlBot(commands.Bot):
                 await shutdown()
         finally:
             try:
+                if self._web_runner is not None:
+                    await self._web_runner.cleanup()
+                    self._web_runner = None
                 await cancel_panel_tasks(self)
                 await shutdown_stealth_tasks()
                 sessions = getattr(self, "_quest_sessions", None)

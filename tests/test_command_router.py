@@ -8,14 +8,12 @@ import unittest
 import uuid
 
 from ipc_protocol import REQUEST_ID_MARKER
-from worker.command_router import (
-    dispatch,
-    handle_protection_enable,
-    handle_quest_config,
-    handle_rel_nickname,
-    handle_tracker_start,
-    handle_voice_join,
-)
+from worker.core.router import dispatch
+from worker.protection.commands import handle_protection_enable
+from worker.quest.commands import handle_quest_config
+from worker.relationships.commands import handle_rel_nickname
+from worker.tracker.commands import handle_tracker_start
+from worker.voice.commands import handle_voice_join
 
 
 class _Bot:
@@ -87,9 +85,7 @@ class CommandRouterTests(unittest.IsolatedAsyncioTestCase):
 
         bot = _Bot()
         bot.voice_manager = VoiceManager()
-        command = "VOICE_JOIN_JSON:" + json.dumps(
-            {"channel_id": 123456789012345678}, separators=(",", ":")
-        )
+        command = "VOICE_JOIN_JSON:" + json.dumps({"channel_id": 123456789012345678}, separators=(",", ":"))
 
         output = io.StringIO()
         with contextlib.redirect_stdout(output):
@@ -116,9 +112,7 @@ class CommandRouterTests(unittest.IsolatedAsyncioTestCase):
         bot = _Bot()
         bot.protection_manager = ProtectionManager()
         bot.presence_manager = PresenceManager()
-        command = "PROTECTION_ENABLE_JSON:" + json.dumps(
-            {"whitelist": [30, 20, 30]}, separators=(",", ":")
-        )
+        command = "PROTECTION_ENABLE_JSON:" + json.dumps({"whitelist": [30, 20, 30]}, separators=(",", ":"))
 
         output = io.StringIO()
         with contextlib.redirect_stdout(output):
@@ -145,9 +139,7 @@ class CommandRouterTests(unittest.IsolatedAsyncioTestCase):
         bot = _Bot()
         bot.tracker_manager = TrackerManager()
         webhook = "https://discord.com/api/webhooks/123456789012345678/" + "a" * 40
-        command = "TRACKER_START_JSON:" + json.dumps(
-            {"target_id": 42, "webhook_url": webhook}, separators=(",", ":")
-        )
+        command = "TRACKER_START_JSON:" + json.dumps({"target_id": 42, "webhook_url": webhook}, separators=(",", ":"))
 
         output = io.StringIO()
         with contextlib.redirect_stdout(output):

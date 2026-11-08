@@ -18,7 +18,7 @@ class PanelSecurityTests(unittest.IsolatedAsyncioTestCase):
             """
             import asyncio
             from types import SimpleNamespace
-            from panel.modals.token_modal import _subscribe_protection_events
+            from panel.session.modal import _subscribe_protection_events
 
             async def main():
                 callbacks = []

@@ -61,13 +61,13 @@ def install_libs() -> None:
         )
 
     print("[1/3] Instalando dependencias compartilhadas...")
-    _pip_install(PROJECT_ROOT / "requirements.txt")
+    _pip_install(PROJECT_ROOT / "requirements" / "base.txt")
 
     print("\n[2/3] Instalando discord.py do painel em panel/lib...")
-    _replace_isolated_environment("requirements-panel.txt", "panel/lib")
+    _replace_isolated_environment("requirements/panel.txt", "panel/lib")
 
     print("\n[3/3] Instalando discord.py-self do worker em worker/lib...")
-    _replace_isolated_environment("requirements-worker.txt", "worker/lib")
+    _replace_isolated_environment("requirements/worker.txt", "worker/lib")
 
     print("\nInstalacao concluida.")
     print(f"Valide com: {sys.executable} scripts/check_environment.py")

@@ -8,7 +8,7 @@ from unittest.mock import patch
 import worker  # noqa: F401 - ativa o ambiente isolado do discord.py-self
 import discord
 
-from worker.relationship_manager import RelationshipManager
+from worker.relationships.manager import RelationshipManager
 
 
 class _FastBulkConfig:
@@ -98,9 +98,7 @@ class _FakeClient:
         if self.fetch_error:
             raise self.fetch_error
         return [
-            relationship
-            for relationship in self.relationships
-            if relationship.type != discord.RelationshipType.none
+            relationship for relationship in self.relationships if relationship.type != discord.RelationshipType.none
         ]
 
     async def send_friend_request(self, username):
@@ -115,10 +113,7 @@ class _FakeClient:
 
 class RelationshipManagerTests(unittest.IsolatedAsyncioTestCase):
     async def test_pending_preview_is_bounded_but_total_is_complete(self):
-        relationships = [
-            _FakeRelationship(i, discord.RelationshipType.incoming_request)
-            for i in range(1, 31)
-        ]
+        relationships = [_FakeRelationship(i, discord.RelationshipType.incoming_request) for i in range(1, 31)]
         manager = RelationshipManager(_FakeClient(relationships))
 
         data = await manager.get_pending_requests(page=0, page_size=25)
@@ -135,9 +130,7 @@ class RelationshipManagerTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_read_falls_back_to_cache_and_marks_result_stale(self):
         cached = _FakeRelationship(1, discord.RelationshipType.friend)
-        manager = RelationshipManager(
-            _FakeClient([cached], fetch_error=RuntimeError("offline"))
-        )
+        manager = RelationshipManager(_FakeClient([cached], fetch_error=RuntimeError("offline")))
 
         stats = await manager.get_stats()
 
@@ -147,18 +140,14 @@ class RelationshipManagerTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_destructive_bulk_aborts_when_fresh_list_is_unavailable(self):
         relationship = _FakeRelationship(1, discord.RelationshipType.friend)
-        manager = RelationshipManager(
-            _FakeClient([relationship], fetch_error=RuntimeError("offline"))
-        )
+        manager = RelationshipManager(_FakeClient([relationship], fetch_error=RuntimeError("offline")))
 
-        with patch("worker.relationship_manager.emit_line") as emit:
+        with patch("worker.relationships.manager.emit_line") as emit:
             result = await manager.remove_all_friends([])
 
         self.assertEqual(result["status"], "ABORTADO")
         self.assertFalse(relationship.deleted)
-        self.assertTrue(
-            any("REL_CLEANUP_RESULT:ABORTADO" in call.args[0] for call in emit.call_args_list)
-        )
+        self.assertTrue(any("REL_CLEANUP_RESULT:ABORTADO" in call.args[0] for call in emit.call_args_list))
 
     async def test_remove_all_respects_whitelist_and_not_found_is_idempotent(self):
         keep = _FakeRelationship(1, discord.RelationshipType.friend)
@@ -171,8 +160,8 @@ class RelationshipManagerTests(unittest.IsolatedAsyncioTestCase):
         manager = RelationshipManager(_FakeClient([keep, remove, already_removed]))
 
         with (
-            patch("worker.relationship_manager.BulkConfig", return_value=_FastBulkConfig()),
-            patch("worker.relationship_manager.emit_line"),
+            patch("worker.relationships.manager.BulkConfig", return_value=_FastBulkConfig()),
+            patch("worker.relationships.manager.emit_line"),
         ):
             result = await manager.remove_all_friends([1])
 
@@ -192,8 +181,8 @@ class RelationshipManagerTests(unittest.IsolatedAsyncioTestCase):
         manager = RelationshipManager(_FakeClient([relationship]))
 
         with (
-            patch("worker.relationship_manager.BulkConfig", return_value=_FastBulkConfig()),
-            patch("worker.relationship_manager.emit_line"),
+            patch("worker.relationships.manager.BulkConfig", return_value=_FastBulkConfig()),
+            patch("worker.relationships.manager.emit_line"),
         ):
             result = await manager.unblock_all()
 
@@ -207,8 +196,8 @@ class RelationshipManagerTests(unittest.IsolatedAsyncioTestCase):
         manager = RelationshipManager(_FakeClient([incoming, outgoing]))
 
         with (
-            patch("worker.relationship_manager.BulkConfig", return_value=_FastBulkConfig()),
-            patch("worker.relationship_manager.emit_line"),
+            patch("worker.relationships.manager.BulkConfig", return_value=_FastBulkConfig()),
+            patch("worker.relationships.manager.emit_line"),
         ):
             result = await manager.accept_all_requests()
 
@@ -231,8 +220,8 @@ class RelationshipManagerTests(unittest.IsolatedAsyncioTestCase):
         manager = RelationshipManager(_FakeClient([incoming]))
 
         with (
-            patch("worker.relationship_manager.BulkConfig", return_value=_FastBulkConfig()),
-            patch("worker.relationship_manager.emit_line"),
+            patch("worker.relationships.manager.BulkConfig", return_value=_FastBulkConfig()),
+            patch("worker.relationships.manager.emit_line"),
         ):
             result = await manager.accept_all_requests()
 
@@ -247,8 +236,8 @@ class RelationshipManagerTests(unittest.IsolatedAsyncioTestCase):
         first.on_delete = lambda: setattr(manager, "cancelled", True)
 
         with (
-            patch("worker.relationship_manager.BulkConfig", return_value=_FastBulkConfig()),
-            patch("worker.relationship_manager.emit_line"),
+            patch("worker.relationships.manager.BulkConfig", return_value=_FastBulkConfig()),
+            patch("worker.relationships.manager.emit_line"),
         ):
             result = await manager.remove_all_friends([])
 
@@ -264,12 +253,10 @@ class RelationshipManagerTests(unittest.IsolatedAsyncioTestCase):
         second_manager = RelationshipManager(_FakeClient([second]))
 
         with (
-            patch("worker.relationship_manager.BulkConfig", return_value=_FastBulkConfig()),
-            patch("worker.relationship_manager.emit_line"),
+            patch("worker.relationships.manager.BulkConfig", return_value=_FastBulkConfig()),
+            patch("worker.relationships.manager.emit_line"),
         ):
-            results = await asyncio.gather(
-                first_manager.unblock_all(), second_manager.unblock_all()
-            )
+            results = await asyncio.gather(first_manager.unblock_all(), second_manager.unblock_all())
 
         self.assertEqual([result["status"] for result in results], ["COMPLETADO"] * 2)
         self.assertTrue(first.deleted)
@@ -280,7 +267,7 @@ class RelationshipManagerTests(unittest.IsolatedAsyncioTestCase):
         manager = RelationshipManager(_FakeClient([relationship]))
         await manager._bulk_lock.acquire()
         try:
-            with patch("worker.relationship_manager.emit_line"):
+            with patch("worker.relationships.manager.emit_line"):
                 result = await manager.unblock_all()
         finally:
             manager._bulk_lock.release()
@@ -297,6 +284,32 @@ class RelationshipManagerTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result["ok"])
         self.assertEqual(result["code"], "UPDATED")
         self.assertEqual(relationship.nick, "Colega")
+
+    async def test_bulk_rejects_malformed_id_before_starting(self):
+        # Os IDs alvo sao lidos antes do _START: um ID invalido falha antes de qualquer operacao.
+        malformed = _FakeRelationship(1, discord.RelationshipType.friend)
+        malformed.user.id = "nao-numerico"
+        manager = RelationshipManager(_FakeClient([malformed]))
+        calls = []
+
+        async def operation(relationship):
+            calls.append(relationship)
+
+        with patch("worker.relationships.manager.emit_line") as emit:
+            with self.assertRaises(ValueError):
+                await manager._run_bulk(
+                    relationships=[malformed],
+                    operation=operation,
+                    desired_remaining_types=(discord.RelationshipType.friend,),
+                    desired_result_type=None,
+                    not_found_is_success=True,
+                    prefix="REL_X",
+                    request_id=None,
+                    config=_FastBulkConfig(),
+                )
+
+        self.assertEqual(calls, [])
+        emit.assert_not_called()
 
     def test_progress_label_cannot_inject_protocol_fields(self):
         self.assertEqual(

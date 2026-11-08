@@ -12,3 +12,7 @@ tests/
 *.log
 panel/lib/
 worker/lib/
+.ruff_cache/
+.superpowers/
+.claude/
+docs/

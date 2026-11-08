@@ -1,0 +1,433 @@
+{
+ "not_deletable": {
+  "log": [],
+  "outcome": "skipped"
+ },
+ "deleted": {
+  "log": [
+   [
+    "wait_paused"
+   ],
+   [
+    "delete"
+   ]
+  ],
+  "outcome": "deleted"
+ },
+ "not_found": {
+  "log": [
+   [
+    "wait_paused"
+   ],
+   [
+    "delete"
+   ]
+  ],
+  "outcome": "missing"
+ },
+ "forbidden": {
+  "log": [
+   [
+    "wait_paused"
+   ],
+   [
+    "delete"
+   ],
+   [
+    "emit",
+    "MSG_X_FORBIDDEN:77",
+    "m1"
+   ]
+  ],
+  "outcome": "forbidden"
+ },
+ "captcha": {
+  "log": [
+   [
+    "wait_paused"
+   ],
+   [
+    "delete"
+   ],
+   [
+    "emit",
+    "MSG_X_ABORT_CAPTCHA",
+    "m1"
+   ]
+  ],
+  "outcome": "captcha"
+ },
+ "rate_limited_then_ok": {
+  "log": [
+   [
+    "wait_paused"
+   ],
+   [
+    "delete"
+   ],
+   [
+    "emit",
+    "MSG_X_RATELIMIT:1:1.0",
+    "m1"
+   ],
+   [
+    "sleep",
+    1.0
+   ],
+   [
+    "wait_paused"
+   ],
+   [
+    "delete"
+   ]
+  ],
+  "outcome": "deleted"
+ },
+ "rate_limited_cloudflare": {
+  "log": [
+   [
+    "wait_paused"
+   ],
+   [
+    "delete"
+   ],
+   [
+    "emit",
+    "MSG_X_RATELIMIT:1:2.0",
+    "m1"
+   ]
+  ],
+  "outcome": "ratelimited"
+ },
+ "rate_limited_cancel": {
+  "log": [
+   [
+    "wait_paused"
+   ],
+   [
+    "delete"
+   ],
+   [
+    "emit",
+    "MSG_X_RATELIMIT:1:2.0",
+    "m1"
+   ],
+   [
+    "sleep",
+    2.0
+   ]
+  ],
+  "outcome": "cancelled"
+ },
+ "http_429_from_attribute": {
+  "log": [
+   [
+    "wait_paused"
+   ],
+   [
+    "delete"
+   ],
+   [
+    "emit",
+    "MSG_X_RATELIMIT:1:2.5",
+    "m1"
+   ],
+   [
+    "sleep",
+    2.5
+   ],
+   [
+    "wait_paused"
+   ],
+   [
+    "delete"
+   ]
+  ],
+  "outcome": "deleted"
+ },
+ "http_429_from_json": {
+  "log": [
+   [
+    "wait_paused"
+   ],
+   [
+    "delete"
+   ],
+   [
+    "emit",
+    "MSG_X_RATELIMIT:1:3.0",
+    "m1"
+   ],
+   [
+    "sleep",
+    3.0
+   ],
+   [
+    "wait_paused"
+   ],
+   [
+    "delete"
+   ]
+  ],
+  "outcome": "deleted"
+ },
+ "http_429_default": {
+  "log": [
+   [
+    "wait_paused"
+   ],
+   [
+    "delete"
+   ],
+   [
+    "emit",
+    "MSG_X_RATELIMIT:1:5.0",
+    "m1"
+   ],
+   [
+    "sleep",
+    5.0
+   ],
+   [
+    "wait_paused"
+   ],
+   [
+    "delete"
+   ]
+  ],
+  "outcome": "deleted"
+ },
+ "http_429_limit": {
+  "log": [
+   [
+    "wait_paused"
+   ],
+   [
+    "delete"
+   ],
+   [
+    "emit",
+    "MSG_X_RATELIMIT:1:1.0",
+    "m1"
+   ],
+   [
+    "sleep",
+    1.0
+   ],
+   [
+    "wait_paused"
+   ],
+   [
+    "delete"
+   ],
+   [
+    "emit",
+    "MSG_X_RATELIMIT:2:1.0",
+    "m1"
+   ],
+   [
+    "sleep",
+    1.0
+   ],
+   [
+    "wait_paused"
+   ],
+   [
+    "delete"
+   ],
+   [
+    "emit",
+    "MSG_X_RATELIMIT:3:1.0",
+    "m1"
+   ]
+  ],
+  "outcome": "ratelimited"
+ },
+ "http_429_cancel": {
+  "log": [
+   [
+    "wait_paused"
+   ],
+   [
+    "delete"
+   ],
+   [
+    "emit",
+    "MSG_X_RATELIMIT:1:1.0",
+    "m1"
+   ],
+   [
+    "sleep",
+    1.0
+   ]
+  ],
+  "outcome": "cancelled"
+ },
+ "http_500_retries_then_fail": {
+  "log": [
+   [
+    "wait_paused"
+   ],
+   [
+    "delete"
+   ],
+   [
+    "emit",
+    "MSG_X_RETRY:500:1:2",
+    "m1"
+   ],
+   [
+    "sleep",
+    2.0
+   ],
+   [
+    "wait_paused"
+   ],
+   [
+    "delete"
+   ],
+   [
+    "emit",
+    "MSG_X_RETRY:500:2:4",
+    "m1"
+   ],
+   [
+    "sleep",
+    4.0
+   ],
+   [
+    "wait_paused"
+   ],
+   [
+    "delete"
+   ],
+   [
+    "emit",
+    "MSG_X_RETRY:500:3:8",
+    "m1"
+   ],
+   [
+    "sleep",
+    8.0
+   ],
+   [
+    "wait_paused"
+   ],
+   [
+    "delete"
+   ],
+   [
+    "emit",
+    "MSG_X_ERROR:500:77",
+    "m1"
+   ]
+  ],
+  "outcome": "failed"
+ },
+ "http_500_then_ok": {
+  "log": [
+   [
+    "wait_paused"
+   ],
+   [
+    "delete"
+   ],
+   [
+    "emit",
+    "MSG_X_RETRY:503:1:2",
+    "m1"
+   ],
+   [
+    "sleep",
+    2.0
+   ],
+   [
+    "wait_paused"
+   ],
+   [
+    "delete"
+   ]
+  ],
+  "outcome": "deleted"
+ },
+ "http_500_cancel": {
+  "log": [
+   [
+    "wait_paused"
+   ],
+   [
+    "delete"
+   ],
+   [
+    "emit",
+    "MSG_X_RETRY:500:1:2",
+    "m1"
+   ],
+   [
+    "sleep",
+    2.0
+   ]
+  ],
+  "outcome": "cancelled"
+ },
+ "http_400": {
+  "log": [
+   [
+    "wait_paused"
+   ],
+   [
+    "delete"
+   ],
+   [
+    "emit",
+    "MSG_X_ERROR:400:77",
+    "m1"
+   ]
+  ],
+  "outcome": "failed"
+ },
+ "http_no_status": {
+  "log": [
+   [
+    "wait_paused"
+   ],
+   [
+    "delete"
+   ],
+   [
+    "emit",
+    "MSG_X_ERROR:HTTP:77",
+    "m1"
+   ]
+  ],
+  "outcome": "failed"
+ },
+ "generic_error": {
+  "log": [
+   [
+    "wait_paused"
+   ],
+   [
+    "delete"
+   ],
+   [
+    "emit",
+    "MSG_X_ERROR:ValueError:77",
+    "m1"
+   ]
+  ],
+  "outcome": "failed"
+ },
+ "paused_cancelled": {
+  "log": [
+   [
+    "wait_paused"
+   ]
+  ],
+  "outcome": "cancelled"
+ },
+ "cancelled_before_start": {
+  "log": [],
+  "outcome": "cancelled"
+ }
+}

@@ -7,6 +7,12 @@ venv/
 .venv/
 panel/lib/
 worker/lib/
+# staging e backup temporários do setup_envs.py ao reinstalar os libs
+.lib-staging-*/
+.lib-backup/
+.ruff_cache/
+.superpowers/
+*.log
 .vscode/
 .idea/
 .env
@@ -14,6 +20,10 @@ worker/lib/
 !.env.example
 *.token
 config_local.py
+*-cleanup-state.json
 .DS_Store
 Thumbs.db
 .scrapy/
+# documentação de trabalho local
+docs/
+PLANO_POSTGRESQL.md

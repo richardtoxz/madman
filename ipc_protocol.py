@@ -94,3 +94,110 @@ def decode_startup_error(payload: str) -> tuple[str, str]:
     if not code or not message:
         raise IPCProtocolError("erro de inicializacao incompleto")
     return code, message
+
+
+def encode_json_payload(data: dict[str, Any]) -> str:
+    return json.dumps(data, ensure_ascii=False, separators=(",", ":"))
+
+
+def decode_json_payload(payload: str) -> dict[str, Any] | None:
+    if not payload or not isinstance(payload, str):
+        return None
+    try:
+        parsed = json.loads(payload)
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return None
+    return parsed if isinstance(parsed, dict) else None
+
+
+_CLEANUP_DELETE_COUNTS_RE = re.compile(
+    r"Deletadas\s+(?P<deleted>\d+)(?:\s+de\s+(?P<total>\d+))?",
+    re.IGNORECASE,
+)
+_CLEANUP_FIELD_PATTERNS = {
+    "missing": re.compile(r"Ja ausentes\s+(\d+)", re.IGNORECASE),
+    "ignored": re.compile(r"ignoradas\s+(\d+)", re.IGNORECASE),
+    "failed": re.compile(r"falhas\s+(\d+)", re.IGNORECASE),
+    "remaining": re.compile(r"restantes\s+(\d+)", re.IGNORECASE),
+    "unavailable_sources": re.compile(r"fontes indisponiveis\s+(\d+)", re.IGNORECASE),
+}
+
+
+def parse_cleanup_result(
+    result: str | dict[str, Any] | None, fallback_total: int = 0
+) -> dict[str, Any]:
+    if isinstance(result, dict):
+        data = dict(result)
+    elif isinstance(result, str) and result.strip().startswith("{"):
+        data = decode_json_payload(result.strip()) or {}
+    elif isinstance(result, str) and "JSON:" in result:
+        _, _, raw_json = result.partition("JSON:")
+        data = decode_json_payload(raw_json.strip()) or {}
+    else:
+        data = {}
+
+    if data:
+        status = str(data.get("status") or "COMPLETADO").upper()
+        deleted = int(data.get("deleted", 0) or 0)
+        total = max(int(data.get("total", 0) or 0), fallback_total, deleted)
+        text = str(data.get("text") or f"{status}:Deletadas {deleted} de {total}.")
+        if status == "CANCELADO":
+            outcome = "cancelled"
+        elif status in {"ERRO", "ABORTADO"}:
+            outcome = "error"
+        elif status == "PARCIAL":
+            outcome = "partial"
+        else:
+            outcome = "complete"
+        return {
+            "outcome": outcome,
+            "status": status,
+            "deleted": deleted,
+            "total": total,
+            "missing": int(data.get("missing", 0) or 0),
+            "ignored": int(data.get("ignored", 0) or 0),
+            "failed": int(data.get("failed", 0) or 0),
+            "remaining": int(data.get("remaining", 0) or 0),
+            "unavailable_sources": int(data.get("unavailable_sources", 0) or 0),
+            "text": text,
+        }
+
+    text = str(result or "ERRO:Sem resposta do worker").strip()
+    match = _CLEANUP_DELETE_COUNTS_RE.search(text)
+    deleted = int(match.group("deleted")) if match else 0
+    total = (
+        int(match.group("total"))
+        if match and match.group("total") is not None
+        else max(fallback_total, deleted)
+    )
+
+    normalized = text.casefold()
+    if normalized.startswith("cancelado"):
+        outcome = "cancelled"
+        status = "CANCELADO"
+    elif normalized.startswith(("erro:", "abortado:")) or any(
+        marker in normalized
+        for marker in ("timeout", "nao conectado", "não conectado")
+    ):
+        outcome = "error"
+        status = "ABORTADO" if normalized.startswith("abortado:") else "ERRO"
+    elif normalized.startswith("parcial:"):
+        outcome = "partial"
+        status = "PARCIAL"
+    else:
+        outcome = "complete"
+        status = "COMPLETADO"
+
+    extracted = {}
+    for key, pattern in _CLEANUP_FIELD_PATTERNS.items():
+        field_match = pattern.search(text)
+        extracted[key] = int(field_match.group(1)) if field_match else 0
+
+    return {
+        "outcome": outcome,
+        "status": status,
+        "deleted": deleted,
+        "total": total,
+        "text": text,
+        **extracted,
+    }

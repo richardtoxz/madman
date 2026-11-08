@@ -8,7 +8,7 @@ from unittest.mock import patch
 import worker  # noqa: F401 - ativa o ambiente isolado do discord.py-self
 import discord
 
-from worker.guild_manager import GuildManager
+from worker.guilds.manager import GuildManager
 
 
 class _FastBulkConfig:
@@ -44,20 +44,12 @@ def _forbidden():
 class _FakeSettings:
     def __init__(self, *, muted: bool = False, edit_error=None, valid_return=True):
         self.muted = muted
-        self.level = (
-            discord.NotificationLevel.nothing
-            if muted
-            else discord.NotificationLevel.server_default
-        )
+        self.level = discord.NotificationLevel.nothing if muted else discord.NotificationLevel.server_default
         self.suppress_everyone = muted
         self.suppress_roles = muted
         self.mobile_push = not muted
         self.mute_scheduled_events = muted
-        self.notify_highlights = (
-            discord.HighlightLevel.disabled
-            if muted
-            else discord.HighlightLevel.default
-        )
+        self.notify_highlights = discord.HighlightLevel.disabled if muted else discord.HighlightLevel.default
         self.edit_error = edit_error
         self.valid_return = valid_return
         self.edit_calls = []
@@ -193,18 +185,14 @@ class GuildManagerTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_bulk_aborts_when_fresh_list_is_unavailable(self):
         guild = _FakeUserGuild(1)
-        manager = GuildManager(
-            _FakeClient([guild], fetch_error=RuntimeError("offline"))
-        )
+        manager = GuildManager(_FakeClient([guild], fetch_error=RuntimeError("offline")))
 
-        with patch("worker.guild_manager.emit_line") as emit:
+        with patch("worker.guilds.manager.emit_line") as emit:
             result = await manager.leave_all_guilds([])
 
         self.assertEqual(result["status"], "ABORTADO")
         self.assertEqual(guild.leave_calls, 0)
-        self.assertTrue(
-            any("GUILD_LEAVE_RESULT:ABORTADO" in call.args[0] for call in emit.call_args_list)
-        )
+        self.assertTrue(any("GUILD_LEAVE_RESULT:ABORTADO" in call.args[0] for call in emit.call_args_list))
 
     async def test_leave_protects_whitelist_and_owned_guilds(self):
         whitelisted = _FakeUserGuild(1)
@@ -214,8 +202,8 @@ class GuildManagerTests(unittest.IsolatedAsyncioTestCase):
         manager = GuildManager(_FakeClient([whitelisted, owned, leave, missing]))
 
         with (
-            patch("worker.guild_manager.BulkConfig", return_value=_FastBulkConfig()),
-            patch("worker.guild_manager.emit_line"),
+            patch("worker.guilds.manager.BulkConfig", return_value=_FastBulkConfig()),
+            patch("worker.guilds.manager.emit_line"),
         ):
             result = await manager.leave_all_guilds([1])
 
@@ -232,8 +220,8 @@ class GuildManagerTests(unittest.IsolatedAsyncioTestCase):
         manager = GuildManager(_FakeClient([guild]))
 
         with (
-            patch("worker.guild_manager.BulkConfig", return_value=_FastBulkConfig()),
-            patch("worker.guild_manager.emit_line"),
+            patch("worker.guilds.manager.BulkConfig", return_value=_FastBulkConfig()),
+            patch("worker.guilds.manager.emit_line"),
         ):
             result = await manager.leave_all_guilds([])
 
@@ -249,8 +237,8 @@ class GuildManagerTests(unittest.IsolatedAsyncioTestCase):
         manager = GuildManager(client)
 
         with (
-            patch("worker.guild_manager.BulkConfig", return_value=_FastBulkConfig()),
-            patch("worker.guild_manager.emit_line"),
+            patch("worker.guilds.manager.BulkConfig", return_value=_FastBulkConfig()),
+            patch("worker.guilds.manager.emit_line"),
         ):
             result = await manager.mute_all_guilds([])
 
@@ -276,8 +264,8 @@ class GuildManagerTests(unittest.IsolatedAsyncioTestCase):
         manager = GuildManager(client)
 
         with (
-            patch("worker.guild_manager.BulkConfig", return_value=_FastBulkConfig()),
-            patch("worker.guild_manager.emit_line"),
+            patch("worker.guilds.manager.BulkConfig", return_value=_FastBulkConfig()),
+            patch("worker.guilds.manager.emit_line"),
         ):
             result = await manager.mute_all_guilds([])
 
@@ -292,8 +280,8 @@ class GuildManagerTests(unittest.IsolatedAsyncioTestCase):
         manager = GuildManager(client)
 
         with (
-            patch("worker.guild_manager.BulkConfig", return_value=_FastBulkConfig()),
-            patch("worker.guild_manager.emit_line"),
+            patch("worker.guilds.manager.BulkConfig", return_value=_FastBulkConfig()),
+            patch("worker.guilds.manager.emit_line"),
         ):
             result = await manager.mute_all_guilds([])
 
@@ -308,8 +296,8 @@ class GuildManagerTests(unittest.IsolatedAsyncioTestCase):
         manager = GuildManager(client)
 
         with (
-            patch("worker.guild_manager.BulkConfig", return_value=_FastBulkConfig()),
-            patch("worker.guild_manager.emit_line"),
+            patch("worker.guilds.manager.BulkConfig", return_value=_FastBulkConfig()),
+            patch("worker.guilds.manager.emit_line"),
         ):
             result = await manager.mute_all_guilds([])
 
@@ -329,8 +317,8 @@ class GuildManagerTests(unittest.IsolatedAsyncioTestCase):
         manager = GuildManager(client)
 
         with (
-            patch("worker.guild_manager.BulkConfig", return_value=_FastBulkConfig()),
-            patch("worker.guild_manager.emit_line"),
+            patch("worker.guilds.manager.BulkConfig", return_value=_FastBulkConfig()),
+            patch("worker.guilds.manager.emit_line"),
         ):
             result = await manager.mute_all_guilds([])
 
@@ -344,8 +332,8 @@ class GuildManagerTests(unittest.IsolatedAsyncioTestCase):
         first.on_leave = lambda: setattr(manager, "cancelled", True)
 
         with (
-            patch("worker.guild_manager.BulkConfig", return_value=_FastBulkConfig()),
-            patch("worker.guild_manager.emit_line"),
+            patch("worker.guilds.manager.BulkConfig", return_value=_FastBulkConfig()),
+            patch("worker.guilds.manager.emit_line"),
         ):
             result = await manager.leave_all_guilds([])
 
@@ -363,8 +351,8 @@ class GuildManagerTests(unittest.IsolatedAsyncioTestCase):
         ]
 
         with (
-            patch("worker.guild_manager.BulkConfig", return_value=_FastBulkConfig()),
-            patch("worker.guild_manager.emit_line"),
+            patch("worker.guilds.manager.BulkConfig", return_value=_FastBulkConfig()),
+            patch("worker.guilds.manager.emit_line"),
         ):
             results = await asyncio.gather(
                 managers[0].leave_all_guilds([]),
@@ -380,7 +368,7 @@ class GuildManagerTests(unittest.IsolatedAsyncioTestCase):
         manager = GuildManager(_FakeClient([guild]))
         await manager._bulk_lock.acquire()
         try:
-            with patch("worker.guild_manager.emit_line"):
+            with patch("worker.guilds.manager.emit_line"):
                 result = await manager.leave_all_guilds([])
         finally:
             manager._bulk_lock.release()

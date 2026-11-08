@@ -1,0 +1,1528 @@
+{
+ "profile first_fetch": {
+  "log": [
+   [
+    "fetch_profile",
+    42,
+    {
+     "with_mutual_guilds": false,
+     "with_mutual_friends": false
+    }
+   ],
+   [
+    "log",
+    {
+     "title": "Perfil Público Inicial",
+     "color": 10181046,
+     "changes": [
+      [
+       "Username",
+       "alvo"
+      ],
+      [
+       "Nome de exibição",
+       "Alvo"
+      ],
+      [
+       "Avatar",
+       "https://cdn/avatar.png"
+      ],
+      [
+       "Banner",
+       "—"
+      ],
+      [
+       "Pronomes",
+       "ele/dele"
+      ],
+      [
+       "Cor de destaque",
+       "—"
+      ],
+      [
+       "Assinatura Nitro",
+       "nitro"
+      ],
+      [
+       "Nitro desde",
+       "2024-01-02"
+      ],
+      [
+       "Impulsionando servidor desde",
+       "—"
+      ],
+      [
+       "Bio pública",
+       "bio inicial"
+      ],
+      [
+       "Insígnias",
+       "Early Supporter"
+      ],
+      [
+       "Conexões públicas",
+       "`github: alvo` [Perfil](https://github.com/alvo)"
+      ]
+     ],
+     "user": "namespace(id=42, name='alvo')",
+     "event_type": "profile"
+    }
+   ]
+  ],
+  "state": {
+   "bio": "bio inicial",
+   "connected_accounts": [
+    "`github: alvo` [Perfil](https://github.com/alvo)"
+   ],
+   "badges": [
+    "Early Supporter"
+   ],
+   "profile_identity": {
+    "Username": "alvo",
+    "Nome de exibição": "Alvo",
+    "Avatar": "https://cdn/avatar.png",
+    "Banner": "",
+    "Pronomes": "ele/dele",
+    "Cor de destaque": "",
+    "Assinatura Nitro": "nitro",
+    "Nitro desde": "2024-01-02",
+    "Impulsionando servidor desde": null
+   },
+   "profile_card": {
+    "username": "alvo",
+    "display_name": "Alvo",
+    "avatar_url": null,
+    "decoration_url": null,
+    "name_style": null,
+    "guild_tag": null,
+    "banner_url": null,
+    "accent": null,
+    "theme": null,
+    "bio": "bio inicial",
+    "pronouns": "ele/dele",
+    "badges": []
+   },
+   "profile_initialized": true,
+   "stats": {
+    "last_error": null,
+    "subscription_errors": 0
+   }
+  }
+ },
+ "profile no_changes": {
+  "log": [
+   [
+    "fetch_profile",
+    42,
+    {
+     "with_mutual_guilds": false,
+     "with_mutual_friends": false
+    }
+   ],
+   [
+    "log",
+    {
+     "title": "Perfil Público Inicial",
+     "color": 10181046,
+     "changes": [
+      [
+       "Username",
+       "alvo"
+      ],
+      [
+       "Nome de exibição",
+       "Alvo"
+      ],
+      [
+       "Avatar",
+       "https://cdn/avatar.png"
+      ],
+      [
+       "Banner",
+       "—"
+      ],
+      [
+       "Pronomes",
+       "ele/dele"
+      ],
+      [
+       "Cor de destaque",
+       "—"
+      ],
+      [
+       "Assinatura Nitro",
+       "nitro"
+      ],
+      [
+       "Nitro desde",
+       "2024-01-02"
+      ],
+      [
+       "Impulsionando servidor desde",
+       "—"
+      ],
+      [
+       "Bio pública",
+       "bio inicial"
+      ],
+      [
+       "Insígnias",
+       "Early Supporter"
+      ],
+      [
+       "Conexões públicas",
+       "`github: alvo` [Perfil](https://github.com/alvo)"
+      ]
+     ],
+     "user": "namespace(id=42, name='alvo')",
+     "event_type": "profile"
+    }
+   ],
+   [
+    "fetch_profile",
+    42,
+    {
+     "with_mutual_guilds": false,
+     "with_mutual_friends": false
+    }
+   ]
+  ],
+  "state": {
+   "bio": "bio inicial",
+   "connected_accounts": [
+    "`github: alvo` [Perfil](https://github.com/alvo)"
+   ],
+   "badges": [
+    "Early Supporter"
+   ],
+   "profile_identity": {
+    "Username": "alvo",
+    "Nome de exibição": "Alvo",
+    "Avatar": "https://cdn/avatar.png",
+    "Banner": "",
+    "Pronomes": "ele/dele",
+    "Cor de destaque": "",
+    "Assinatura Nitro": "nitro",
+    "Nitro desde": "2024-01-02",
+    "Impulsionando servidor desde": null
+   },
+   "profile_card": {
+    "username": "alvo",
+    "display_name": "Alvo",
+    "avatar_url": null,
+    "decoration_url": null,
+    "name_style": null,
+    "guild_tag": null,
+    "banner_url": null,
+    "accent": null,
+    "theme": null,
+    "bio": "bio inicial",
+    "pronouns": "ele/dele",
+    "badges": []
+   },
+   "profile_initialized": true,
+   "stats": {
+    "last_error": null,
+    "subscription_errors": 0
+   }
+  }
+ },
+ "profile bio_connections_badges_changed": {
+  "log": [
+   [
+    "fetch_profile",
+    42,
+    {
+     "with_mutual_guilds": false,
+     "with_mutual_friends": false
+    }
+   ],
+   [
+    "log",
+    {
+     "title": "Perfil Público Inicial",
+     "color": 10181046,
+     "changes": [
+      [
+       "Username",
+       "alvo"
+      ],
+      [
+       "Nome de exibição",
+       "Alvo"
+      ],
+      [
+       "Avatar",
+       "https://cdn/avatar.png"
+      ],
+      [
+       "Banner",
+       "—"
+      ],
+      [
+       "Pronomes",
+       "ele/dele"
+      ],
+      [
+       "Cor de destaque",
+       "—"
+      ],
+      [
+       "Assinatura Nitro",
+       "nitro"
+      ],
+      [
+       "Nitro desde",
+       "2024-01-02"
+      ],
+      [
+       "Impulsionando servidor desde",
+       "—"
+      ],
+      [
+       "Bio pública",
+       "bio inicial"
+      ],
+      [
+       "Insígnias",
+       "Early Supporter"
+      ],
+      [
+       "Conexões públicas",
+       "`github: alvo` [Perfil](https://github.com/alvo)"
+      ]
+     ],
+     "user": "namespace(id=42, name='alvo')",
+     "event_type": "profile"
+    }
+   ],
+   [
+    "fetch_profile",
+    42,
+    {
+     "with_mutual_guilds": false,
+     "with_mutual_friends": false
+    }
+   ],
+   [
+    "log",
+    {
+     "title": "Perfil Público Atualizado",
+     "color": 10181046,
+     "changes": [
+      [
+       "Bio editada",
+       "**Antes:**\n>>> bio inicial\n\n**Depois:**\n>>> bio nova"
+      ],
+      [
+       "Conexões públicas adicionadas",
+       "`x: alvo`"
+      ],
+      [
+       "Conexões públicas removidas",
+       "`github: alvo` [Perfil](https://github.com/alvo)"
+      ],
+      [
+       "Insígnias adicionadas",
+       "hypesquad"
+      ],
+      [
+       "Insígnias removidas",
+       "Early Supporter"
+      ]
+     ],
+     "user": "namespace(id=42, name='alvo')",
+     "event_type": "profile"
+    }
+   ]
+  ],
+  "state": {
+   "bio": "bio nova",
+   "connected_accounts": [
+    "`x: alvo`"
+   ],
+   "badges": [
+    "hypesquad"
+   ],
+   "profile_identity": {
+    "Username": "alvo",
+    "Nome de exibição": "Alvo",
+    "Avatar": "https://cdn/avatar.png",
+    "Banner": "",
+    "Pronomes": "ele/dele",
+    "Cor de destaque": "",
+    "Assinatura Nitro": "nitro",
+    "Nitro desde": "2024-01-02",
+    "Impulsionando servidor desde": null
+   },
+   "profile_card": {
+    "username": "alvo",
+    "display_name": "Alvo",
+    "avatar_url": null,
+    "decoration_url": null,
+    "name_style": null,
+    "guild_tag": null,
+    "banner_url": null,
+    "accent": null,
+    "theme": null,
+    "bio": "bio nova",
+    "pronouns": "ele/dele",
+    "badges": []
+   },
+   "profile_initialized": true,
+   "stats": {
+    "last_error": null,
+    "subscription_errors": 0
+   }
+  }
+ },
+ "profile identity_changed": {
+  "log": [
+   [
+    "fetch_profile",
+    42,
+    {
+     "with_mutual_guilds": false,
+     "with_mutual_friends": false
+    }
+   ],
+   [
+    "log",
+    {
+     "title": "Perfil Público Inicial",
+     "color": 10181046,
+     "changes": [
+      [
+       "Username",
+       "alvo"
+      ],
+      [
+       "Nome de exibição",
+       "Alvo"
+      ],
+      [
+       "Avatar",
+       "https://cdn/avatar.png"
+      ],
+      [
+       "Banner",
+       "—"
+      ],
+      [
+       "Pronomes",
+       "ele/dele"
+      ],
+      [
+       "Cor de destaque",
+       "—"
+      ],
+      [
+       "Assinatura Nitro",
+       "nitro"
+      ],
+      [
+       "Nitro desde",
+       "2024-01-02"
+      ],
+      [
+       "Impulsionando servidor desde",
+       "—"
+      ],
+      [
+       "Bio pública",
+       "bio inicial"
+      ],
+      [
+       "Insígnias",
+       "Early Supporter"
+      ],
+      [
+       "Conexões públicas",
+       "`github: alvo` [Perfil](https://github.com/alvo)"
+      ]
+     ],
+     "user": "namespace(id=42, name='alvo')",
+     "event_type": "profile"
+    }
+   ],
+   [
+    "fetch_profile",
+    42,
+    {
+     "with_mutual_guilds": false,
+     "with_mutual_friends": false
+    }
+   ],
+   [
+    "log",
+    {
+     "title": "Perfil Público Atualizado",
+     "color": 10181046,
+     "changes": [
+      [
+       "Nome de exibição",
+       "Alvo ➔ Novo Nome"
+      ],
+      [
+       "Assinatura Nitro",
+       "nitro ➔ —"
+      ]
+     ],
+     "user": "namespace(id=42, name='alvo')",
+     "event_type": "profile"
+    }
+   ]
+  ],
+  "state": {
+   "bio": "bio inicial",
+   "connected_accounts": [
+    "`github: alvo` [Perfil](https://github.com/alvo)"
+   ],
+   "badges": [
+    "Early Supporter"
+   ],
+   "profile_identity": {
+    "Username": "alvo",
+    "Nome de exibição": "Novo Nome",
+    "Avatar": "https://cdn/avatar.png",
+    "Banner": "",
+    "Pronomes": "ele/dele",
+    "Cor de destaque": "",
+    "Assinatura Nitro": null,
+    "Nitro desde": "2024-01-02",
+    "Impulsionando servidor desde": null
+   },
+   "profile_card": {
+    "username": "alvo",
+    "display_name": "Novo Nome",
+    "avatar_url": null,
+    "decoration_url": null,
+    "name_style": null,
+    "guild_tag": null,
+    "banner_url": null,
+    "accent": null,
+    "theme": null,
+    "bio": "bio inicial",
+    "pronouns": "ele/dele",
+    "badges": []
+   },
+   "profile_initialized": true,
+   "stats": {
+    "last_error": null,
+    "subscription_errors": 0
+   }
+  }
+ },
+ "profile emit_changes_false": {
+  "log": [
+   [
+    "fetch_profile",
+    42,
+    {
+     "with_mutual_guilds": false,
+     "with_mutual_friends": false
+    }
+   ],
+   [
+    "log",
+    {
+     "title": "Perfil Público Inicial",
+     "color": 10181046,
+     "changes": [
+      [
+       "Username",
+       "alvo"
+      ],
+      [
+       "Nome de exibição",
+       "Alvo"
+      ],
+      [
+       "Avatar",
+       "https://cdn/avatar.png"
+      ],
+      [
+       "Banner",
+       "—"
+      ],
+      [
+       "Pronomes",
+       "ele/dele"
+      ],
+      [
+       "Cor de destaque",
+       "—"
+      ],
+      [
+       "Assinatura Nitro",
+       "nitro"
+      ],
+      [
+       "Nitro desde",
+       "2024-01-02"
+      ],
+      [
+       "Impulsionando servidor desde",
+       "—"
+      ],
+      [
+       "Bio pública",
+       "bio inicial"
+      ],
+      [
+       "Insígnias",
+       "Early Supporter"
+      ],
+      [
+       "Conexões públicas",
+       "`github: alvo` [Perfil](https://github.com/alvo)"
+      ]
+     ],
+     "user": "namespace(id=42, name='alvo')",
+     "event_type": "profile"
+    }
+   ],
+   [
+    "fetch_profile",
+    42,
+    {
+     "with_mutual_guilds": false,
+     "with_mutual_friends": false
+    }
+   ]
+  ],
+  "state": {
+   "bio": "bio nova",
+   "connected_accounts": [
+    "`x: alvo`"
+   ],
+   "badges": [
+    "hypesquad"
+   ],
+   "profile_identity": {
+    "Username": "alvo",
+    "Nome de exibição": "Alvo",
+    "Avatar": "https://cdn/avatar.png",
+    "Banner": "",
+    "Pronomes": "ele/dele",
+    "Cor de destaque": "",
+    "Assinatura Nitro": "nitro",
+    "Nitro desde": "2024-01-02",
+    "Impulsionando servidor desde": null
+   },
+   "profile_card": {
+    "username": "alvo",
+    "display_name": "Alvo",
+    "avatar_url": null,
+    "decoration_url": null,
+    "name_style": null,
+    "guild_tag": null,
+    "banner_url": null,
+    "accent": null,
+    "theme": null,
+    "bio": "bio nova",
+    "pronouns": "ele/dele",
+    "badges": []
+   },
+   "profile_initialized": true,
+   "stats": {
+    "last_error": null,
+    "subscription_errors": 0
+   }
+  }
+ },
+ "profile none": {
+  "log": [
+   [
+    "fetch_profile",
+    42,
+    {
+     "with_mutual_guilds": false,
+     "with_mutual_friends": false
+    }
+   ]
+  ],
+  "state": {
+   "bio": null,
+   "connected_accounts": [],
+   "badges": null,
+   "profile_identity": {},
+   "profile_card": {},
+   "profile_initialized": false,
+   "stats": {
+    "last_error": null,
+    "subscription_errors": 0
+   }
+  }
+ },
+ "profile blocker": {
+  "log": [
+   [
+    "fetch_profile",
+    42,
+    {
+     "with_mutual_guilds": false,
+     "with_mutual_friends": false
+    }
+   ]
+  ],
+  "state": {
+   "bio": null,
+   "connected_accounts": [],
+   "badges": null,
+   "profile_identity": {},
+   "profile_card": {},
+   "profile_initialized": false,
+   "stats": {
+    "last_error": null,
+    "subscription_errors": 0
+   }
+  }
+ },
+ "profile visuals_error": {
+  "log": [
+   [
+    "fetch_profile",
+    42,
+    {
+     "with_mutual_guilds": false,
+     "with_mutual_friends": false
+    }
+   ],
+   [
+    "log",
+    {
+     "title": "Perfil Público Inicial",
+     "color": 10181046,
+     "changes": [
+      [
+       "Username",
+       "alvo"
+      ],
+      [
+       "Nome de exibição",
+       "Alvo"
+      ],
+      [
+       "Avatar",
+       "https://cdn/avatar.png"
+      ],
+      [
+       "Banner",
+       "—"
+      ],
+      [
+       "Pronomes",
+       "ele/dele"
+      ],
+      [
+       "Cor de destaque",
+       "—"
+      ],
+      [
+       "Assinatura Nitro",
+       "nitro"
+      ],
+      [
+       "Nitro desde",
+       "2024-01-02"
+      ],
+      [
+       "Impulsionando servidor desde",
+       "—"
+      ],
+      [
+       "Bio pública",
+       "bio inicial"
+      ],
+      [
+       "Insígnias",
+       "Set"
+      ],
+      [
+       "Conexões públicas",
+       "`github: alvo` [Perfil](https://github.com/alvo)"
+      ]
+     ],
+     "user": "namespace(id=42, name='alvo')",
+     "event_type": "profile"
+    }
+   ]
+  ],
+  "state": {
+   "bio": "bio inicial",
+   "connected_accounts": [
+    "`github: alvo` [Perfil](https://github.com/alvo)"
+   ],
+   "badges": [
+    "Set"
+   ],
+   "profile_identity": {
+    "Username": "alvo",
+    "Nome de exibição": "Alvo",
+    "Avatar": "https://cdn/avatar.png",
+    "Banner": "",
+    "Pronomes": "ele/dele",
+    "Cor de destaque": "",
+    "Assinatura Nitro": "nitro",
+    "Nitro desde": "2024-01-02",
+    "Impulsionando servidor desde": null
+   },
+   "profile_card": {},
+   "profile_initialized": true,
+   "stats": {
+    "last_error": null,
+    "subscription_errors": 0
+   }
+  }
+ },
+ "profile fetch_error": {
+  "log": [
+   [
+    "fetch_profile",
+    42,
+    {
+     "with_mutual_guilds": false,
+     "with_mutual_friends": false
+    }
+   ],
+   [
+    "emit",
+    "TRACKER:PROFILE_FETCH_ERROR:RuntimeError",
+    null
+   ]
+  ],
+  "state": {
+   "bio": null,
+   "connected_accounts": [],
+   "badges": null,
+   "profile_identity": {},
+   "profile_card": {},
+   "profile_initialized": false,
+   "stats": {
+    "last_error": "PROFILE_FETCH_ERROR",
+    "subscription_errors": 0,
+    "profile_errors": 1
+   }
+  }
+ },
+ "voice disabled": {
+  "log": [],
+  "tracked": [],
+  "in_voice": null,
+  "sessions": {},
+  "stats": {
+   "last_error": null,
+   "subscription_errors": 0
+  }
+ },
+ "voice channels_not_allowed": {
+  "log": [],
+  "tracked": [],
+  "in_voice": null,
+  "sessions": {},
+  "stats": {
+   "last_error": null,
+   "subscription_errors": 0
+  }
+ },
+ "voice other_member_joins_tracked": {
+  "log": [
+   [
+    "voice_embed",
+    [
+     "👥 Entrou na Call do Alvo",
+     3066993,
+     "namespace(id=7, guild=namespace(id=20, name='Guild'))",
+     "<canal 1 voz>",
+     "namespace(id=20, name='Guild')"
+    ],
+    {}
+   ]
+  ],
+  "tracked": [
+   1
+  ],
+  "in_voice": null,
+  "sessions": {},
+  "stats": {
+   "last_error": null,
+   "subscription_errors": 0
+  }
+ },
+ "voice other_member_leaves_tracked": {
+  "log": [
+   [
+    "voice_embed",
+    [
+     "🚶 Saiu da Call do Alvo",
+     15158332,
+     "namespace(id=7, guild=namespace(id=20, name='Guild'))",
+     "<canal 1 voz>",
+     "namespace(id=20, name='Guild')"
+    ],
+    {}
+   ]
+  ],
+  "tracked": [
+   1
+  ],
+  "in_voice": null,
+  "sessions": {},
+  "stats": {
+   "last_error": null,
+   "subscription_errors": 0
+  }
+ },
+ "voice other_member_untracked": {
+  "log": [],
+  "tracked": [],
+  "in_voice": null,
+  "sessions": {},
+  "stats": {
+   "last_error": null,
+   "subscription_errors": 0
+  }
+ },
+ "voice other_member_same_channel": {
+  "log": [],
+  "tracked": [],
+  "in_voice": null,
+  "sessions": {},
+  "stats": {
+   "last_error": null,
+   "subscription_errors": 0
+  }
+ },
+ "voice target_joins": {
+  "log": [
+   [
+    "voice_embed",
+    [],
+    {
+     "title": "🔊 Entrou no Canal de Voz",
+     "color": 10353135,
+     "member": "namespace(id=42, guild=namespace(id=20, name='Guild'))",
+     "channel": "<canal 1 voz>",
+     "guild": "namespace(id=20, name='Guild')",
+     "duration": null,
+     "partial": false,
+     "previous_channel": null
+    }
+   ]
+  ],
+  "tracked": [
+   1
+  ],
+  "in_voice": 1,
+  "sessions": {
+   "20": {
+    "channel_id": 1,
+    "started": 1000.0,
+    "partial": false
+   }
+  },
+  "stats": {
+   "last_error": null,
+   "subscription_errors": 0
+  }
+ },
+ "voice target_leaves_with_session": {
+  "log": [
+   [
+    "voice_embed",
+    [],
+    {
+     "title": "🔇 Saiu do Canal de Voz",
+     "color": 10353135,
+     "member": "namespace(id=42, guild=namespace(id=20, name='Guild'))",
+     "channel": "<canal 1 voz>",
+     "guild": "namespace(id=20, name='Guild')",
+     "duration": 90,
+     "partial": true,
+     "previous_channel": "<canal 1 voz>"
+    }
+   ]
+  ],
+  "tracked": [],
+  "in_voice": null,
+  "sessions": {},
+  "stats": {
+   "last_error": null,
+   "subscription_errors": 0,
+   "voice_seconds": 90
+  }
+ },
+ "voice target_moves": {
+  "log": [
+   [
+    "voice_embed",
+    [],
+    {
+     "title": "🔀 Mudou de Canal de Voz",
+     "color": 10353135,
+     "member": "namespace(id=42, guild=namespace(id=20, name='Guild'))",
+     "channel": "<canal 2 outra>",
+     "guild": "namespace(id=20, name='Guild')",
+     "duration": 90,
+     "partial": true,
+     "previous_channel": "<canal 1 voz>"
+    }
+   ]
+  ],
+  "tracked": [
+   2
+  ],
+  "in_voice": 2,
+  "sessions": {
+   "20": {
+    "channel_id": 2,
+    "started": 1000.0,
+    "partial": false
+   }
+  },
+  "stats": {
+   "last_error": null,
+   "subscription_errors": 0,
+   "voice_seconds": 90
+  }
+ },
+ "voice target_moves_to_hidden": {
+  "log": [
+   [
+    "voice_embed",
+    [],
+    {
+     "title": "🔀 Mudou de Canal de Voz",
+     "color": 10353135,
+     "member": "namespace(id=42, guild=namespace(id=20, name='Guild'))",
+     "channel": "<canal 1 voz>",
+     "guild": "namespace(id=20, name='Guild')",
+     "duration": 90,
+     "partial": true,
+     "previous_channel": "<canal 1 voz>"
+    }
+   ]
+  ],
+  "tracked": [],
+  "in_voice": null,
+  "sessions": {},
+  "stats": {
+   "last_error": null,
+   "subscription_errors": 0,
+   "voice_seconds": 90
+  }
+ },
+ "voice target_flags_only": {
+  "log": [
+   [
+    "voice_embed",
+    [],
+    {
+     "title": "🤐 Mutou o microfone • 🔇 Silenciou o áudio • 🎥 Iniciou uma stream • 🛡️ Foi mutado pelo servidor",
+     "color": 10353135,
+     "member": "namespace(id=42, guild=namespace(id=20, name='Guild'))",
+     "channel": "<canal 1 voz>",
+     "guild": "namespace(id=20, name='Guild')",
+     "duration": null,
+     "partial": false,
+     "previous_channel": null
+    }
+   ]
+  ],
+  "tracked": [],
+  "in_voice": null,
+  "sessions": {},
+  "stats": {
+   "last_error": null,
+   "subscription_errors": 0
+  }
+ },
+ "voice target_flags_off": {
+  "log": [
+   [
+    "voice_embed",
+    [],
+    {
+     "title": "📷 Desligou a câmera • 🛡️ Áudio do servidor restaurado • 🎭 Pode falar no palco",
+     "color": 10353135,
+     "member": "namespace(id=42, guild=namespace(id=20, name='Guild'))",
+     "channel": "<canal 1 voz>",
+     "guild": "namespace(id=20, name='Guild')",
+     "duration": null,
+     "partial": false,
+     "previous_channel": null
+    }
+   ]
+  ],
+  "tracked": [],
+  "in_voice": null,
+  "sessions": {},
+  "stats": {
+   "last_error": null,
+   "subscription_errors": 0
+  }
+ },
+ "voice target_stage_and_afk": {
+  "log": [
+   [
+    "voice_embed",
+    [],
+    {
+     "title": "✋ Pediu para falar no palco • 💤 Movido para AFK",
+     "color": 10353135,
+     "member": "namespace(id=42, guild=namespace(id=20, name='Guild'))",
+     "channel": "<canal 1 voz>",
+     "guild": "namespace(id=20, name='Guild')",
+     "duration": null,
+     "partial": false,
+     "previous_channel": null
+    }
+   ]
+  ],
+  "tracked": [],
+  "in_voice": null,
+  "sessions": {},
+  "stats": {
+   "last_error": null,
+   "subscription_errors": 0
+  }
+ },
+ "voice target_stage_withdrawn": {
+  "log": [
+   [
+    "voice_embed",
+    [],
+    {
+     "title": "✋ Retirou o pedido para falar • 💤 Saiu do AFK",
+     "color": 10353135,
+     "member": "namespace(id=42, guild=namespace(id=20, name='Guild'))",
+     "channel": "<canal 1 voz>",
+     "guild": "namespace(id=20, name='Guild')",
+     "duration": null,
+     "partial": false,
+     "previous_channel": null
+    }
+   ]
+  ],
+  "tracked": [],
+  "in_voice": null,
+  "sessions": {},
+  "stats": {
+   "last_error": null,
+   "subscription_errors": 0
+  }
+ },
+ "voice target_no_change": {
+  "log": [],
+  "tracked": [],
+  "in_voice": null,
+  "sessions": {},
+  "stats": {
+   "last_error": null,
+   "subscription_errors": 0
+  }
+ },
+ "edit disabled": {
+  "log": [],
+  "cache": {
+   "author_id": 42,
+   "content": "antes",
+   "attachments": [],
+   "embeds": []
+  }
+ },
+ "edit channel_not_allowed": {
+  "log": [
+   [
+    "get_channel",
+    666
+   ]
+  ],
+  "cache": {
+   "author_id": 42,
+   "content": "antes",
+   "attachments": [],
+   "embeds": []
+  }
+ },
+ "edit author_from_cached_message": {
+  "log": [
+   [
+    "get_channel",
+    10
+   ],
+   [
+    "flush",
+    10
+   ],
+   [
+    "cache",
+    99
+   ],
+   [
+    "get_channel",
+    10
+   ],
+   [
+    "log",
+    {
+     "title": "Mensagem Editada",
+     "color": 16645526,
+     "changes": [
+      [
+       "Antes",
+       ">>> do cache"
+      ],
+      [
+       "Depois",
+       ">>> depois"
+      ]
+     ],
+     "description": "[Mensagem](https://discord.com/channels/20/10/99)",
+     "footer": "📍 Guild ➔ #geral",
+     "event_type": "message_edit"
+    }
+   ]
+  ],
+  "cache": {
+   "author_id": 42,
+   "author_name": "alvo",
+   "author_avatar": "https://cdn/a.png",
+   "content": "depois",
+   "timestamp": "02/01/2026 - 03:04:05",
+   "created_unix": 1767323045,
+   "message_id": 99,
+   "channel_id": 10,
+   "guild_id": null,
+   "mentions": [],
+   "attachments": [],
+   "stickers": [],
+   "embeds": [],
+   "reply": null,
+   "poll": null,
+   "message_type": "default",
+   "jump_url": null,
+   "_captured": true
+  }
+ },
+ "edit author_from_cache": {
+  "log": [
+   [
+    "get_channel",
+    10
+   ],
+   [
+    "flush",
+    10
+   ],
+   [
+    "get_channel",
+    10
+   ],
+   [
+    "log",
+    {
+     "title": "Mensagem Editada",
+     "color": 16645526,
+     "changes": [
+      [
+       "Antes",
+       ">>> antes"
+      ],
+      [
+       "Depois",
+       ">>> depois"
+      ]
+     ],
+     "description": "[Mensagem](https://discord.com/channels/20/10/99)",
+     "footer": "📍 Guild ➔ #geral",
+     "event_type": "message_edit"
+    }
+   ]
+  ],
+  "cache": {
+   "author_id": 42,
+   "content": "depois",
+   "attachments": [],
+   "embeds": []
+  }
+ },
+ "edit author_from_payload": {
+  "log": [
+   [
+    "get_channel",
+    10
+   ],
+   [
+    "flush",
+    10
+   ],
+   [
+    "cache",
+    99
+   ],
+   [
+    "get_channel",
+    10
+   ],
+   [
+    "log",
+    {
+     "title": "Mensagem Editada",
+     "color": 16645526,
+     "changes": [
+      [
+       "Antes",
+       ">>> —"
+      ],
+      [
+       "Depois",
+       ">>> depois"
+      ]
+     ],
+     "description": "[Mensagem](https://discord.com/channels/20/10/99)",
+     "footer": "📍 Guild ➔ #geral",
+     "event_type": "message_edit"
+    }
+   ]
+  ],
+  "cache": {
+   "author_id": 42,
+   "_captured": true,
+   "content": "depois"
+  }
+ },
+ "edit author_payload_invalid": {
+  "log": [
+   [
+    "get_channel",
+    10
+   ]
+  ],
+  "cache": null
+ },
+ "edit other_author": {
+  "log": [
+   [
+    "get_channel",
+    10
+   ]
+  ],
+  "cache": {
+   "author_id": 7,
+   "content": "antes",
+   "attachments": [],
+   "embeds": []
+  }
+ },
+ "edit content_same": {
+  "log": [
+   [
+    "get_channel",
+    10
+   ],
+   [
+    "flush",
+    10
+   ]
+  ],
+  "cache": {
+   "author_id": 42,
+   "content": "antes",
+   "attachments": [],
+   "embeds": []
+  }
+ },
+ "edit content_empty": {
+  "log": [
+   [
+    "get_channel",
+    10
+   ],
+   [
+    "flush",
+    10
+   ],
+   [
+    "get_channel",
+    10
+   ],
+   [
+    "log",
+    {
+     "title": "Mensagem Editada",
+     "color": 16645526,
+     "changes": [
+      [
+       "Antes",
+       ">>> antes"
+      ],
+      [
+       "Depois",
+       ">>> —"
+      ]
+     ],
+     "description": "[Mensagem](https://discord.com/channels/20/10/99)",
+     "footer": "📍 Guild ➔ #geral",
+     "event_type": "message_edit"
+    }
+   ]
+  ],
+  "cache": {
+   "author_id": 42,
+   "content": "",
+   "attachments": [],
+   "embeds": []
+  }
+ },
+ "edit attachments_changed": {
+  "log": [
+   [
+    "get_channel",
+    10
+   ],
+   [
+    "flush",
+    10
+   ],
+   [
+    "get_channel",
+    10
+   ],
+   [
+    "log",
+    {
+     "title": "Mensagem Editada",
+     "color": 16645526,
+     "changes": [
+      [
+       "Anexos",
+       "0 ➔ 1\n[foto.png](https://cdn/foto.png)"
+      ]
+     ],
+     "description": "[Mensagem](https://discord.com/channels/20/10/99)",
+     "footer": "📍 Guild ➔ #geral",
+     "event_type": "message_edit"
+    }
+   ]
+  ],
+  "cache": {
+   "author_id": 42,
+   "content": "antes",
+   "attachments": [
+    {
+     "url": "https://cdn/foto.png",
+     "filename": "foto.png",
+     "content_type": null,
+     "size": 10,
+     "spoiler": false,
+     "duration": null
+    }
+   ],
+   "embeds": []
+  }
+ },
+ "edit embeds_changed": {
+  "log": [
+   [
+    "get_channel",
+    10
+   ],
+   [
+    "flush",
+    10
+   ],
+   [
+    "get_channel",
+    10
+   ],
+   [
+    "log",
+    {
+     "title": "Mensagem Editada",
+     "color": 16645526,
+     "changes": [
+      [
+       "Embeds",
+       "novo"
+      ]
+     ],
+     "description": "[Mensagem](https://discord.com/channels/20/10/99)",
+     "footer": "📍 Guild ➔ #geral",
+     "event_type": "message_edit"
+    }
+   ]
+  ],
+  "cache": {
+   "author_id": 42,
+   "content": "antes",
+   "attachments": [],
+   "embeds": [
+    {
+     "title": "novo",
+     "description": null,
+     "url": null,
+     "image_url": "https://img",
+     "video_url": null
+    }
+   ]
+  }
+ },
+ "edit embeds_removed": {
+  "log": [
+   [
+    "get_channel",
+    10
+   ],
+   [
+    "flush",
+    10
+   ],
+   [
+    "get_channel",
+    10
+   ],
+   [
+    "log",
+    {
+     "title": "Mensagem Editada",
+     "color": 16645526,
+     "changes": [
+      [
+       "Embeds",
+       "Removidos"
+      ]
+     ],
+     "description": "[Mensagem](https://discord.com/channels/20/10/99)",
+     "footer": "📍 Guild ➔ #geral",
+     "event_type": "message_edit"
+    }
+   ]
+  ],
+  "cache": {
+   "author_id": 42,
+   "content": "antes",
+   "attachments": [],
+   "embeds": []
+  }
+ },
+ "edit nothing_changed": {
+  "log": [
+   [
+    "get_channel",
+    10
+   ],
+   [
+    "flush",
+    10
+   ]
+  ],
+  "cache": {
+   "author_id": 42,
+   "content": "antes",
+   "attachments": [],
+   "embeds": []
+  }
+ }
+}

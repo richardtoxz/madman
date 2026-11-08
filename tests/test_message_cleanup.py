@@ -3,26 +3,19 @@ from __future__ import annotations
 import asyncio
 import unittest
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import AsyncMock, call, patch
 
 import worker  # noqa: F401 - ativa o ambiente isolado do discord.py-self
 import discord
 
-from worker.config import ControlState
-from worker.message_manager import MessageManager
+from worker.core.config import ControlState
+from worker.messages.manager import MessageManager
+from worker.core.pacing import MessageConfig
 
 
 class _FastConfig:
     BASE_DELAY = 0.0
-    MIN_DELAY = 0.0
-    MAX_DELAY = 0.0
-    BACKOFF_MULTIPLIER = 1.0
-    COOLDOWN_STEP = 0.0
-    COOLDOWN_AFTER = 1
     MAX_429_CONSECUTIVE = 2
-    BATCH_SIZE = 10_000
-    BATCH_PAUSE_MIN = 0.0
-    BATCH_PAUSE_MAX = 0.0
 
 
 class _FakeResponse:
@@ -95,12 +88,39 @@ class MessageCleanupTests(unittest.IsolatedAsyncioTestCase):
         self.manager = MessageManager(self.client, ControlState())
         self.manager.config = _FastConfig()
 
+    async def test_more_than_eighty_messages_use_only_the_configured_cooldown(self):
+        self.manager.config = MessageConfig()
+        messages = [_FakeMessage(index, 42) for index in range(1, 82)]
+
+        with (
+            patch.object(self.manager, "_sleep_interruptibly", new=AsyncMock(return_value=True)) as sleep,
+            patch("worker.messages.helpers.emit_line"),
+        ):
+            stats = await self.manager._delete_messages_adaptive(messages, total_hint=81)
+
+        self.assertEqual(stats["deletadas"], 81)
+        self.assertEqual(sleep.await_args_list, [call(MessageConfig.BASE_DELAY)] * 81)
+
+    async def test_clean_all_dms_has_no_extra_pause_between_conversations(self):
+        self.manager.config = MessageConfig()
+        first = _FakeDestination(search_messages=[_FakeMessage(1, 42, total_results=1)])
+        second = _FakeDestination(search_messages=[_FakeMessage(2, 42, total_results=1)])
+        self.client.fetch_private_channels = AsyncMock(return_value=[first, second])
+
+        with (
+            patch("worker.messages.cleanup.discord.DMChannel", _FakeDestination),
+            patch.object(self.manager, "_sleep_interruptibly", new=AsyncMock(return_value=True)) as sleep,
+            patch("worker.messages.cleanup.emit_line"),
+            patch("worker.messages.helpers.emit_line"),
+        ):
+            await self.manager.clean_all_dms()
+
+        self.assertEqual(sleep.await_args_list, [call(MessageConfig.BASE_DELAY)] * 2)
+
     def test_only_own_deletable_messages_are_selected(self):
         own = _FakeMessage(1, 42)
         other = _FakeMessage(2, 99)
-        system = _FakeMessage(
-            3, 42, message_type=discord.MessageType.recipient_add
-        )
+        system = _FakeMessage(3, 42, message_type=discord.MessageType.recipient_add)
 
         self.assertTrue(self.manager._is_deletable_message(own))
         self.assertFalse(self.manager._is_deletable_message(other))
@@ -118,7 +138,7 @@ class MessageCleanupTests(unittest.IsolatedAsyncioTestCase):
         ]
         destination = _FakeDestination(search_messages=messages)
 
-        with patch("worker.message_helpers.emit_line"):
+        with patch("worker.messages.helpers.emit_line"):
             count = await self.manager._count_destination_messages(destination)
 
         self.assertEqual(count, 2)
@@ -129,22 +149,16 @@ class MessageCleanupTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(destination.history_calls, [])
 
     async def test_indexing_search_falls_back_to_unlimited_history(self):
-        search_message = _FakeMessage(
-            1, 42, total_results=1, indexing=True
-        )
+        search_message = _FakeMessage(1, 42, total_results=1, indexing=True)
         history_messages = [
             _FakeMessage(2, 42),
             _FakeMessage(3, 99),
-            _FakeMessage(
-                4, 42, message_type=discord.MessageType.recipient_remove
-            ),
+            _FakeMessage(4, 42, message_type=discord.MessageType.recipient_remove),
             _FakeMessage(5, 42),
         ]
-        destination = _FakeDestination(
-            search_messages=[search_message], history_messages=history_messages
-        )
+        destination = _FakeDestination(search_messages=[search_message], history_messages=history_messages)
 
-        with patch("worker.message_helpers.emit_line"):
+        with patch("worker.messages.helpers.emit_line"):
             count = await self.manager._count_destination_messages(destination)
 
         self.assertEqual(count, 2)
@@ -163,10 +177,8 @@ class MessageCleanupTests(unittest.IsolatedAsyncioTestCase):
         )
 
         stream = self.manager._iter_destination_messages(destination)
-        with patch("worker.message_helpers.emit_line"):
-            stats = await self.manager._delete_messages_adaptive(
-                stream, total_hint=3
-            )
+        with patch("worker.messages.helpers.emit_line"):
+            stats = await self.manager._delete_messages_adaptive(stream, total_hint=3)
 
         self.assertEqual(stats["deletadas"], 3)
         self.assertTrue(all(message.deleted for message in (first, second, third)))
@@ -182,7 +194,7 @@ class MessageCleanupTests(unittest.IsolatedAsyncioTestCase):
         )
         destination = _FakeDestination(search_messages=[regular, system])
 
-        with patch("worker.message_helpers.emit_line"):
+        with patch("worker.messages.helpers.emit_line"):
             stats = await self.manager._delete_messages_adaptive(
                 self.manager._iter_destination_messages(destination), total_hint=2
             )
@@ -198,15 +210,11 @@ class MessageCleanupTests(unittest.IsolatedAsyncioTestCase):
         first = _FakeMessage(1, 42, total_results=3)
         second = _FakeMessage(2, 42)
         third = _FakeMessage(3, 42)
-        destination = _FakeDestination(
-            search_messages=[first], history_messages=[first, second, third]
-        )
+        destination = _FakeDestination(search_messages=[first], history_messages=[first, second, third])
 
         stream = self.manager._iter_destination_messages(destination)
-        with patch("worker.message_helpers.emit_line"):
-            stats = await self.manager._delete_messages_adaptive(
-                stream, total_hint=3
-            )
+        with patch("worker.messages.helpers.emit_line"):
+            stats = await self.manager._delete_messages_adaptive(stream, total_hint=3)
 
         self.assertEqual(stats["deletadas"], 3)
         self.assertTrue(all(message.deleted for message in (first, second, third)))
@@ -216,17 +224,13 @@ class MessageCleanupTests(unittest.IsolatedAsyncioTestCase):
         )
 
     async def test_quick_count_does_not_scan_history_while_indexing(self):
-        search_message = _FakeMessage(
-            1, 42, total_results=1_500, indexing=True
-        )
+        search_message = _FakeMessage(1, 42, total_results=1_500, indexing=True)
         destination = _FakeDestination(
             search_messages=[search_message],
-            history_messages=[
-                _FakeMessage(message_id, 42) for message_id in range(2, 1502)
-            ],
+            history_messages=[_FakeMessage(message_id, 42) for message_id in range(2, 1502)],
         )
 
-        with patch("worker.message_helpers.emit_line"):
+        with patch("worker.messages.helpers.emit_line"):
             count = await self.manager._get_quick_count(destination)
 
         self.assertEqual(count, 1_500)
@@ -239,22 +243,30 @@ class MessageCleanupTests(unittest.IsolatedAsyncioTestCase):
     async def test_final_verification_treats_empty_search_as_clean(self):
         destination = _FakeDestination(history_messages=[_FakeMessage(1, 99)])
 
-        with patch("worker.message_helpers.emit_line"):
+        with patch("worker.messages.helpers.emit_line"):
             remaining = await self.manager._verify_clean(destination)
 
+        # Busca vazia so e aceita como 0 depois de uma sonda curta no historico.
         self.assertEqual(remaining, 0)
-        self.assertEqual(destination.history_calls, [])
+        self.assertEqual(destination.history_calls, [{"limit": 500, "oldest_first": False}])
+
+    async def test_empty_search_with_own_messages_in_history_is_not_reported_as_zero(self):
+        # Indice de busca atrasado apos exclusoes: historico ainda tem mensagens suas.
+        destination = _FakeDestination(history_messages=[_FakeMessage(1, 42), _FakeMessage(2, 42), _FakeMessage(3, 99)])
+
+        with patch("worker.messages.helpers.emit_line"):
+            quick = await self.manager._get_quick_count(destination)
+            remaining = await self.manager._verify_clean(destination)
+
+        self.assertEqual(quick, 2)
+        self.assertEqual(remaining, 2)
 
     async def test_already_deleted_message_is_not_reported_as_failure(self):
-        error = discord.NotFound(
-            _FakeResponse(), {"code": 10008, "message": "Unknown Message"}
-        )
+        error = discord.NotFound(_FakeResponse(), {"code": 10008, "message": "Unknown Message"})
         message = _FakeMessage(1, 42, delete_error=error)
 
-        with patch("worker.message_helpers.emit_line"):
-            stats = await self.manager._delete_messages_adaptive(
-                [message], total_hint=1
-            )
+        with patch("worker.messages.helpers.emit_line"):
+            stats = await self.manager._delete_messages_adaptive([message], total_hint=1)
 
         self.assertEqual(stats["ausentes"], 1)
         self.assertEqual(stats["falhas"], 0)
@@ -273,10 +285,8 @@ class MessageCleanupTests(unittest.IsolatedAsyncioTestCase):
             for message_id in range(1, 1501):
                 yield StreamingMessage(message_id, 42)
 
-        with patch("worker.message_helpers.emit_line"):
-            stats = await self.manager._delete_messages_adaptive(
-                messages(), total_hint=1500
-            )
+        with patch("worker.messages.helpers.emit_line"):
+            stats = await self.manager._delete_messages_adaptive(messages(), total_hint=1500)
 
         self.assertEqual(deleted, 1500)
         self.assertEqual(stats["deletadas"], 1500)
@@ -284,9 +294,7 @@ class MessageCleanupTests(unittest.IsolatedAsyncioTestCase):
 
     def test_unavailable_history_produces_partial_result(self):
         self.manager._unavailable_sources.add(("history", 123, "FORBIDDEN"))
-        result = self.manager._result_text(
-            self.manager._empty_stats(), remaining=0, initial_total=0
-        )
+        result = self.manager._result_text(self.manager._empty_stats(), remaining=0, initial_total=0)
 
         self.assertTrue(result.startswith("RESULT:PARCIAL:"))
         self.assertIn("fontes indisponiveis 1", result)

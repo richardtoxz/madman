@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from tracker_protocol import normalize_target_ids
 
 
 class TrackerMixin:
@@ -9,25 +10,26 @@ class TrackerMixin:
         return {"ok": False, "code": code, "message": message, "enabled": False}
 
     @staticmethod
-    def _tracker_start_command(target_id: int, webhook_url: str) -> str:
+    def _tracker_start_command(target_id: int | list[int] | str, webhook_url: str) -> str:
+        target_ids = normalize_target_ids(target_id)
         return "TRACKER_START_JSON:" + json.dumps(
-            {"target_id": int(target_id), "webhook_url": webhook_url},
+            {"target_id": target_ids[0], "target_ids": target_ids, "webhook_url": webhook_url},
             ensure_ascii=False,
             separators=(",", ":"),
         )
 
-    async def tracker_start(self, user_id: int, target_id: int, webhook_url: str) -> dict:
+    async def tracker_start(self, user_id: int, target_id: int | list[int] | str, webhook_url: str) -> dict:
         try:
-            target_id = int(target_id)
+            target_ids = normalize_target_ids(target_id)
         except (TypeError, ValueError):
             return self._tracker_error("INVALID_TARGET_ID", "ID do alvo invalido.")
-        if target_id <= 0 or target_id >= 2**64 or not isinstance(webhook_url, str):
+        if not isinstance(webhook_url, str):
             return self._tracker_error("INVALID_INPUT", "ID do alvo ou webhook invalido.")
         process = self._get_proc(user_id)
         if not process:
             return self._tracker_error("NOT_CONNECTED", "Conta nao autenticada.")
         result = await process.send_and_wait_json(
-            self._tracker_start_command(target_id, webhook_url),
+            self._tracker_start_command(target_ids, webhook_url),
             "TRACKER_RESULT:",
             timeout=15.0,
         )
@@ -35,7 +37,8 @@ class TrackerMixin:
             return self._tracker_error("NO_RESPONSE", "O worker nao confirmou o Tracker.")
         if result.get("ok") and result.get("enabled"):
             self._tracker_settings[int(user_id)] = {
-                "target_id": target_id,
+                "target_id": target_ids[0],
+                "target_ids": target_ids,
                 "webhook_url": webhook_url,
             }
         return result
@@ -69,7 +72,7 @@ class TrackerMixin:
         if not settings:
             return None
         result = await process.send_and_wait_json(
-            self._tracker_start_command(settings["target_id"], settings["webhook_url"]),
+            self._tracker_start_command(settings.get("target_ids", settings.get("target_id")), settings["webhook_url"]),
             "TRACKER_RESULT:",
             timeout=15.0,
         )
