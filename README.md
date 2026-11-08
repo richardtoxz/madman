@@ -55,45 +55,6 @@ cp .env.example .env
 docker compose up --build
 ```
 
-## Publicar o painel na internet
-
-- Defina `WEB_SESSION_SECRET` com 32 caracteres ou mais. Sem ele, o painel usa um
-  segredo aleatório e avisa no log. As sessões ficam em memória: todo reinício (ou
-  deploy) desloga todo mundo e desconecta as contas, com ou sem o segredo.
-- Para o painel não ficar aberto a qualquer conta do Discord, liste em
-  `ALLOWED_USER_IDS` os IDs que podem usar o site e o `/painel` (separados por
-  vírgula). Vazio libera todo mundo.
-- Atrás de um proxy (Cloudflare Tunnel, nginx, Render), deixe em `TRUSTED_PROXY_IPS`
-  só os endereços de onde o proxy conecta, como IPs ou faixas (`10.0.0.0/8`). O
-  padrão é `127.0.0.1,::1`. O IP do visitante vem do `CF-Connecting-IP` ou do último
-  endereço do `X-Forwarded-For` que não é do proxy; o começo desse cabeçalho é
-  escrito pelo próprio visitante e é ignorado.
-- Se o HTTPS termina no proxy, defina `WEB_FORCE_SECURE_COOKIE=1` para o cookie de
-  sessão sair com `Secure` e o painel mandar HSTS.
-- `MAX_ACTIVE_WORKERS` limita as contas conectadas ao mesmo tempo (padrão 25). Cada
-  conta é um processo Python: ajuste à memória do servidor.
-- Os logs saem no stdout, no nível de `LOG_LEVEL` (padrão `INFO`). Ao receber
-  `SIGTERM`, o painel desconecta as contas e fecha o site antes de sair.
-- Depois de 5 tentativas de conectar uma conta que falham em 10 minutos, ela espera
-  antes de tentar de novo: cada tentativa é um login no Discord saindo do servidor.
-- Eventos de segurança saem no log `madman.security`, uma linha por evento
-  (`evento=csrf_invalido ip=... caminho=... usuario=...`): CSRF e origem inválidos,
-  login OAuth com `state` inválido, login negado pela `ALLOWED_USER_IDS`, limite de
-  tentativas, abas demais e configuração fraca. Tokens, cookies e segredos nunca
-  entram no log.
-
-### Render
-
-O `render.yaml` descreve o serviço (Docker, health check em `/api/health`, uma
-instância e deploy só depois do CI passar). Para um serviço que já existe, copie as
-variáveis dele para *Environment*. No Developer Portal, cadastre o redirect
-`https://<seu-serviço>.onrender.com/api/auth/discord/callback`.
-
-Para conferir o `TRUSTED_PROXY_IPS` depois do deploy, abra
-`/api/auth/discord/callback` direto no navegador: a linha
-`evento=oauth_state_invalido` no log deve mostrar o seu IP público em `ip=`. Se
-mostrar um endereço interno, acrescente a faixa dele à variável.
-
 ## Funções
 
 - **Mensagens:** apaga suas mensagens em DMs, grupos e servidores.
