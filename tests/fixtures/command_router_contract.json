@@ -1,0 +1,4454 @@
+{
+ "full START": {
+  "log": [
+   [
+    "set",
+    "control_state.started",
+    true
+   ]
+  ],
+  "stdout": [
+   "STATUS:STARTED||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full PAUSE": {
+  "log": [
+   [
+    "set",
+    "control_state.paused",
+    true
+   ],
+   [
+    "set",
+    "msg_manager.paused",
+    true
+   ]
+  ],
+  "stdout": [
+   "STATUS:PAUSED||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full RESUME": {
+  "log": [
+   [
+    "set",
+    "control_state.paused",
+    false
+   ],
+   [
+    "set",
+    "msg_manager.paused",
+    false
+   ]
+  ],
+  "stdout": [
+   "STATUS:RESUMED||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full CANCEL": {
+  "log": [
+   [
+    "set",
+    "control_state.cancelled",
+    true
+   ],
+   [
+    "set",
+    "msg_manager.cancelled",
+    true
+   ],
+   [
+    "set",
+    "rel_manager.cancelled",
+    true
+   ],
+   [
+    "set",
+    "guild_manager.cancelled",
+    true
+   ]
+  ],
+  "stdout": [
+   "STATUS:CANCELLED||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full CLOSE": {
+  "log": [
+   [
+    "call",
+    "bot.close",
+    [],
+    {}
+   ]
+  ],
+  "stdout": [
+   "STATUS:CLOSING||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full REL_STATS": {
+  "log": [
+   [
+    "call",
+    "rel_manager.get_stats",
+    [],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_STATS_RESULT:{\"ok\": true, \"via\": \"rel_manager.get_stats\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full REL_FRIENDS_LIST": {
+  "log": [
+   [
+    "call",
+    "rel_manager.get_friends_list",
+    [
+     0,
+     20,
+     "status"
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_FRIENDS_RESULT:{\"ok\": true, \"via\": \"rel_manager.get_friends_list\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full REL_FRIENDS_PAGE_JSON:{\"page\":1,\"page_size\":5,\"sort\":\"name\"}": {
+  "log": [
+   [
+    "call",
+    "rel_manager.get_friends_list",
+    [
+     1,
+     5,
+     "name"
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_FRIENDS_RESULT:{\"ok\": true, \"via\": \"rel_manager.get_friends_list\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full REL_FRIENDS_PAGE_JSON:{\"page\":-1}": {
+  "log": [],
+  "stdout": [
+   "IPC_ERROR:HANDLER_FAILED:ValueError||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full REL_CLOSEST_JSON:{\"limit\":5}": {
+  "log": [
+   [
+    "call",
+    "rel_manager.get_closest_friends",
+    [
+     5
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_CLOSEST_RESULT:{\"ok\":true,\"via\":\"rel_manager.get_closest_friends\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full REL_CLOSEST_JSON:{\"limit\":500}": {
+  "log": [],
+  "stdout": [
+   "IPC_ERROR:HANDLER_FAILED:ValueError||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full REL_PENDING_LIST": {
+  "log": [
+   [
+    "call",
+    "rel_manager.get_pending_requests",
+    [
+     0,
+     10
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_PENDING_RESULT:{\"ok\": true, \"via\": \"rel_manager.get_pending_requests\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full REL_PENDING_PAGE_JSON:{\"page\":2,\"page_size\":10}": {
+  "log": [
+   [
+    "call",
+    "rel_manager.get_pending_requests",
+    [
+     2,
+     10
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_PENDING_RESULT:{\"ok\": true, \"via\": \"rel_manager.get_pending_requests\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full REL_BLOCKED_LIST": {
+  "log": [
+   [
+    "call",
+    "rel_manager.get_blocked_list",
+    [
+     0,
+     20
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_BLOCKED_RESULT:{\"ok\": true, \"via\": \"rel_manager.get_blocked_list\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full REL_BLOCKED_PAGE_JSON:{\"page\":0,\"page_size\":25}": {
+  "log": [
+   [
+    "call",
+    "rel_manager.get_blocked_list",
+    [
+     0,
+     25
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_BLOCKED_RESULT:{\"ok\": true, \"via\": \"rel_manager.get_blocked_list\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full REL_REMOVE_ALL:1,2,x,3": {
+  "log": [
+   [
+    "set",
+    "rel_manager.cancelled",
+    false
+   ],
+   [
+    "call",
+    "rel_manager.remove_all_friends",
+    [
+     [
+      1,
+      2,
+      3
+     ]
+    ],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "rel_manager.remove_all_friends"
+    },
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "full REL_UNBLOCK_ALL": {
+  "log": [
+   [
+    "set",
+    "rel_manager.cancelled",
+    false
+   ],
+   [
+    "call",
+    "rel_manager.unblock_all",
+    [],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "rel_manager.unblock_all"
+    },
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "full REL_ACCEPT_ALL": {
+  "log": [
+   [
+    "set",
+    "rel_manager.cancelled",
+    false
+   ],
+   [
+    "call",
+    "rel_manager.accept_all_requests",
+    [],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "rel_manager.accept_all_requests"
+    },
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "full REL_DENY_ALL": {
+  "log": [
+   [
+    "set",
+    "rel_manager.cancelled",
+    false
+   ],
+   [
+    "call",
+    "rel_manager.deny_all_requests",
+    [],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "rel_manager.deny_all_requests"
+    },
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "full REL_NICKNAME_JSON:{\"target_id\":7,\"nickname\":\"apelido\"}": {
+  "log": [
+   [
+    "call",
+    "rel_manager.set_friend_nickname",
+    [
+     7,
+     "apelido"
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_NICKNAME_RESULT:{\"ok\":true,\"via\":\"rel_manager.set_friend_nickname\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full REL_NICKNAME_JSON:{\"target_id\":7,\"nickname\":\"\"}": {
+  "log": [
+   [
+    "call",
+    "rel_manager.set_friend_nickname",
+    [
+     7,
+     null
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_NICKNAME_RESULT:{\"ok\":true,\"via\":\"rel_manager.set_friend_nickname\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full REL_NICKNAME_JSON:{\"target_id\":0}": {
+  "log": [],
+  "stdout": [
+   "REL_NICKNAME_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"ID ou apelido invalido.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full REL_ADD_FRIEND_JSON:{\"username\":\"  alice  \"}": {
+  "log": [
+   [
+    "call",
+    "rel_manager.send_friend_request_by_name",
+    [
+     "alice"
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_ADD_FRIEND_RESULT:{\"ok\":true,\"via\":\"rel_manager.send_friend_request_by_name\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full REL_ADD_FRIEND_JSON:{\"username\":\"\"}": {
+  "log": [],
+  "stdout": [
+   "REL_ADD_FRIEND_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"Nome de usuario invalido.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full REL_BLOCK_JSON:{\"target_id\":9}": {
+  "log": [
+   [
+    "call",
+    "rel_manager.block_user",
+    [
+     9
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_BLOCK_RESULT:{\"ok\":true,\"via\":\"rel_manager.block_user\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full REL_BLOCK_JSON:{\"target_id\":\"x\"}": {
+  "log": [],
+  "stdout": [
+   "REL_BLOCK_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"ID de usuario invalido.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full REL_UNBLOCK_JSON:{\"target_id\":9}": {
+  "log": [
+   [
+    "call",
+    "rel_manager.unblock_user",
+    [
+     9
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_UNBLOCK_RESULT:{\"ok\":true,\"via\":\"rel_manager.unblock_user\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full REL_UNBLOCK_JSON:nao-e-json": {
+  "log": [],
+  "stdout": [
+   "REL_UNBLOCK_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"ID de usuario invalido.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full GUILD_STATS": {
+  "log": [
+   [
+    "call",
+    "guild_manager.get_stats",
+    [],
+    {}
+   ]
+  ],
+  "stdout": [
+   "GUILD_STATS_RESULT:{\"ok\":true,\"via\":\"guild_manager.get_stats\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full GUILD_LIST_PAGE_JSON:{\"page\":1,\"page_size\":20}": {
+  "log": [
+   [
+    "call",
+    "guild_manager.get_guilds_page",
+    [
+     1,
+     20
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "GUILD_LIST_RESULT:{\"ok\":true,\"via\":\"guild_manager.get_guilds_page\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full GUILD_LEAVE_ALL_JSON:{\"whitelist\":[3,1,3]}": {
+  "log": [
+   [
+    "call",
+    "presence_manager.set_task",
+    [
+     "Saindo de servidores"
+    ],
+    {}
+   ],
+   [
+    "set",
+    "guild_manager.cancelled",
+    false
+   ],
+   [
+    "call",
+    "guild_manager.leave_all_guilds",
+    [
+     [
+      1,
+      3
+     ]
+    ],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "guild_manager.leave_all_guilds"
+    },
+    {
+     "presence_task_token": {
+      "ok": true,
+      "via": "presence_manager.set_task"
+     }
+    }
+   ]
+  ],
+  "stdout": []
+ },
+ "full GUILD_LEAVE_ALL_JSON:{\"whitelist\":\"x\"}": {
+  "log": [],
+  "stdout": [
+   "IPC_ERROR:HANDLER_FAILED:ValueError||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full GUILD_MUTE_ALL_JSON:{\"whitelist\":[]}": {
+  "log": [
+   [
+    "call",
+    "presence_manager.set_task",
+    [
+     "Silenciando servidores"
+    ],
+    {}
+   ],
+   [
+    "set",
+    "guild_manager.cancelled",
+    false
+   ],
+   [
+    "call",
+    "guild_manager.mute_all_guilds",
+    [
+     []
+    ],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "guild_manager.mute_all_guilds"
+    },
+    {
+     "presence_task_token": {
+      "ok": true,
+      "via": "presence_manager.set_task"
+     }
+    }
+   ]
+  ],
+  "stdout": []
+ },
+ "full TARGET:55": {
+  "log": [
+   [
+    "call",
+    "presence_manager.set_task",
+    [
+     "Limpando mensagens"
+    ],
+    {}
+   ],
+   [
+    "call",
+    "msg_manager.clean_channel",
+    [
+     55
+    ],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "msg_manager.clean_channel"
+    },
+    {
+     "presence_task_token": {
+      "ok": true,
+      "via": "presence_manager.set_task"
+     }
+    }
+   ]
+  ],
+  "stdout": []
+ },
+ "full MSG_PREVIEW_JSON:{\"target_id\":12,\"guild\":true}": {
+  "log": [
+   [
+    "call",
+    "msg_manager.preview_clean",
+    [
+     12
+    ],
+    {
+     "guild": true,
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "msg_manager.preview_clean"
+    },
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "full MSG_PREVIEW_JSON:{\"target_id\":-5}": {
+  "log": [],
+  "stdout": [
+   "MSG_PREVIEW_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"ID invalido.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full MSG_CLEAN_ALL_DMS": {
+  "log": [
+   [
+    "call",
+    "presence_manager.set_task",
+    [
+     "Limpando todas as DMs"
+    ],
+    {}
+   ],
+   [
+    "call",
+    "msg_manager.clean_all_dms",
+    [],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "msg_manager.clean_all_dms"
+    },
+    {
+     "presence_task_token": {
+      "ok": true,
+      "via": "presence_manager.set_task"
+     }
+    }
+   ]
+  ],
+  "stdout": []
+ },
+ "full MSG_CLEAN_BATCH_JSON:{\"target_ids\":[1,2]}": {
+  "log": [
+   [
+    "call",
+    "presence_manager.set_task",
+    [
+     "Limpando fila de conversas"
+    ],
+    {}
+   ],
+   [
+    "call",
+    "msg_manager.clean_channels_batch",
+    [
+     [
+      1,
+      2
+     ]
+    ],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "msg_manager.clean_channels_batch"
+    },
+    {
+     "presence_task_token": {
+      "ok": true,
+      "via": "presence_manager.set_task"
+     }
+    }
+   ]
+  ],
+  "stdout": []
+ },
+ "full MSG_CLEAN_BATCH_JSON:{\"target_ids\":[]}": {
+  "log": [],
+  "stdout": [
+   "MSG_CLEAN_ALL_DMS_RESULT:ERRO:IDs invalidos para limpeza em fila.||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full MSG_CLEAN_CHANNEL:77": {
+  "log": [
+   [
+    "call",
+    "presence_manager.set_task",
+    [
+     "Limpando canal de texto"
+    ],
+    {}
+   ],
+   [
+    "call",
+    "msg_manager.clean_channel",
+    [
+     77
+    ],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "msg_manager.clean_channel"
+    },
+    {
+     "presence_task_token": {
+      "ok": true,
+      "via": "presence_manager.set_task"
+     }
+    }
+   ]
+  ],
+  "stdout": []
+ },
+ "full MSG_CLEAN_CHANNEL_NOW:77": {
+  "log": [
+   [
+    "call",
+    "presence_manager.set_task",
+    [
+     "Limpando canal de texto"
+    ],
+    {}
+   ],
+   [
+    "call",
+    "msg_manager.clean_channel",
+    [
+     77
+    ],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef",
+     "auto_start": true
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "msg_manager.clean_channel"
+    },
+    {
+     "presence_task_token": {
+      "ok": true,
+      "via": "presence_manager.set_task"
+     }
+    }
+   ]
+  ],
+  "stdout": []
+ },
+ "full MSG_CLEAN_GUILD:88": {
+  "log": [
+   [
+    "call",
+    "presence_manager.set_task",
+    [
+     "Limpando servidor"
+    ],
+    {}
+   ],
+   [
+    "call",
+    "msg_manager.clean_guild",
+    [
+     88
+    ],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "msg_manager.clean_guild"
+    },
+    {
+     "presence_task_token": {
+      "ok": true,
+      "via": "presence_manager.set_task"
+     }
+    }
+   ]
+  ],
+  "stdout": []
+ },
+ "full MSG_CLEAN_GUILD_NOW:88": {
+  "log": [
+   [
+    "call",
+    "presence_manager.set_task",
+    [
+     "Limpando servidor"
+    ],
+    {}
+   ],
+   [
+    "call",
+    "msg_manager.clean_guild",
+    [
+     88
+    ],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef",
+     "auto_start": true
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "msg_manager.clean_guild"
+    },
+    {
+     "presence_task_token": {
+      "ok": true,
+      "via": "presence_manager.set_task"
+     }
+    }
+   ]
+  ],
+  "stdout": []
+ },
+ "full MSG_COUNT:66": {
+  "log": [
+   [
+    "set",
+    "msg_manager.cancelled",
+    false
+   ],
+   [
+    "call",
+    "msg_manager.count_messages",
+    [
+     66
+    ],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "msg_manager.count_messages"
+    },
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "full MSG_SCAN_GUILDS": {
+  "log": [
+   [
+    "set",
+    "msg_manager.cancelled",
+    false
+   ],
+   [
+    "call",
+    "msg_manager.scan_guilds_for_messages",
+    [],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "msg_manager.scan_guilds_for_messages"
+    },
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "full DM_CLOSE:44": {
+  "log": [
+   [
+    "call",
+    "msg_manager.close_dm",
+    [
+     44
+    ],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "msg_manager.close_dm"
+    },
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "full DM_CLOSE_ALL": {
+  "log": [
+   [
+    "set",
+    "msg_manager.cancelled",
+    false
+   ],
+   [
+    "call",
+    "msg_manager.close_all_dms",
+    [],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "msg_manager.close_all_dms"
+    },
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "full DM_LIST": {
+  "log": [
+   [
+    "call",
+    "msg_manager.list_dms",
+    [],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef",
+     "refresh": false
+    }
+   ]
+  ],
+  "stdout": []
+ },
+ "full DM_LIST_REFRESH": {
+  "log": [
+   [
+    "call",
+    "msg_manager.list_dms",
+    [],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef",
+     "refresh": true
+    }
+   ]
+  ],
+  "stdout": []
+ },
+ "full GROUP_DM_LEAVE:33": {
+  "log": [
+   [
+    "call",
+    "msg_manager.leave_group_dm",
+    [
+     33
+    ],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "msg_manager.leave_group_dm"
+    },
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "full GROUP_DM_LEAVE_ALL": {
+  "log": [
+   [
+    "set",
+    "msg_manager.cancelled",
+    false
+   ],
+   [
+    "call",
+    "msg_manager.leave_all_group_dms",
+    [],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "msg_manager.leave_all_group_dms"
+    },
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "full VOICE_JOIN_JSON:{\"channel_id\":123}": {
+  "log": [
+   [
+    "call",
+    "voice_manager.join_voice",
+    [
+     123
+    ],
+    {}
+   ],
+   [
+    "spawn",
+    "coroutine"
+   ]
+  ],
+  "stdout": [
+   "VOICE_RESULT:{\"ok\":true,\"via\":\"voice_manager.join_voice\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full VOICE_JOIN_JSON:{\"channel_id\":0}": {
+  "log": [],
+  "stdout": [
+   "VOICE_RESULT:{\"ok\":false,\"code\":\"INVALID_CHANNEL_ID\",\"message\":\"ID de canal invalido.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full VOICE_LEAVE": {
+  "log": [
+   [
+    "call",
+    "voice_manager.leave_voice",
+    [],
+    {}
+   ],
+   [
+    "spawn",
+    "coroutine"
+   ]
+  ],
+  "stdout": [
+   "VOICE_RESULT:{\"ok\":true,\"via\":\"voice_manager.leave_voice\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full VOICE_FOLLOW_JSON:{\"target_id\":321}": {
+  "log": [
+   [
+    "call",
+    "voice_manager.start_follow",
+    [
+     321
+    ],
+    {}
+   ],
+   [
+    "spawn",
+    "coroutine"
+   ]
+  ],
+  "stdout": [
+   "VOICE_RESULT:{\"ok\":true,\"via\":\"voice_manager.start_follow\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full VOICE_FOLLOW_JSON:nao-e-json": {
+  "log": [],
+  "stdout": [
+   "VOICE_RESULT:{\"ok\":false,\"code\":\"INVALID_TARGET_ID\",\"message\":\"ID de usuario invalido.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full VOICE_UNFOLLOW": {
+  "log": [
+   [
+    "call",
+    "voice_manager.stop_follow",
+    [],
+    {}
+   ],
+   [
+    "spawn",
+    "coroutine"
+   ]
+  ],
+  "stdout": [
+   "VOICE_RESULT:{\"ok\":true,\"via\":\"voice_manager.stop_follow\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full VOICE_STATUS": {
+  "log": [
+   [
+    "call",
+    "voice_manager.get_status",
+    [],
+    {}
+   ]
+  ],
+  "stdout": [
+   "VOICE_STATUS_RESULT:{\"ok\":true,\"via\":\"voice_manager.get_status\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full PROTECTION_ENABLE": {
+  "log": [
+   [
+    "call",
+    "protection_manager.enable",
+    [
+     null
+    ],
+    {}
+   ],
+   [
+    "call",
+    "presence_manager.set_protection",
+    [
+     true
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "PROTECTION_RESULT:{\"ok\":true,\"via\":\"protection_manager.enable\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full PROTECTION_ENABLE_JSON:{\"whitelist\":[5,4]}": {
+  "log": [
+   [
+    "call",
+    "protection_manager.enable",
+    [
+     [
+      4,
+      5
+     ]
+    ],
+    {}
+   ],
+   [
+    "call",
+    "presence_manager.set_protection",
+    [
+     true
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "PROTECTION_RESULT:{\"ok\":true,\"via\":\"protection_manager.enable\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full PROTECTION_DISABLE": {
+  "log": [
+   [
+    "call",
+    "protection_manager.disable",
+    [],
+    {}
+   ],
+   [
+    "call",
+    "presence_manager.set_protection",
+    [
+     false
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "PROTECTION_RESULT:{\"ok\":true,\"via\":\"protection_manager.disable\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full PROTECTION_STATUS": {
+  "log": [
+   [
+    "call",
+    "protection_manager.get_status",
+    [],
+    {}
+   ]
+  ],
+  "stdout": [
+   "PROTECTION_STATUS_RESULT:{\"ok\":true,\"via\":\"protection_manager.get_status\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full PROTECTION_CONFIG_JSON:{\"whitelist\":[8]}": {
+  "log": [
+   [
+    "call",
+    "protection_manager.configure",
+    [
+     [
+      8
+     ]
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "PROTECTION_RESULT:{\"ok\":true,\"via\":\"protection_manager.configure\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full PROTECTION_CONFIG_JSON:{\"whitelist\":[0]}": {
+  "log": [],
+  "stdout": [
+   "IPC_ERROR:HANDLER_FAILED:ValueError||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full TRACKER_START_JSON:{\"target_id\":42,\"webhook_url\":\"https://discord.com/api/webhooks/123456789012345678/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}": {
+  "log": [
+   [
+    "call",
+    "tracker_manager.start_tracking",
+    [
+     42,
+     "https://discord.com/api/webhooks/123456789012345678/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "TRACKER_RESULT:{\"ok\":true,\"via\":\"tracker_manager.start_tracking\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full TRACKER_START_JSON:{\"target_ids\":[1,2],\"webhook_url\":\"https://discord.com/api/webhooks/123456789012345678/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}": {
+  "log": [
+   [
+    "call",
+    "tracker_manager.start_tracking",
+    [
+     [
+      1,
+      2
+     ],
+     "https://discord.com/api/webhooks/123456789012345678/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "TRACKER_RESULT:{\"ok\":true,\"via\":\"tracker_manager.start_tracking\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full TRACKER_START_JSON:{\"target_id\":42,\"webhook_url\":5}": {
+  "log": [],
+  "stdout": [
+   "TRACKER_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"ID do alvo ou webhook invalido.\",\"enabled\":false}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full TRACKER_STOP": {
+  "log": [
+   [
+    "call",
+    "tracker_manager.stop_tracking",
+    [],
+    {}
+   ]
+  ],
+  "stdout": [
+   "TRACKER_RESULT:{\"ok\":true,\"via\":\"tracker_manager.stop_tracking\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full TRACKER_STATUS": {
+  "log": [
+   [
+    "call",
+    "tracker_manager.get_status",
+    [],
+    {}
+   ]
+  ],
+  "stdout": [
+   "TRACKER_STATUS_RESULT:{\"ok\":true,\"via\":\"tracker_manager.get_status\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full PRESENCE_MAIN": {
+  "log": [
+   [
+    "call",
+    "presence_manager.set_main",
+    [],
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "full PRESENCE_TASK:Nome:Detalhe": {
+  "log": [
+   [
+    "call",
+    "presence_manager.set_task",
+    [
+     "Nome",
+     "Detalhe"
+    ],
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "full PRESENCE_TASK:": {
+  "log": [
+   [
+    "call",
+    "presence_manager.set_task",
+    [
+     "",
+     null
+    ],
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "full PRESENCE_UPDATE:texto livre": {
+  "log": [
+   [
+    "call",
+    "presence_manager.update_detail",
+    [
+     "texto livre"
+    ],
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "full RICH_PRESENCE_STATUS": {
+  "log": [
+   [
+    "call",
+    "presence_manager.status",
+    [],
+    {}
+   ]
+  ],
+  "stdout": [
+   "RICH_PRESENCE_RESULT:{\"ok\":true,\"via\":\"presence_manager.status\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full RICH_PRESENCE_SET_JSON:{\"enabled\":true,\"custom\":null}": {
+  "log": [
+   [
+    "call",
+    "presence_manager.configure",
+    [
+     true,
+     null
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "RICH_PRESENCE_RESULT:{\"ok\":true,\"via\":\"presence_manager.configure\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full RICH_PRESENCE_SET_JSON:{\"enabled\":\"x\"}": {
+  "log": [],
+  "stdout": [
+   "RICH_PRESENCE_RESULT:{\"ok\":false,\"code\":\"INVALID_RICH_PRESENCE\",\"message\":\"Configuração de Rich Presence inválida.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full RICH_PRESENCE_SET_JSON:nao-json": {
+  "log": [],
+  "stdout": [
+   "RICH_PRESENCE_RESULT:{\"ok\":false,\"code\":\"INVALID_RICH_PRESENCE\",\"message\":\"Configuração de Rich Presence inválida.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full QUEST_LIST": {
+  "log": [
+   [
+    "call",
+    "quest_manager.list_quests",
+    [],
+    {}
+   ]
+  ],
+  "stdout": [
+   "QUEST_LIST_RESULT:{\"ok\":true,\"via\":\"quest_manager.list_quests\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full QUEST_START:123": {
+  "log": [
+   [
+    "call",
+    "quest_manager.start_quest",
+    [
+     "123"
+    ],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ]
+  ],
+  "stdout": [
+   "QUEST_START_RESULT:{\"ok\":true,\"via\":\"quest_manager.start_quest\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full QUEST_START:abc": {
+  "log": [],
+  "stdout": [
+   "QUEST_START_RESULT:{\"ok\":false,\"code\":\"INVALID_QUEST_ID\",\"message\":\"ID de Quest inválido.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full QUEST_CANCEL": {
+  "log": [
+   [
+    "call",
+    "quest_manager.cancel",
+    [],
+    {}
+   ]
+  ],
+  "stdout": [
+   "QUEST_CANCEL_RESULT:{\"ok\":true,\"code\":\"CANCELLED\",\"message\":\"Fila de Quests cancelada.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full QUEST_AUTO": {
+  "log": [
+   [
+    "call",
+    "quest_manager.start_auto",
+    [],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ]
+  ],
+  "stdout": [
+   "QUEST_AUTO_RESULT:{\"ok\":true,\"via\":\"quest_manager.start_auto\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full QUEST_CONFIG:{\"webhook_url\":\"https://discord.com/api/webhooks/123456789012345678/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}": {
+  "log": [
+   [
+    "call",
+    "quest_manager.set_runtime_config",
+    [],
+    {
+     "webhook_url": "https://discord.com/api/webhooks/123456789012345678/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ]
+  ],
+  "stdout": []
+ },
+ "full QUEST_CONFIG:": {
+  "log": [],
+  "stdout": [
+   "QUEST:CONFIG_RESULT:{\"ok\":false,\"code\":\"INVALID_PAYLOAD\",\"message\":\"Payload de configuração vazio.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full QUEST_CONFIG:[]": {
+  "log": [],
+  "stdout": [
+   "QUEST:CONFIG_RESULT:{\"ok\":false,\"code\":\"INVALID_PAYLOAD\",\"message\":\"Payload de configuração deve ser um objeto.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full QUEST_CONFIG:nao-e-json": {
+  "log": [],
+  "stdout": [
+   "QUEST:CONFIG_RESULT:{\"ok\":false,\"code\":\"INVALID_PAYLOAD\",\"message\":\"Payload de configuração inválido.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full ACCOUNT_STATUS": {
+  "log": [
+   [
+    "call",
+    "account_manager.get_custom_status",
+    [],
+    {}
+   ]
+  ],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":true,\"via\":\"account_manager.get_custom_status\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full ACCOUNT_PROFILE": {
+  "log": [
+   [
+    "call",
+    "account_manager.get_profile",
+    [],
+    {
+     "refresh": false
+    }
+   ],
+   [
+    "spawn",
+    "coroutine"
+   ]
+  ],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":true,\"via\":\"account_manager.get_profile\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full ACCOUNT_PROFILE_REFRESH": {
+  "log": [
+   [
+    "call",
+    "account_manager.get_profile",
+    [],
+    {
+     "refresh": true
+    }
+   ],
+   [
+    "spawn",
+    "coroutine"
+   ]
+  ],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":true,\"via\":\"account_manager.get_profile\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full ACCOUNT_STATUS_SET_JSON:{\"text\":\"oi\"}": {
+  "log": [
+   [
+    "call",
+    "account_manager.set_custom_status",
+    [
+     {
+      "text": "oi"
+     }
+    ],
+    {}
+   ],
+   [
+    "spawn",
+    "coroutine"
+   ]
+  ],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":true,\"via\":\"account_manager.set_custom_status\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full ACCOUNT_STATUS_SET_JSON:nao-e-json": {
+  "log": [],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"Dados inválidos.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full ACCOUNT_SESSIONS": {
+  "log": [
+   [
+    "call",
+    "account_manager.list_sessions",
+    [],
+    {}
+   ],
+   [
+    "spawn",
+    "coroutine"
+   ]
+  ],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":true,\"via\":\"account_manager.list_sessions\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full ACCOUNT_MENTIONS_JSON:{\"limit\":10,\"before\":\"99\"}": {
+  "log": [
+   [
+    "call",
+    "account_manager.list_mentions",
+    [],
+    {
+     "limit": 10,
+     "before": 99
+    }
+   ],
+   [
+    "spawn",
+    "coroutine"
+   ]
+  ],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":true,\"via\":\"account_manager.list_mentions\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full ACCOUNT_MENTIONS_JSON:{\"limit\":\"x\"}": {
+  "log": [],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"Dados inválidos.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full ACCOUNT_MENTION_DELETE_JSON:{\"ids\":[1,2]}": {
+  "log": [
+   [
+    "call",
+    "account_manager.delete_mentions",
+    [
+     [
+      1,
+      2
+     ]
+    ],
+    {}
+   ],
+   [
+    "spawn",
+    "coroutine"
+   ]
+  ],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":true,\"via\":\"account_manager.delete_mentions\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full ACCOUNT_MENTION_DELETE_JSON:{\"ids\":[]}": {
+  "log": [],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"IDs de menção inválidos.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full ACCOUNT_UNREAD": {
+  "log": [
+   [
+    "call",
+    "account_manager.unread_summary",
+    [],
+    {}
+   ]
+  ],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":true,\"via\":\"account_manager.unread_summary\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full ACCOUNT_ACK_ALL_JSON:{\"scope\":\"private\"}": {
+  "log": [
+   [
+    "call",
+    "account_manager.ack_all",
+    [
+     "private"
+    ],
+    {}
+   ],
+   [
+    "spawn",
+    "coroutine"
+   ]
+  ],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":true,\"via\":\"account_manager.ack_all\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full ACCOUNT_ACK_ALL_JSON:{\"scope\":\"bad\"}": {
+  "log": [],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"Dados inválidos.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "full COMANDO_DESCONHECIDO": {
+  "log": [],
+  "stdout": [
+   "IPC_ERROR:UNKNOWN_COMMAND||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal START": {
+  "log": [
+   [
+    "set",
+    "control_state.started",
+    true
+   ]
+  ],
+  "stdout": [
+   "STATUS:STARTED||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal PAUSE": {
+  "log": [
+   [
+    "set",
+    "control_state.paused",
+    true
+   ]
+  ],
+  "stdout": [
+   "STATUS:PAUSED||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal RESUME": {
+  "log": [
+   [
+    "set",
+    "control_state.paused",
+    false
+   ]
+  ],
+  "stdout": [
+   "STATUS:RESUMED||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal CANCEL": {
+  "log": [
+   [
+    "set",
+    "control_state.cancelled",
+    true
+   ],
+   [
+    "set",
+    "rel_manager.cancelled",
+    true
+   ],
+   [
+    "set",
+    "guild_manager.cancelled",
+    true
+   ]
+  ],
+  "stdout": [
+   "STATUS:CANCELLED||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal CLOSE": {
+  "log": [
+   [
+    "call",
+    "bot.close",
+    [],
+    {}
+   ]
+  ],
+  "stdout": [
+   "STATUS:CLOSING||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal REL_STATS": {
+  "log": [
+   [
+    "call",
+    "rel_manager.get_stats",
+    [],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_STATS_RESULT:{\"ok\": true, \"via\": \"rel_manager.get_stats\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal REL_FRIENDS_LIST": {
+  "log": [
+   [
+    "call",
+    "rel_manager.get_friends_list",
+    [
+     0,
+     20,
+     "status"
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_FRIENDS_RESULT:{\"ok\": true, \"via\": \"rel_manager.get_friends_list\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal REL_FRIENDS_PAGE_JSON:{\"page\":1,\"page_size\":5,\"sort\":\"name\"}": {
+  "log": [
+   [
+    "call",
+    "rel_manager.get_friends_list",
+    [
+     1,
+     5,
+     "name"
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_FRIENDS_RESULT:{\"ok\": true, \"via\": \"rel_manager.get_friends_list\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal REL_FRIENDS_PAGE_JSON:{\"page\":-1}": {
+  "log": [],
+  "stdout": [
+   "IPC_ERROR:HANDLER_FAILED:ValueError||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal REL_CLOSEST_JSON:{\"limit\":5}": {
+  "log": [
+   [
+    "call",
+    "rel_manager.get_closest_friends",
+    [
+     5
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_CLOSEST_RESULT:{\"ok\":true,\"via\":\"rel_manager.get_closest_friends\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal REL_CLOSEST_JSON:{\"limit\":500}": {
+  "log": [],
+  "stdout": [
+   "IPC_ERROR:HANDLER_FAILED:ValueError||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal REL_PENDING_LIST": {
+  "log": [
+   [
+    "call",
+    "rel_manager.get_pending_requests",
+    [
+     0,
+     10
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_PENDING_RESULT:{\"ok\": true, \"via\": \"rel_manager.get_pending_requests\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal REL_PENDING_PAGE_JSON:{\"page\":2,\"page_size\":10}": {
+  "log": [
+   [
+    "call",
+    "rel_manager.get_pending_requests",
+    [
+     2,
+     10
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_PENDING_RESULT:{\"ok\": true, \"via\": \"rel_manager.get_pending_requests\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal REL_BLOCKED_LIST": {
+  "log": [
+   [
+    "call",
+    "rel_manager.get_blocked_list",
+    [
+     0,
+     20
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_BLOCKED_RESULT:{\"ok\": true, \"via\": \"rel_manager.get_blocked_list\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal REL_BLOCKED_PAGE_JSON:{\"page\":0,\"page_size\":25}": {
+  "log": [
+   [
+    "call",
+    "rel_manager.get_blocked_list",
+    [
+     0,
+     25
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_BLOCKED_RESULT:{\"ok\": true, \"via\": \"rel_manager.get_blocked_list\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal REL_REMOVE_ALL:1,2,x,3": {
+  "log": [
+   [
+    "set",
+    "rel_manager.cancelled",
+    false
+   ],
+   [
+    "call",
+    "rel_manager.remove_all_friends",
+    [
+     [
+      1,
+      2,
+      3
+     ]
+    ],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "rel_manager.remove_all_friends"
+    },
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "minimal REL_UNBLOCK_ALL": {
+  "log": [
+   [
+    "set",
+    "rel_manager.cancelled",
+    false
+   ],
+   [
+    "call",
+    "rel_manager.unblock_all",
+    [],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "rel_manager.unblock_all"
+    },
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "minimal REL_ACCEPT_ALL": {
+  "log": [
+   [
+    "set",
+    "rel_manager.cancelled",
+    false
+   ],
+   [
+    "call",
+    "rel_manager.accept_all_requests",
+    [],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "rel_manager.accept_all_requests"
+    },
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "minimal REL_DENY_ALL": {
+  "log": [
+   [
+    "set",
+    "rel_manager.cancelled",
+    false
+   ],
+   [
+    "call",
+    "rel_manager.deny_all_requests",
+    [],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "rel_manager.deny_all_requests"
+    },
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "minimal REL_NICKNAME_JSON:{\"target_id\":7,\"nickname\":\"apelido\"}": {
+  "log": [
+   [
+    "call",
+    "rel_manager.set_friend_nickname",
+    [
+     7,
+     "apelido"
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_NICKNAME_RESULT:{\"ok\":true,\"via\":\"rel_manager.set_friend_nickname\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal REL_NICKNAME_JSON:{\"target_id\":7,\"nickname\":\"\"}": {
+  "log": [
+   [
+    "call",
+    "rel_manager.set_friend_nickname",
+    [
+     7,
+     null
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_NICKNAME_RESULT:{\"ok\":true,\"via\":\"rel_manager.set_friend_nickname\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal REL_NICKNAME_JSON:{\"target_id\":0}": {
+  "log": [],
+  "stdout": [
+   "REL_NICKNAME_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"ID ou apelido invalido.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal REL_ADD_FRIEND_JSON:{\"username\":\"  alice  \"}": {
+  "log": [
+   [
+    "call",
+    "rel_manager.send_friend_request_by_name",
+    [
+     "alice"
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_ADD_FRIEND_RESULT:{\"ok\":true,\"via\":\"rel_manager.send_friend_request_by_name\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal REL_ADD_FRIEND_JSON:{\"username\":\"\"}": {
+  "log": [],
+  "stdout": [
+   "REL_ADD_FRIEND_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"Nome de usuario invalido.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal REL_BLOCK_JSON:{\"target_id\":9}": {
+  "log": [
+   [
+    "call",
+    "rel_manager.block_user",
+    [
+     9
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_BLOCK_RESULT:{\"ok\":true,\"via\":\"rel_manager.block_user\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal REL_BLOCK_JSON:{\"target_id\":\"x\"}": {
+  "log": [],
+  "stdout": [
+   "REL_BLOCK_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"ID de usuario invalido.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal REL_UNBLOCK_JSON:{\"target_id\":9}": {
+  "log": [
+   [
+    "call",
+    "rel_manager.unblock_user",
+    [
+     9
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_UNBLOCK_RESULT:{\"ok\":true,\"via\":\"rel_manager.unblock_user\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal REL_UNBLOCK_JSON:nao-e-json": {
+  "log": [],
+  "stdout": [
+   "REL_UNBLOCK_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"ID de usuario invalido.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal GUILD_STATS": {
+  "log": [
+   [
+    "call",
+    "guild_manager.get_stats",
+    [],
+    {}
+   ]
+  ],
+  "stdout": [
+   "GUILD_STATS_RESULT:{\"ok\":true,\"via\":\"guild_manager.get_stats\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal GUILD_LIST_PAGE_JSON:{\"page\":1,\"page_size\":20}": {
+  "log": [
+   [
+    "call",
+    "guild_manager.get_guilds_page",
+    [
+     1,
+     20
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "GUILD_LIST_RESULT:{\"ok\":true,\"via\":\"guild_manager.get_guilds_page\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal GUILD_LEAVE_ALL_JSON:{\"whitelist\":[3,1,3]}": {
+  "log": [
+   [
+    "set",
+    "guild_manager.cancelled",
+    false
+   ],
+   [
+    "call",
+    "guild_manager.leave_all_guilds",
+    [
+     [
+      1,
+      3
+     ]
+    ],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "guild_manager.leave_all_guilds"
+    },
+    {
+     "presence_task_token": null
+    }
+   ]
+  ],
+  "stdout": []
+ },
+ "minimal GUILD_LEAVE_ALL_JSON:{\"whitelist\":\"x\"}": {
+  "log": [],
+  "stdout": [
+   "IPC_ERROR:HANDLER_FAILED:ValueError||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal GUILD_MUTE_ALL_JSON:{\"whitelist\":[]}": {
+  "log": [
+   [
+    "set",
+    "guild_manager.cancelled",
+    false
+   ],
+   [
+    "call",
+    "guild_manager.mute_all_guilds",
+    [
+     []
+    ],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "guild_manager.mute_all_guilds"
+    },
+    {
+     "presence_task_token": null
+    }
+   ]
+  ],
+  "stdout": []
+ },
+ "minimal TARGET:55": {
+  "log": [],
+  "stdout": [
+   "IPC_ERROR:HANDLER_FAILED:AttributeError||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal MSG_PREVIEW_JSON:{\"target_id\":12,\"guild\":true}": {
+  "log": [],
+  "stdout": [
+   "IPC_ERROR:HANDLER_FAILED:AttributeError||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal MSG_PREVIEW_JSON:{\"target_id\":-5}": {
+  "log": [],
+  "stdout": [
+   "MSG_PREVIEW_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"ID invalido.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal MSG_CLEAN_ALL_DMS": {
+  "log": [],
+  "stdout": [
+   "IPC_ERROR:HANDLER_FAILED:AttributeError||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal MSG_CLEAN_BATCH_JSON:{\"target_ids\":[1,2]}": {
+  "log": [],
+  "stdout": [
+   "IPC_ERROR:HANDLER_FAILED:AttributeError||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal MSG_CLEAN_BATCH_JSON:{\"target_ids\":[]}": {
+  "log": [],
+  "stdout": [
+   "MSG_CLEAN_ALL_DMS_RESULT:ERRO:IDs invalidos para limpeza em fila.||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal MSG_CLEAN_CHANNEL:77": {
+  "log": [],
+  "stdout": [
+   "IPC_ERROR:HANDLER_FAILED:AttributeError||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal MSG_CLEAN_CHANNEL_NOW:77": {
+  "log": [],
+  "stdout": [
+   "IPC_ERROR:HANDLER_FAILED:AttributeError||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal MSG_CLEAN_GUILD:88": {
+  "log": [],
+  "stdout": [
+   "IPC_ERROR:HANDLER_FAILED:AttributeError||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal MSG_CLEAN_GUILD_NOW:88": {
+  "log": [],
+  "stdout": [
+   "IPC_ERROR:HANDLER_FAILED:AttributeError||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal MSG_COUNT:66": {
+  "log": [],
+  "stdout": [
+   "IPC_ERROR:HANDLER_FAILED:AttributeError||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal MSG_SCAN_GUILDS": {
+  "log": [],
+  "stdout": [
+   "IPC_ERROR:HANDLER_FAILED:AttributeError||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal DM_CLOSE:44": {
+  "log": [],
+  "stdout": [
+   "IPC_ERROR:HANDLER_FAILED:AttributeError||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal DM_CLOSE_ALL": {
+  "log": [],
+  "stdout": [
+   "IPC_ERROR:HANDLER_FAILED:AttributeError||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal DM_LIST": {
+  "log": [],
+  "stdout": [
+   "IPC_ERROR:HANDLER_FAILED:AttributeError||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal DM_LIST_REFRESH": {
+  "log": [],
+  "stdout": [
+   "IPC_ERROR:HANDLER_FAILED:AttributeError||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal GROUP_DM_LEAVE:33": {
+  "log": [],
+  "stdout": [
+   "IPC_ERROR:HANDLER_FAILED:AttributeError||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal GROUP_DM_LEAVE_ALL": {
+  "log": [],
+  "stdout": [
+   "IPC_ERROR:HANDLER_FAILED:AttributeError||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal VOICE_JOIN_JSON:{\"channel_id\":123}": {
+  "log": [
+   [
+    "call",
+    "voice_manager.join_voice",
+    [
+     123
+    ],
+    {}
+   ],
+   [
+    "spawn",
+    "coroutine"
+   ]
+  ],
+  "stdout": [
+   "VOICE_RESULT:{\"ok\":true,\"via\":\"voice_manager.join_voice\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal VOICE_JOIN_JSON:{\"channel_id\":0}": {
+  "log": [],
+  "stdout": [
+   "VOICE_RESULT:{\"ok\":false,\"code\":\"INVALID_CHANNEL_ID\",\"message\":\"ID de canal invalido.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal VOICE_LEAVE": {
+  "log": [
+   [
+    "call",
+    "voice_manager.leave_voice",
+    [],
+    {}
+   ],
+   [
+    "spawn",
+    "coroutine"
+   ]
+  ],
+  "stdout": [
+   "VOICE_RESULT:{\"ok\":true,\"via\":\"voice_manager.leave_voice\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal VOICE_FOLLOW_JSON:{\"target_id\":321}": {
+  "log": [
+   [
+    "call",
+    "voice_manager.start_follow",
+    [
+     321
+    ],
+    {}
+   ],
+   [
+    "spawn",
+    "coroutine"
+   ]
+  ],
+  "stdout": [
+   "VOICE_RESULT:{\"ok\":true,\"via\":\"voice_manager.start_follow\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal VOICE_FOLLOW_JSON:nao-e-json": {
+  "log": [],
+  "stdout": [
+   "VOICE_RESULT:{\"ok\":false,\"code\":\"INVALID_TARGET_ID\",\"message\":\"ID de usuario invalido.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal VOICE_UNFOLLOW": {
+  "log": [
+   [
+    "call",
+    "voice_manager.stop_follow",
+    [],
+    {}
+   ],
+   [
+    "spawn",
+    "coroutine"
+   ]
+  ],
+  "stdout": [
+   "VOICE_RESULT:{\"ok\":true,\"via\":\"voice_manager.stop_follow\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal VOICE_STATUS": {
+  "log": [
+   [
+    "call",
+    "voice_manager.get_status",
+    [],
+    {}
+   ]
+  ],
+  "stdout": [
+   "VOICE_STATUS_RESULT:{\"ok\":true,\"via\":\"voice_manager.get_status\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal PROTECTION_ENABLE": {
+  "log": [
+   [
+    "call",
+    "protection_manager.enable",
+    [
+     null
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "PROTECTION_RESULT:{\"ok\":true,\"via\":\"protection_manager.enable\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal PROTECTION_ENABLE_JSON:{\"whitelist\":[5,4]}": {
+  "log": [
+   [
+    "call",
+    "protection_manager.enable",
+    [
+     [
+      4,
+      5
+     ]
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "PROTECTION_RESULT:{\"ok\":true,\"via\":\"protection_manager.enable\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal PROTECTION_DISABLE": {
+  "log": [
+   [
+    "call",
+    "protection_manager.disable",
+    [],
+    {}
+   ]
+  ],
+  "stdout": [
+   "PROTECTION_RESULT:{\"ok\":true,\"via\":\"protection_manager.disable\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal PROTECTION_STATUS": {
+  "log": [
+   [
+    "call",
+    "protection_manager.get_status",
+    [],
+    {}
+   ]
+  ],
+  "stdout": [
+   "PROTECTION_STATUS_RESULT:{\"ok\":true,\"via\":\"protection_manager.get_status\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal PROTECTION_CONFIG_JSON:{\"whitelist\":[8]}": {
+  "log": [
+   [
+    "call",
+    "protection_manager.configure",
+    [
+     [
+      8
+     ]
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "PROTECTION_RESULT:{\"ok\":true,\"via\":\"protection_manager.configure\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal PROTECTION_CONFIG_JSON:{\"whitelist\":[0]}": {
+  "log": [],
+  "stdout": [
+   "IPC_ERROR:HANDLER_FAILED:ValueError||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal TRACKER_START_JSON:{\"target_id\":42,\"webhook_url\":\"https://discord.com/api/webhooks/123456789012345678/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}": {
+  "log": [
+   [
+    "call",
+    "tracker_manager.start_tracking",
+    [
+     42,
+     "https://discord.com/api/webhooks/123456789012345678/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "TRACKER_RESULT:{\"ok\":true,\"via\":\"tracker_manager.start_tracking\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal TRACKER_START_JSON:{\"target_ids\":[1,2],\"webhook_url\":\"https://discord.com/api/webhooks/123456789012345678/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}": {
+  "log": [
+   [
+    "call",
+    "tracker_manager.start_tracking",
+    [
+     [
+      1,
+      2
+     ],
+     "https://discord.com/api/webhooks/123456789012345678/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "TRACKER_RESULT:{\"ok\":true,\"via\":\"tracker_manager.start_tracking\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal TRACKER_START_JSON:{\"target_id\":42,\"webhook_url\":5}": {
+  "log": [],
+  "stdout": [
+   "TRACKER_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"ID do alvo ou webhook invalido.\",\"enabled\":false}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal TRACKER_STOP": {
+  "log": [
+   [
+    "call",
+    "tracker_manager.stop_tracking",
+    [],
+    {}
+   ]
+  ],
+  "stdout": [
+   "TRACKER_RESULT:{\"ok\":true,\"via\":\"tracker_manager.stop_tracking\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal TRACKER_STATUS": {
+  "log": [
+   [
+    "call",
+    "tracker_manager.get_status",
+    [],
+    {}
+   ]
+  ],
+  "stdout": [
+   "TRACKER_STATUS_RESULT:{\"ok\":true,\"via\":\"tracker_manager.get_status\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal PRESENCE_MAIN": {
+  "log": [],
+  "stdout": []
+ },
+ "minimal PRESENCE_TASK:Nome:Detalhe": {
+  "log": [],
+  "stdout": []
+ },
+ "minimal PRESENCE_TASK:": {
+  "log": [],
+  "stdout": []
+ },
+ "minimal PRESENCE_UPDATE:texto livre": {
+  "log": [],
+  "stdout": []
+ },
+ "minimal RICH_PRESENCE_STATUS": {
+  "log": [],
+  "stdout": [
+   "RICH_PRESENCE_RESULT:{\"ok\":false,\"code\":\"PRESENCE_UNAVAILABLE\",\"message\":\"A presença ainda não está disponível neste worker.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal RICH_PRESENCE_SET_JSON:{\"enabled\":true,\"custom\":null}": {
+  "log": [],
+  "stdout": [
+   "RICH_PRESENCE_RESULT:{\"ok\":false,\"code\":\"PRESENCE_UNAVAILABLE\",\"message\":\"A presença ainda não está disponível neste worker.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal RICH_PRESENCE_SET_JSON:{\"enabled\":\"x\"}": {
+  "log": [],
+  "stdout": [
+   "RICH_PRESENCE_RESULT:{\"ok\":false,\"code\":\"PRESENCE_UNAVAILABLE\",\"message\":\"A presença ainda não está disponível neste worker.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal RICH_PRESENCE_SET_JSON:nao-json": {
+  "log": [],
+  "stdout": [
+   "RICH_PRESENCE_RESULT:{\"ok\":false,\"code\":\"PRESENCE_UNAVAILABLE\",\"message\":\"A presença ainda não está disponível neste worker.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal QUEST_LIST": {
+  "log": [],
+  "stdout": [
+   "QUEST_LIST_RESULT:{\"ok\":false,\"code\":\"UNAVAILABLE\",\"message\":\"Quest Manager indisponível.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal QUEST_START:123": {
+  "log": [],
+  "stdout": [
+   "QUEST_START_RESULT:{\"ok\":false,\"code\":\"UNAVAILABLE\",\"message\":\"Quest Manager indisponível.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal QUEST_START:abc": {
+  "log": [],
+  "stdout": [
+   "QUEST_START_RESULT:{\"ok\":false,\"code\":\"INVALID_QUEST_ID\",\"message\":\"ID de Quest inválido.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal QUEST_CANCEL": {
+  "log": [],
+  "stdout": [
+   "QUEST_CANCEL_RESULT:{\"ok\":false,\"code\":\"UNAVAILABLE\",\"message\":\"Quest Manager indisponível.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal QUEST_AUTO": {
+  "log": [],
+  "stdout": [
+   "QUEST_AUTO_RESULT:{\"ok\":false,\"code\":\"UNAVAILABLE\",\"message\":\"Quest Manager indisponível.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal QUEST_CONFIG:{\"webhook_url\":\"https://discord.com/api/webhooks/123456789012345678/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}": {
+  "log": [],
+  "stdout": [
+   "QUEST:CONFIG_RESULT:{\"ok\":false,\"code\":\"UNAVAILABLE\",\"message\":\"Quest Manager indisponível.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal QUEST_CONFIG:": {
+  "log": [],
+  "stdout": [
+   "QUEST:CONFIG_RESULT:{\"ok\":false,\"code\":\"INVALID_PAYLOAD\",\"message\":\"Payload de configuração vazio.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal QUEST_CONFIG:[]": {
+  "log": [],
+  "stdout": [
+   "QUEST:CONFIG_RESULT:{\"ok\":false,\"code\":\"INVALID_PAYLOAD\",\"message\":\"Payload de configuração deve ser um objeto.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal QUEST_CONFIG:nao-e-json": {
+  "log": [],
+  "stdout": [
+   "QUEST:CONFIG_RESULT:{\"ok\":false,\"code\":\"INVALID_PAYLOAD\",\"message\":\"Payload de configuração inválido.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal ACCOUNT_STATUS": {
+  "log": [],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":false,\"code\":\"UNAVAILABLE\",\"message\":\"Recursos da conta indisponíveis.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal ACCOUNT_PROFILE": {
+  "log": [],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":false,\"code\":\"UNAVAILABLE\",\"message\":\"Recursos da conta indisponíveis.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal ACCOUNT_PROFILE_REFRESH": {
+  "log": [],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":false,\"code\":\"UNAVAILABLE\",\"message\":\"Recursos da conta indisponíveis.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal ACCOUNT_STATUS_SET_JSON:{\"text\":\"oi\"}": {
+  "log": [],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":false,\"code\":\"UNAVAILABLE\",\"message\":\"Recursos da conta indisponíveis.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal ACCOUNT_STATUS_SET_JSON:nao-e-json": {
+  "log": [],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"Dados inválidos.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal ACCOUNT_SESSIONS": {
+  "log": [],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":false,\"code\":\"UNAVAILABLE\",\"message\":\"Recursos da conta indisponíveis.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal ACCOUNT_MENTIONS_JSON:{\"limit\":10,\"before\":\"99\"}": {
+  "log": [],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":false,\"code\":\"UNAVAILABLE\",\"message\":\"Recursos da conta indisponíveis.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal ACCOUNT_MENTIONS_JSON:{\"limit\":\"x\"}": {
+  "log": [],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"Dados inválidos.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal ACCOUNT_MENTION_DELETE_JSON:{\"ids\":[1,2]}": {
+  "log": [],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":false,\"code\":\"UNAVAILABLE\",\"message\":\"Recursos da conta indisponíveis.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal ACCOUNT_MENTION_DELETE_JSON:{\"ids\":[]}": {
+  "log": [],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"IDs de menção inválidos.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal ACCOUNT_UNREAD": {
+  "log": [],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":false,\"code\":\"UNAVAILABLE\",\"message\":\"Recursos da conta indisponíveis.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal ACCOUNT_ACK_ALL_JSON:{\"scope\":\"private\"}": {
+  "log": [],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":false,\"code\":\"UNAVAILABLE\",\"message\":\"Recursos da conta indisponíveis.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal ACCOUNT_ACK_ALL_JSON:{\"scope\":\"bad\"}": {
+  "log": [],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"Dados inválidos.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "minimal COMANDO_DESCONHECIDO": {
+  "log": [],
+  "stdout": [
+   "IPC_ERROR:UNKNOWN_COMMAND||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing START": {
+  "log": [
+   [
+    "set",
+    "control_state.started",
+    true
+   ]
+  ],
+  "stdout": [
+   "STATUS:STARTED||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing PAUSE": {
+  "log": [
+   [
+    "set",
+    "control_state.paused",
+    true
+   ],
+   [
+    "set",
+    "msg_manager.paused",
+    true
+   ]
+  ],
+  "stdout": [
+   "STATUS:PAUSED||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing RESUME": {
+  "log": [
+   [
+    "set",
+    "control_state.paused",
+    false
+   ],
+   [
+    "set",
+    "msg_manager.paused",
+    false
+   ]
+  ],
+  "stdout": [
+   "STATUS:RESUMED||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing CANCEL": {
+  "log": [
+   [
+    "set",
+    "control_state.cancelled",
+    true
+   ],
+   [
+    "set",
+    "msg_manager.cancelled",
+    true
+   ],
+   [
+    "set",
+    "rel_manager.cancelled",
+    true
+   ],
+   [
+    "set",
+    "guild_manager.cancelled",
+    true
+   ]
+  ],
+  "stdout": [
+   "STATUS:CANCELLED||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing CLOSE": {
+  "log": [
+   [
+    "call",
+    "bot.close",
+    [],
+    {}
+   ]
+  ],
+  "stdout": [
+   "STATUS:CLOSING||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing REL_STATS": {
+  "log": [
+   [
+    "call",
+    "rel_manager.get_stats",
+    [],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_STATS_RESULT:{\"ok\": true, \"via\": \"rel_manager.get_stats\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing REL_FRIENDS_LIST": {
+  "log": [
+   [
+    "call",
+    "rel_manager.get_friends_list",
+    [
+     0,
+     20,
+     "status"
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_FRIENDS_RESULT:{\"ok\": true, \"via\": \"rel_manager.get_friends_list\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing REL_FRIENDS_PAGE_JSON:{\"page\":1,\"page_size\":5,\"sort\":\"name\"}": {
+  "log": [
+   [
+    "call",
+    "rel_manager.get_friends_list",
+    [
+     1,
+     5,
+     "name"
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_FRIENDS_RESULT:{\"ok\": true, \"via\": \"rel_manager.get_friends_list\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing REL_FRIENDS_PAGE_JSON:{\"page\":-1}": {
+  "log": [],
+  "stdout": [
+   "IPC_ERROR:HANDLER_FAILED:ValueError||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing REL_CLOSEST_JSON:{\"limit\":5}": {
+  "log": [
+   [
+    "call",
+    "rel_manager.get_closest_friends",
+    [
+     5
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_CLOSEST_RESULT:{\"ok\":true,\"via\":\"rel_manager.get_closest_friends\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing REL_CLOSEST_JSON:{\"limit\":500}": {
+  "log": [],
+  "stdout": [
+   "IPC_ERROR:HANDLER_FAILED:ValueError||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing REL_PENDING_LIST": {
+  "log": [
+   [
+    "call",
+    "rel_manager.get_pending_requests",
+    [
+     0,
+     10
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_PENDING_RESULT:{\"ok\": true, \"via\": \"rel_manager.get_pending_requests\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing REL_PENDING_PAGE_JSON:{\"page\":2,\"page_size\":10}": {
+  "log": [
+   [
+    "call",
+    "rel_manager.get_pending_requests",
+    [
+     2,
+     10
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_PENDING_RESULT:{\"ok\": true, \"via\": \"rel_manager.get_pending_requests\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing REL_BLOCKED_LIST": {
+  "log": [
+   [
+    "call",
+    "rel_manager.get_blocked_list",
+    [
+     0,
+     20
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_BLOCKED_RESULT:{\"ok\": true, \"via\": \"rel_manager.get_blocked_list\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing REL_BLOCKED_PAGE_JSON:{\"page\":0,\"page_size\":25}": {
+  "log": [
+   [
+    "call",
+    "rel_manager.get_blocked_list",
+    [
+     0,
+     25
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_BLOCKED_RESULT:{\"ok\": true, \"via\": \"rel_manager.get_blocked_list\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing REL_REMOVE_ALL:1,2,x,3": {
+  "log": [
+   [
+    "set",
+    "rel_manager.cancelled",
+    false
+   ],
+   [
+    "call",
+    "rel_manager.remove_all_friends",
+    [
+     [
+      1,
+      2,
+      3
+     ]
+    ],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "rel_manager.remove_all_friends"
+    },
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "failing REL_UNBLOCK_ALL": {
+  "log": [
+   [
+    "set",
+    "rel_manager.cancelled",
+    false
+   ],
+   [
+    "call",
+    "rel_manager.unblock_all",
+    [],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "rel_manager.unblock_all"
+    },
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "failing REL_ACCEPT_ALL": {
+  "log": [
+   [
+    "set",
+    "rel_manager.cancelled",
+    false
+   ],
+   [
+    "call",
+    "rel_manager.accept_all_requests",
+    [],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "rel_manager.accept_all_requests"
+    },
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "failing REL_DENY_ALL": {
+  "log": [
+   [
+    "set",
+    "rel_manager.cancelled",
+    false
+   ],
+   [
+    "call",
+    "rel_manager.deny_all_requests",
+    [],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "rel_manager.deny_all_requests"
+    },
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "failing REL_NICKNAME_JSON:{\"target_id\":7,\"nickname\":\"apelido\"}": {
+  "log": [
+   [
+    "call",
+    "rel_manager.set_friend_nickname",
+    [
+     7,
+     "apelido"
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_NICKNAME_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"ID ou apelido invalido.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing REL_NICKNAME_JSON:{\"target_id\":7,\"nickname\":\"\"}": {
+  "log": [
+   [
+    "call",
+    "rel_manager.set_friend_nickname",
+    [
+     7,
+     null
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_NICKNAME_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"ID ou apelido invalido.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing REL_NICKNAME_JSON:{\"target_id\":0}": {
+  "log": [],
+  "stdout": [
+   "REL_NICKNAME_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"ID ou apelido invalido.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing REL_ADD_FRIEND_JSON:{\"username\":\"  alice  \"}": {
+  "log": [
+   [
+    "call",
+    "rel_manager.send_friend_request_by_name",
+    [
+     "alice"
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_ADD_FRIEND_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"Nome de usuario invalido.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing REL_ADD_FRIEND_JSON:{\"username\":\"\"}": {
+  "log": [],
+  "stdout": [
+   "REL_ADD_FRIEND_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"Nome de usuario invalido.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing REL_BLOCK_JSON:{\"target_id\":9}": {
+  "log": [
+   [
+    "call",
+    "rel_manager.block_user",
+    [
+     9
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_BLOCK_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"ID de usuario invalido.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing REL_BLOCK_JSON:{\"target_id\":\"x\"}": {
+  "log": [],
+  "stdout": [
+   "REL_BLOCK_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"ID de usuario invalido.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing REL_UNBLOCK_JSON:{\"target_id\":9}": {
+  "log": [
+   [
+    "call",
+    "rel_manager.unblock_user",
+    [
+     9
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "REL_UNBLOCK_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"ID de usuario invalido.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing REL_UNBLOCK_JSON:nao-e-json": {
+  "log": [],
+  "stdout": [
+   "REL_UNBLOCK_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"ID de usuario invalido.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing GUILD_STATS": {
+  "log": [
+   [
+    "call",
+    "guild_manager.get_stats",
+    [],
+    {}
+   ]
+  ],
+  "stdout": [
+   "GUILD_STATS_RESULT:{\"ok\":true,\"via\":\"guild_manager.get_stats\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing GUILD_LIST_PAGE_JSON:{\"page\":1,\"page_size\":20}": {
+  "log": [
+   [
+    "call",
+    "guild_manager.get_guilds_page",
+    [
+     1,
+     20
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "GUILD_LIST_RESULT:{\"ok\":true,\"via\":\"guild_manager.get_guilds_page\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing GUILD_LEAVE_ALL_JSON:{\"whitelist\":[3,1,3]}": {
+  "log": [
+   [
+    "call",
+    "presence_manager.set_task",
+    [
+     "Saindo de servidores"
+    ],
+    {}
+   ],
+   [
+    "set",
+    "guild_manager.cancelled",
+    false
+   ],
+   [
+    "call",
+    "guild_manager.leave_all_guilds",
+    [
+     [
+      1,
+      3
+     ]
+    ],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "guild_manager.leave_all_guilds"
+    },
+    {
+     "presence_task_token": {
+      "ok": true,
+      "via": "presence_manager.set_task"
+     }
+    }
+   ]
+  ],
+  "stdout": []
+ },
+ "failing GUILD_LEAVE_ALL_JSON:{\"whitelist\":\"x\"}": {
+  "log": [],
+  "stdout": [
+   "IPC_ERROR:HANDLER_FAILED:ValueError||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing GUILD_MUTE_ALL_JSON:{\"whitelist\":[]}": {
+  "log": [
+   [
+    "call",
+    "presence_manager.set_task",
+    [
+     "Silenciando servidores"
+    ],
+    {}
+   ],
+   [
+    "set",
+    "guild_manager.cancelled",
+    false
+   ],
+   [
+    "call",
+    "guild_manager.mute_all_guilds",
+    [
+     []
+    ],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "guild_manager.mute_all_guilds"
+    },
+    {
+     "presence_task_token": {
+      "ok": true,
+      "via": "presence_manager.set_task"
+     }
+    }
+   ]
+  ],
+  "stdout": []
+ },
+ "failing TARGET:55": {
+  "log": [
+   [
+    "call",
+    "presence_manager.set_task",
+    [
+     "Limpando mensagens"
+    ],
+    {}
+   ],
+   [
+    "call",
+    "msg_manager.clean_channel",
+    [
+     55
+    ],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "msg_manager.clean_channel"
+    },
+    {
+     "presence_task_token": {
+      "ok": true,
+      "via": "presence_manager.set_task"
+     }
+    }
+   ]
+  ],
+  "stdout": []
+ },
+ "failing MSG_PREVIEW_JSON:{\"target_id\":12,\"guild\":true}": {
+  "log": [
+   [
+    "call",
+    "msg_manager.preview_clean",
+    [
+     12
+    ],
+    {
+     "guild": true,
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "msg_manager.preview_clean"
+    },
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "failing MSG_PREVIEW_JSON:{\"target_id\":-5}": {
+  "log": [],
+  "stdout": [
+   "MSG_PREVIEW_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"ID invalido.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing MSG_CLEAN_ALL_DMS": {
+  "log": [
+   [
+    "call",
+    "presence_manager.set_task",
+    [
+     "Limpando todas as DMs"
+    ],
+    {}
+   ],
+   [
+    "call",
+    "msg_manager.clean_all_dms",
+    [],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "msg_manager.clean_all_dms"
+    },
+    {
+     "presence_task_token": {
+      "ok": true,
+      "via": "presence_manager.set_task"
+     }
+    }
+   ]
+  ],
+  "stdout": []
+ },
+ "failing MSG_CLEAN_BATCH_JSON:{\"target_ids\":[1,2]}": {
+  "log": [
+   [
+    "call",
+    "presence_manager.set_task",
+    [
+     "Limpando fila de conversas"
+    ],
+    {}
+   ],
+   [
+    "call",
+    "msg_manager.clean_channels_batch",
+    [
+     [
+      1,
+      2
+     ]
+    ],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "msg_manager.clean_channels_batch"
+    },
+    {
+     "presence_task_token": {
+      "ok": true,
+      "via": "presence_manager.set_task"
+     }
+    }
+   ]
+  ],
+  "stdout": []
+ },
+ "failing MSG_CLEAN_BATCH_JSON:{\"target_ids\":[]}": {
+  "log": [],
+  "stdout": [
+   "MSG_CLEAN_ALL_DMS_RESULT:ERRO:IDs invalidos para limpeza em fila.||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing MSG_CLEAN_CHANNEL:77": {
+  "log": [
+   [
+    "call",
+    "presence_manager.set_task",
+    [
+     "Limpando canal de texto"
+    ],
+    {}
+   ],
+   [
+    "call",
+    "msg_manager.clean_channel",
+    [
+     77
+    ],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "msg_manager.clean_channel"
+    },
+    {
+     "presence_task_token": {
+      "ok": true,
+      "via": "presence_manager.set_task"
+     }
+    }
+   ]
+  ],
+  "stdout": []
+ },
+ "failing MSG_CLEAN_CHANNEL_NOW:77": {
+  "log": [
+   [
+    "call",
+    "presence_manager.set_task",
+    [
+     "Limpando canal de texto"
+    ],
+    {}
+   ],
+   [
+    "call",
+    "msg_manager.clean_channel",
+    [
+     77
+    ],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef",
+     "auto_start": true
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "msg_manager.clean_channel"
+    },
+    {
+     "presence_task_token": {
+      "ok": true,
+      "via": "presence_manager.set_task"
+     }
+    }
+   ]
+  ],
+  "stdout": []
+ },
+ "failing MSG_CLEAN_GUILD:88": {
+  "log": [
+   [
+    "call",
+    "presence_manager.set_task",
+    [
+     "Limpando servidor"
+    ],
+    {}
+   ],
+   [
+    "call",
+    "msg_manager.clean_guild",
+    [
+     88
+    ],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "msg_manager.clean_guild"
+    },
+    {
+     "presence_task_token": {
+      "ok": true,
+      "via": "presence_manager.set_task"
+     }
+    }
+   ]
+  ],
+  "stdout": []
+ },
+ "failing MSG_CLEAN_GUILD_NOW:88": {
+  "log": [
+   [
+    "call",
+    "presence_manager.set_task",
+    [
+     "Limpando servidor"
+    ],
+    {}
+   ],
+   [
+    "call",
+    "msg_manager.clean_guild",
+    [
+     88
+    ],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef",
+     "auto_start": true
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "msg_manager.clean_guild"
+    },
+    {
+     "presence_task_token": {
+      "ok": true,
+      "via": "presence_manager.set_task"
+     }
+    }
+   ]
+  ],
+  "stdout": []
+ },
+ "failing MSG_COUNT:66": {
+  "log": [
+   [
+    "set",
+    "msg_manager.cancelled",
+    false
+   ],
+   [
+    "call",
+    "msg_manager.count_messages",
+    [
+     66
+    ],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "msg_manager.count_messages"
+    },
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "failing MSG_SCAN_GUILDS": {
+  "log": [
+   [
+    "set",
+    "msg_manager.cancelled",
+    false
+   ],
+   [
+    "call",
+    "msg_manager.scan_guilds_for_messages",
+    [],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "msg_manager.scan_guilds_for_messages"
+    },
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "failing DM_CLOSE:44": {
+  "log": [
+   [
+    "call",
+    "msg_manager.close_dm",
+    [
+     44
+    ],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "msg_manager.close_dm"
+    },
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "failing DM_CLOSE_ALL": {
+  "log": [
+   [
+    "set",
+    "msg_manager.cancelled",
+    false
+   ],
+   [
+    "call",
+    "msg_manager.close_all_dms",
+    [],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "msg_manager.close_all_dms"
+    },
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "failing DM_LIST": {
+  "log": [
+   [
+    "call",
+    "msg_manager.list_dms",
+    [],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef",
+     "refresh": false
+    }
+   ]
+  ],
+  "stdout": []
+ },
+ "failing DM_LIST_REFRESH": {
+  "log": [
+   [
+    "call",
+    "msg_manager.list_dms",
+    [],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef",
+     "refresh": true
+    }
+   ]
+  ],
+  "stdout": []
+ },
+ "failing GROUP_DM_LEAVE:33": {
+  "log": [
+   [
+    "call",
+    "msg_manager.leave_group_dm",
+    [
+     33
+    ],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "msg_manager.leave_group_dm"
+    },
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "failing GROUP_DM_LEAVE_ALL": {
+  "log": [
+   [
+    "set",
+    "msg_manager.cancelled",
+    false
+   ],
+   [
+    "call",
+    "msg_manager.leave_all_group_dms",
+    [],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ],
+   [
+    "spawn",
+    "safe_exec",
+    {
+     "ok": true,
+     "via": "msg_manager.leave_all_group_dms"
+    },
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "failing VOICE_JOIN_JSON:{\"channel_id\":123}": {
+  "log": [
+   [
+    "call",
+    "voice_manager.join_voice",
+    [
+     123
+    ],
+    {}
+   ],
+   [
+    "spawn",
+    "coroutine"
+   ]
+  ],
+  "stdout": [
+   "VOICE_RESULT:{\"ok\":false,\"code\":\"VOICE_INTERNAL_ERROR\",\"message\":\"Falha interna ao executar a operacao de voz.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing VOICE_JOIN_JSON:{\"channel_id\":0}": {
+  "log": [],
+  "stdout": [
+   "VOICE_RESULT:{\"ok\":false,\"code\":\"INVALID_CHANNEL_ID\",\"message\":\"ID de canal invalido.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing VOICE_LEAVE": {
+  "log": [
+   [
+    "call",
+    "voice_manager.leave_voice",
+    [],
+    {}
+   ],
+   [
+    "spawn",
+    "coroutine"
+   ]
+  ],
+  "stdout": [
+   "VOICE_RESULT:{\"ok\":false,\"code\":\"VOICE_INTERNAL_ERROR\",\"message\":\"Falha interna ao executar a operacao de voz.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing VOICE_FOLLOW_JSON:{\"target_id\":321}": {
+  "log": [
+   [
+    "call",
+    "voice_manager.start_follow",
+    [
+     321
+    ],
+    {}
+   ],
+   [
+    "spawn",
+    "coroutine"
+   ]
+  ],
+  "stdout": [
+   "VOICE_RESULT:{\"ok\":false,\"code\":\"VOICE_INTERNAL_ERROR\",\"message\":\"Falha interna ao executar a operacao de voz.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing VOICE_FOLLOW_JSON:nao-e-json": {
+  "log": [],
+  "stdout": [
+   "VOICE_RESULT:{\"ok\":false,\"code\":\"INVALID_TARGET_ID\",\"message\":\"ID de usuario invalido.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing VOICE_UNFOLLOW": {
+  "log": [
+   [
+    "call",
+    "voice_manager.stop_follow",
+    [],
+    {}
+   ],
+   [
+    "spawn",
+    "coroutine"
+   ]
+  ],
+  "stdout": [
+   "VOICE_RESULT:{\"ok\":false,\"code\":\"VOICE_INTERNAL_ERROR\",\"message\":\"Falha interna ao executar a operacao de voz.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing VOICE_STATUS": {
+  "log": [
+   [
+    "call",
+    "voice_manager.get_status",
+    [],
+    {}
+   ]
+  ],
+  "stdout": [
+   "VOICE_STATUS_RESULT:{\"ok\":true,\"via\":\"voice_manager.get_status\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing PROTECTION_ENABLE": {
+  "log": [
+   [
+    "call",
+    "protection_manager.enable",
+    [
+     null
+    ],
+    {}
+   ],
+   [
+    "call",
+    "presence_manager.set_protection",
+    [
+     true
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "PROTECTION_RESULT:{\"ok\":true,\"via\":\"protection_manager.enable\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing PROTECTION_ENABLE_JSON:{\"whitelist\":[5,4]}": {
+  "log": [
+   [
+    "call",
+    "protection_manager.enable",
+    [
+     [
+      4,
+      5
+     ]
+    ],
+    {}
+   ],
+   [
+    "call",
+    "presence_manager.set_protection",
+    [
+     true
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "PROTECTION_RESULT:{\"ok\":true,\"via\":\"protection_manager.enable\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing PROTECTION_DISABLE": {
+  "log": [
+   [
+    "call",
+    "protection_manager.disable",
+    [],
+    {}
+   ],
+   [
+    "call",
+    "presence_manager.set_protection",
+    [
+     false
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "PROTECTION_RESULT:{\"ok\":true,\"via\":\"protection_manager.disable\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing PROTECTION_STATUS": {
+  "log": [
+   [
+    "call",
+    "protection_manager.get_status",
+    [],
+    {}
+   ]
+  ],
+  "stdout": [
+   "PROTECTION_STATUS_RESULT:{\"ok\":true,\"via\":\"protection_manager.get_status\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing PROTECTION_CONFIG_JSON:{\"whitelist\":[8]}": {
+  "log": [
+   [
+    "call",
+    "protection_manager.configure",
+    [
+     [
+      8
+     ]
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "PROTECTION_RESULT:{\"ok\":true,\"via\":\"protection_manager.configure\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing PROTECTION_CONFIG_JSON:{\"whitelist\":[0]}": {
+  "log": [],
+  "stdout": [
+   "IPC_ERROR:HANDLER_FAILED:ValueError||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing TRACKER_START_JSON:{\"target_id\":42,\"webhook_url\":\"https://discord.com/api/webhooks/123456789012345678/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}": {
+  "log": [
+   [
+    "call",
+    "tracker_manager.start_tracking",
+    [
+     42,
+     "https://discord.com/api/webhooks/123456789012345678/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "TRACKER_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"ID do alvo ou webhook invalido.\",\"enabled\":false}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing TRACKER_START_JSON:{\"target_ids\":[1,2],\"webhook_url\":\"https://discord.com/api/webhooks/123456789012345678/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}": {
+  "log": [
+   [
+    "call",
+    "tracker_manager.start_tracking",
+    [
+     [
+      1,
+      2
+     ],
+     "https://discord.com/api/webhooks/123456789012345678/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "TRACKER_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"ID do alvo ou webhook invalido.\",\"enabled\":false}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing TRACKER_START_JSON:{\"target_id\":42,\"webhook_url\":5}": {
+  "log": [],
+  "stdout": [
+   "TRACKER_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"ID do alvo ou webhook invalido.\",\"enabled\":false}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing TRACKER_STOP": {
+  "log": [
+   [
+    "call",
+    "tracker_manager.stop_tracking",
+    [],
+    {}
+   ]
+  ],
+  "stdout": [
+   "TRACKER_RESULT:{\"ok\":true,\"via\":\"tracker_manager.stop_tracking\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing TRACKER_STATUS": {
+  "log": [
+   [
+    "call",
+    "tracker_manager.get_status",
+    [],
+    {}
+   ]
+  ],
+  "stdout": [
+   "TRACKER_STATUS_RESULT:{\"ok\":true,\"via\":\"tracker_manager.get_status\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing PRESENCE_MAIN": {
+  "log": [
+   [
+    "call",
+    "presence_manager.set_main",
+    [],
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "failing PRESENCE_TASK:Nome:Detalhe": {
+  "log": [
+   [
+    "call",
+    "presence_manager.set_task",
+    [
+     "Nome",
+     "Detalhe"
+    ],
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "failing PRESENCE_TASK:": {
+  "log": [
+   [
+    "call",
+    "presence_manager.set_task",
+    [
+     "",
+     null
+    ],
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "failing PRESENCE_UPDATE:texto livre": {
+  "log": [
+   [
+    "call",
+    "presence_manager.update_detail",
+    [
+     "texto livre"
+    ],
+    {}
+   ]
+  ],
+  "stdout": []
+ },
+ "failing RICH_PRESENCE_STATUS": {
+  "log": [
+   [
+    "call",
+    "presence_manager.status",
+    [],
+    {}
+   ]
+  ],
+  "stdout": [
+   "RICH_PRESENCE_RESULT:{\"ok\":true,\"via\":\"presence_manager.status\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing RICH_PRESENCE_SET_JSON:{\"enabled\":true,\"custom\":null}": {
+  "log": [
+   [
+    "call",
+    "presence_manager.configure",
+    [
+     true,
+     null
+    ],
+    {}
+   ]
+  ],
+  "stdout": [
+   "RICH_PRESENCE_RESULT:{\"ok\":false,\"code\":\"INVALID_RICH_PRESENCE\",\"message\":\"falha simulada\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing RICH_PRESENCE_SET_JSON:{\"enabled\":\"x\"}": {
+  "log": [],
+  "stdout": [
+   "RICH_PRESENCE_RESULT:{\"ok\":false,\"code\":\"INVALID_RICH_PRESENCE\",\"message\":\"Configuração de Rich Presence inválida.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing RICH_PRESENCE_SET_JSON:nao-json": {
+  "log": [],
+  "stdout": [
+   "RICH_PRESENCE_RESULT:{\"ok\":false,\"code\":\"INVALID_RICH_PRESENCE\",\"message\":\"Configuração de Rich Presence inválida.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing QUEST_LIST": {
+  "log": [
+   [
+    "call",
+    "quest_manager.list_quests",
+    [],
+    {}
+   ]
+  ],
+  "stdout": [
+   "QUEST_LIST_RESULT:{\"ok\":true,\"via\":\"quest_manager.list_quests\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing QUEST_START:123": {
+  "log": [
+   [
+    "call",
+    "quest_manager.start_quest",
+    [
+     "123"
+    ],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ]
+  ],
+  "stdout": [
+   "QUEST_START_RESULT:{\"ok\":true,\"via\":\"quest_manager.start_quest\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing QUEST_START:abc": {
+  "log": [],
+  "stdout": [
+   "QUEST_START_RESULT:{\"ok\":false,\"code\":\"INVALID_QUEST_ID\",\"message\":\"ID de Quest inválido.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing QUEST_CANCEL": {
+  "log": [
+   [
+    "call",
+    "quest_manager.cancel",
+    [],
+    {}
+   ]
+  ],
+  "stdout": [
+   "QUEST_CANCEL_RESULT:{\"ok\":true,\"code\":\"CANCELLED\",\"message\":\"Fila de Quests cancelada.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing QUEST_AUTO": {
+  "log": [
+   [
+    "call",
+    "quest_manager.start_auto",
+    [],
+    {
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ]
+  ],
+  "stdout": [
+   "QUEST_AUTO_RESULT:{\"ok\":true,\"via\":\"quest_manager.start_auto\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing QUEST_CONFIG:{\"webhook_url\":\"https://discord.com/api/webhooks/123456789012345678/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}": {
+  "log": [
+   [
+    "call",
+    "quest_manager.set_runtime_config",
+    [],
+    {
+     "webhook_url": "https://discord.com/api/webhooks/123456789012345678/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "request_id": "0123456789abcdef0123456789abcdef"
+    }
+   ]
+  ],
+  "stdout": []
+ },
+ "failing QUEST_CONFIG:": {
+  "log": [],
+  "stdout": [
+   "QUEST:CONFIG_RESULT:{\"ok\":false,\"code\":\"INVALID_PAYLOAD\",\"message\":\"Payload de configuração vazio.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing QUEST_CONFIG:[]": {
+  "log": [],
+  "stdout": [
+   "QUEST:CONFIG_RESULT:{\"ok\":false,\"code\":\"INVALID_PAYLOAD\",\"message\":\"Payload de configuração deve ser um objeto.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing QUEST_CONFIG:nao-e-json": {
+  "log": [],
+  "stdout": [
+   "QUEST:CONFIG_RESULT:{\"ok\":false,\"code\":\"INVALID_PAYLOAD\",\"message\":\"Payload de configuração inválido.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing ACCOUNT_STATUS": {
+  "log": [
+   [
+    "call",
+    "account_manager.get_custom_status",
+    [],
+    {}
+   ]
+  ],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":true,\"via\":\"account_manager.get_custom_status\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing ACCOUNT_PROFILE": {
+  "log": [
+   [
+    "call",
+    "account_manager.get_profile",
+    [],
+    {
+     "refresh": false
+    }
+   ],
+   [
+    "spawn",
+    "coroutine"
+   ]
+  ],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":false,\"code\":\"ACCOUNT_INTERNAL_ERROR\",\"message\":\"Falha interna ao executar a operação da conta.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing ACCOUNT_PROFILE_REFRESH": {
+  "log": [
+   [
+    "call",
+    "account_manager.get_profile",
+    [],
+    {
+     "refresh": true
+    }
+   ],
+   [
+    "spawn",
+    "coroutine"
+   ]
+  ],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":false,\"code\":\"ACCOUNT_INTERNAL_ERROR\",\"message\":\"Falha interna ao executar a operação da conta.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing ACCOUNT_STATUS_SET_JSON:{\"text\":\"oi\"}": {
+  "log": [
+   [
+    "call",
+    "account_manager.set_custom_status",
+    [
+     {
+      "text": "oi"
+     }
+    ],
+    {}
+   ],
+   [
+    "spawn",
+    "coroutine"
+   ]
+  ],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":false,\"code\":\"ACCOUNT_INTERNAL_ERROR\",\"message\":\"Falha interna ao executar a operação da conta.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing ACCOUNT_STATUS_SET_JSON:nao-e-json": {
+  "log": [],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"Dados inválidos.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing ACCOUNT_SESSIONS": {
+  "log": [
+   [
+    "call",
+    "account_manager.list_sessions",
+    [],
+    {}
+   ],
+   [
+    "spawn",
+    "coroutine"
+   ]
+  ],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":false,\"code\":\"ACCOUNT_INTERNAL_ERROR\",\"message\":\"Falha interna ao executar a operação da conta.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing ACCOUNT_MENTIONS_JSON:{\"limit\":10,\"before\":\"99\"}": {
+  "log": [
+   [
+    "call",
+    "account_manager.list_mentions",
+    [],
+    {
+     "limit": 10,
+     "before": 99
+    }
+   ],
+   [
+    "spawn",
+    "coroutine"
+   ]
+  ],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":false,\"code\":\"ACCOUNT_INTERNAL_ERROR\",\"message\":\"Falha interna ao executar a operação da conta.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing ACCOUNT_MENTIONS_JSON:{\"limit\":\"x\"}": {
+  "log": [],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"Dados inválidos.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing ACCOUNT_MENTION_DELETE_JSON:{\"ids\":[1,2]}": {
+  "log": [
+   [
+    "call",
+    "account_manager.delete_mentions",
+    [
+     [
+      1,
+      2
+     ]
+    ],
+    {}
+   ],
+   [
+    "spawn",
+    "coroutine"
+   ]
+  ],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":false,\"code\":\"ACCOUNT_INTERNAL_ERROR\",\"message\":\"Falha interna ao executar a operação da conta.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing ACCOUNT_MENTION_DELETE_JSON:{\"ids\":[]}": {
+  "log": [],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"IDs de menção inválidos.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing ACCOUNT_UNREAD": {
+  "log": [
+   [
+    "call",
+    "account_manager.unread_summary",
+    [],
+    {}
+   ]
+  ],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":true,\"via\":\"account_manager.unread_summary\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing ACCOUNT_ACK_ALL_JSON:{\"scope\":\"private\"}": {
+  "log": [
+   [
+    "call",
+    "account_manager.ack_all",
+    [
+     "private"
+    ],
+    {}
+   ],
+   [
+    "spawn",
+    "coroutine"
+   ]
+  ],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":false,\"code\":\"ACCOUNT_INTERNAL_ERROR\",\"message\":\"Falha interna ao executar a operação da conta.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing ACCOUNT_ACK_ALL_JSON:{\"scope\":\"bad\"}": {
+  "log": [],
+  "stdout": [
+   "ACCOUNT_RESULT:{\"ok\":false,\"code\":\"INVALID_INPUT\",\"message\":\"Dados inválidos.\"}||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ },
+ "failing COMANDO_DESCONHECIDO": {
+  "log": [],
+  "stdout": [
+   "IPC_ERROR:UNKNOWN_COMMAND||REQ:0123456789abcdef0123456789abcdef"
+  ]
+ }
+}

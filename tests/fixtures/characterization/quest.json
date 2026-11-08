@@ -1,0 +1,1270 @@
+{
+ "auto fetch_failed": {
+  "log": [
+   [
+    "fetch"
+   ],
+   [
+    "emit",
+    "QUEST:ERRO:Falha ao buscar Quests: RuntimeError",
+    "rq"
+   ],
+   [
+    "emit",
+    "QUEST:RESULT:{\"ok\":false,\"code\":\"FETCH_FAILED\",\"completed\":0,\"failed\":0,\"manual_enroll\":0,\"manual_claim\":0,\"unsupported\":0,\"message\":\"Falha ao buscar Quests: RuntimeError\"}",
+    "rq"
+   ]
+  ],
+  "state": {
+   "task_cleared": true,
+   "active_quest_id": null,
+   "buckets": {},
+   "last_presence_detail": null
+  }
+ },
+ "auto empty": {
+  "log": [
+   [
+    "fetch"
+   ],
+   [
+    "emit",
+    "QUEST:AUTO:Nenhuma Quest encontrada.",
+    "rq"
+   ],
+   [
+    "emit",
+    "QUEST:RESULT:{\"ok\":true,\"code\":\"EMPTY\",\"completed\":0,\"failed\":0,\"manual_enroll\":0,\"manual_claim\":0,\"unsupported\":0,\"message\":\"Nenhuma Quest encontrada.\"}",
+    "rq"
+   ]
+  ],
+  "state": {
+   "task_cleared": true,
+   "active_quest_id": null,
+   "buckets": {},
+   "last_presence_detail": null
+  }
+ },
+ "auto all_skipped_manual_enroll": {
+  "log": [
+   [
+    "fetch"
+   ],
+   [
+    "emit",
+    "QUEST:AUTO:⏸️ Aceite 'Quest 1' manualmente no Discord.",
+    "rq"
+   ],
+   [
+    "emit",
+    "QUEST:RESULT:{\"ok\":true,\"code\":\"MANUAL_ENROLL_REQUIRED\",\"completed\":0,\"failed\":0,\"manual_enroll\":1,\"manual_claim\":0,\"unsupported\":0,\"message\":\"Aceite as Quests indicadas no Discord e execute novamente.\"}",
+    "rq"
+   ]
+  ],
+  "state": {
+   "task_cleared": true,
+   "active_quest_id": null,
+   "buckets": {},
+   "last_presence_detail": null
+  }
+ },
+ "auto all_skipped_manual_claim": {
+  "log": [
+   [
+    "fetch"
+   ],
+   [
+    "emit",
+    "QUEST:AUTO:🎁 'Quest 1' aguarda resgate manual.",
+    "rq"
+   ],
+   [
+    "emit",
+    "QUEST:RESULT:{\"ok\":true,\"code\":\"MANUAL_CLAIM_REQUIRED\",\"completed\":0,\"failed\":0,\"manual_enroll\":0,\"manual_claim\":1,\"unsupported\":0,\"message\":\"As recompensas concluídas aguardam resgate manual.\"}",
+    "rq"
+   ]
+  ],
+  "state": {
+   "task_cleared": true,
+   "active_quest_id": null,
+   "buckets": {},
+   "last_presence_detail": null
+  }
+ },
+ "auto nothing_pending": {
+  "log": [
+   [
+    "fetch"
+   ],
+   [
+    "emit",
+    "QUEST:AUTO:⏭️ 'Quest 13' requer execução manual (STREAM_ON_DESKTOP).",
+    "rq"
+   ],
+   [
+    "emit",
+    "QUEST:AUTO:⏭️ 'Quest 14' possui alvo inválido.",
+    "rq"
+   ],
+   [
+    "emit",
+    "QUEST:RESULT:{\"ok\":true,\"code\":\"NOTHING_PENDING\",\"completed\":0,\"failed\":0,\"manual_enroll\":0,\"manual_claim\":0,\"unsupported\":2,\"message\":\"Nenhuma Quest pendente compatível.\"}",
+    "rq"
+   ]
+  ],
+  "state": {
+   "task_cleared": true,
+   "active_quest_id": null,
+   "buckets": {},
+   "last_presence_detail": null
+  }
+ },
+ "auto progress_complete_verified": {
+  "log": [
+   [
+    "fetch"
+   ],
+   [
+    "verify",
+    "1"
+   ],
+   [
+    "emit",
+    "QUEST:RESULT:{\"ok\":true,\"code\":\"MANUAL_CLAIM_REQUIRED\",\"completed\":0,\"failed\":0,\"manual_enroll\":0,\"manual_claim\":1,\"unsupported\":0,\"message\":\"As recompensas concluídas aguardam resgate manual.\"}",
+    "rq"
+   ]
+  ],
+  "state": {
+   "task_cleared": true,
+   "active_quest_id": null,
+   "buckets": {},
+   "last_presence_detail": null
+  }
+ },
+ "auto progress_complete_not_verified": {
+  "log": [
+   [
+    "fetch"
+   ],
+   [
+    "verify",
+    "1"
+   ],
+   [
+    "emit",
+    "QUEST:RESULT:{\"ok\":true,\"code\":\"NOTHING_PENDING\",\"completed\":0,\"failed\":1,\"manual_enroll\":0,\"manual_claim\":0,\"unsupported\":0,\"message\":\"Nenhuma Quest pendente compatível.\"}",
+    "rq"
+   ]
+  ],
+  "state": {
+   "task_cleared": true,
+   "active_quest_id": null,
+   "buckets": {},
+   "last_presence_detail": null
+  }
+ },
+ "auto queue_success_and_failure": {
+  "log": [
+   [
+    "fetch"
+   ],
+   [
+    "emit",
+    "QUEST:AUTO:Processando 3 Quest(s) em sequência...",
+    "rq"
+   ],
+   [
+    "emit",
+    "QUEST:AUTO:Quest 22 [WATCH_VIDEO] 30/60",
+    "rq"
+   ],
+   [
+    "background",
+    "quest-webhook-start-22"
+   ],
+   [
+    "presence.set_task",
+    "Quest",
+    "Quest 22"
+   ],
+   [
+    "run",
+    "22",
+    "WATCH_VIDEO",
+    60
+   ],
+   [
+    "emit",
+    "QUEST:AUTO:❌ 'Quest 22' não foi confirmada pelo Discord.",
+    "rq"
+   ],
+   [
+    "presence.complete_task",
+    "tok:Quest 22"
+   ],
+   [
+    "emit",
+    "QUEST:AUTO:Quest 21 [WATCH_VIDEO] 0/60",
+    "rq"
+   ],
+   [
+    "background",
+    "quest-webhook-start-21"
+   ],
+   [
+    "presence.set_task",
+    "Quest",
+    "Quest 21"
+   ],
+   [
+    "run",
+    "21",
+    "WATCH_VIDEO",
+    60
+   ],
+   [
+    "emit",
+    "QUEST:AUTO:✅ 'Quest 21' concluída; resgate a recompensa no Discord.",
+    "rq"
+   ],
+   [
+    "background",
+    "quest-webhook-complete-21"
+   ],
+   [
+    "presence.complete_task",
+    "tok:Quest 21"
+   ],
+   [
+    "emit",
+    "QUEST:AUTO:Quest 23 [WATCH_VIDEO] 0/60",
+    "rq"
+   ],
+   [
+    "background",
+    "quest-webhook-start-23"
+   ],
+   [
+    "presence.set_task",
+    "Quest",
+    "Quest 23"
+   ],
+   [
+    "run",
+    "23",
+    "WATCH_VIDEO",
+    60
+   ],
+   [
+    "emit",
+    "QUEST:AUTO:✅ 'Quest 23' concluída; resgate a recompensa no Discord.",
+    "rq"
+   ],
+   [
+    "background",
+    "quest-webhook-complete-23"
+   ],
+   [
+    "presence.complete_task",
+    "tok:Quest 23"
+   ],
+   [
+    "emit",
+    "QUEST:RESULT:{\"ok\":false,\"code\":\"PARTIAL_FAILURE\",\"completed\":2,\"failed\":1,\"manual_enroll\":0,\"manual_claim\":2,\"unsupported\":0,\"message\":\"Fila finalizada com uma ou mais Quests não confirmadas.\"}",
+    "rq"
+   ]
+  ],
+  "state": {
+   "task_cleared": true,
+   "active_quest_id": null,
+   "buckets": {},
+   "last_presence_detail": null
+  }
+ },
+ "auto queue_exception": {
+  "log": [
+   [
+    "fetch"
+   ],
+   [
+    "emit",
+    "QUEST:AUTO:Processando 1 Quest(s) em sequência...",
+    "rq"
+   ],
+   [
+    "emit",
+    "QUEST:AUTO:Quest 31 [WATCH_VIDEO] 0/60",
+    "rq"
+   ],
+   [
+    "background",
+    "quest-webhook-start-31"
+   ],
+   [
+    "presence.set_task",
+    "Quest",
+    "Quest 31"
+   ],
+   [
+    "run",
+    "31",
+    "WATCH_VIDEO",
+    60
+   ],
+   [
+    "emit",
+    "QUEST:ERRO:Quest 31: RuntimeError",
+    "rq"
+   ],
+   [
+    "presence.complete_task",
+    "tok:Quest 31"
+   ],
+   [
+    "emit",
+    "QUEST:RESULT:{\"ok\":false,\"code\":\"PARTIAL_FAILURE\",\"completed\":0,\"failed\":1,\"manual_enroll\":0,\"manual_claim\":0,\"unsupported\":0,\"message\":\"Fila finalizada com uma ou mais Quests não confirmadas.\"}",
+    "rq"
+   ]
+  ],
+  "state": {
+   "task_cleared": true,
+   "active_quest_id": null,
+   "buckets": {},
+   "last_presence_detail": null
+  }
+ },
+ "auto queue_cancelled_flag": {
+  "log": [
+   [
+    "fetch"
+   ],
+   [
+    "emit",
+    "QUEST:AUTO:Processando 2 Quest(s) em sequência...",
+    "rq"
+   ],
+   [
+    "emit",
+    "QUEST:AUTO:Quest 41 [WATCH_VIDEO] 0/60",
+    "rq"
+   ],
+   [
+    "background",
+    "quest-webhook-start-41"
+   ],
+   [
+    "presence.set_task",
+    "Quest",
+    "Quest 41"
+   ],
+   [
+    "run",
+    "41",
+    "WATCH_VIDEO",
+    60
+   ],
+   [
+    "presence.complete_task",
+    "tok:Quest 41"
+   ],
+   [
+    "emit",
+    "QUEST:RESULT:{\"ok\":false,\"code\":\"PARTIAL_FAILURE\",\"completed\":0,\"failed\":1,\"manual_enroll\":0,\"manual_claim\":0,\"unsupported\":0,\"message\":\"Fila finalizada com uma ou mais Quests não confirmadas.\"}",
+    "rq"
+   ]
+  ],
+  "state": {
+   "task_cleared": true,
+   "active_quest_id": null,
+   "buckets": {},
+   "last_presence_detail": null
+  }
+ },
+ "auto queue_cancelled_error": {
+  "log": [
+   [
+    "fetch"
+   ],
+   [
+    "emit",
+    "QUEST:AUTO:Processando 1 Quest(s) em sequência...",
+    "rq"
+   ],
+   [
+    "emit",
+    "QUEST:AUTO:Quest 51 [WATCH_VIDEO] 0/60",
+    "rq"
+   ],
+   [
+    "background",
+    "quest-webhook-start-51"
+   ],
+   [
+    "presence.set_task",
+    "Quest",
+    "Quest 51"
+   ],
+   [
+    "run",
+    "51",
+    "WATCH_VIDEO",
+    60
+   ],
+   [
+    "presence.complete_task",
+    "tok:Quest 51"
+   ],
+   [
+    "emit",
+    "QUEST:RESULT:{\"ok\":false,\"code\":\"CANCELLED\",\"completed\":0,\"failed\":0,\"manual_enroll\":0,\"manual_claim\":0,\"unsupported\":0,\"message\":\"Fila cancelada.\"}",
+    "rq"
+   ]
+  ],
+  "state": {
+   "task_cleared": true,
+   "active_quest_id": null,
+   "buckets": {},
+   "last_presence_detail": null
+  }
+ },
+ "auto presence_token_none": {
+  "log": [
+   [
+    "fetch"
+   ],
+   [
+    "emit",
+    "QUEST:AUTO:Processando 1 Quest(s) em sequência...",
+    "rq"
+   ],
+   [
+    "emit",
+    "QUEST:AUTO:Quest 61 [WATCH_VIDEO] 0/60",
+    "rq"
+   ],
+   [
+    "background",
+    "quest-webhook-start-61"
+   ],
+   [
+    "presence.set_task",
+    "Quest",
+    "Quest 61"
+   ],
+   [
+    "run",
+    "61",
+    "WATCH_VIDEO",
+    60
+   ],
+   [
+    "emit",
+    "QUEST:AUTO:✅ 'Quest 61' concluída; resgate a recompensa no Discord.",
+    "rq"
+   ],
+   [
+    "background",
+    "quest-webhook-complete-61"
+   ],
+   [
+    "presence.set_main"
+   ],
+   [
+    "emit",
+    "QUEST:RESULT:{\"ok\":true,\"code\":\"FINISHED\",\"completed\":1,\"failed\":0,\"manual_enroll\":0,\"manual_claim\":1,\"unsupported\":0,\"message\":\"Quests concluídas; resgate as recompensas manualmente.\"}",
+    "rq"
+   ]
+  ],
+  "state": {
+   "task_cleared": true,
+   "active_quest_id": null,
+   "buckets": {},
+   "last_presence_detail": null
+  }
+ },
+ "single already_running": {
+  "log": [
+   [
+    "emit",
+    "QUEST:RESULT:{\"ok\":false,\"code\":\"ALREADY_RUNNING\",\"message\":\"Já existe uma Quest em execução.\"}",
+    "rq"
+   ]
+  ],
+  "state": {
+   "task_cleared": true,
+   "active_quest_id": null,
+   "buckets": {},
+   "last_presence_detail": null
+  }
+ },
+ "single not_found": {
+  "log": [
+   [
+    "fetch"
+   ],
+   [
+    "emit",
+    "QUEST:RESULT:{\"ok\":false,\"code\":\"NOT_FOUND\",\"message\":\"Quest não encontrada.\"}",
+    "rq"
+   ],
+   [
+    "presence.set_main"
+   ]
+  ],
+  "state": {
+   "task_cleared": true,
+   "active_quest_id": null,
+   "buckets": {},
+   "last_presence_detail": null
+  }
+ },
+ "single expired": {
+  "log": [
+   [
+    "fetch"
+   ],
+   [
+    "emit",
+    "QUEST:RESULT:{\"ok\":false,\"code\":\"EXPIRED\",\"message\":\"Quest expirada.\"}",
+    "rq"
+   ],
+   [
+    "presence.set_main"
+   ]
+  ],
+  "state": {
+   "task_cleared": true,
+   "active_quest_id": null,
+   "buckets": {},
+   "last_presence_detail": null
+  }
+ },
+ "single already_completed": {
+  "log": [
+   [
+    "fetch"
+   ],
+   [
+    "emit",
+    "QUEST:RESULT:{\"ok\":true,\"code\":\"ALREADY_COMPLETED\",\"message\":\"Quest já concluída; resgate manualmente.\"}",
+    "rq"
+   ],
+   [
+    "presence.set_main"
+   ]
+  ],
+  "state": {
+   "task_cleared": true,
+   "active_quest_id": null,
+   "buckets": {},
+   "last_presence_detail": null
+  }
+ },
+ "single manual_enroll": {
+  "log": [
+   [
+    "fetch"
+   ],
+   [
+    "emit",
+    "QUEST:RESULT:{\"ok\":false,\"code\":\"MANUAL_ENROLL_REQUIRED\",\"message\":\"Aceite a Quest manualmente no Discord.\"}",
+    "rq"
+   ],
+   [
+    "presence.set_main"
+   ]
+  ],
+  "state": {
+   "task_cleared": true,
+   "active_quest_id": null,
+   "buckets": {},
+   "last_presence_detail": null
+  }
+ },
+ "single unsupported": {
+  "log": [
+   [
+    "fetch"
+   ],
+   [
+    "emit",
+    "QUEST:RESULT:{\"ok\":false,\"code\":\"UNSUPPORTED\",\"message\":\"Tipo de Quest não suportado.\"}",
+    "rq"
+   ],
+   [
+    "presence.set_main"
+   ]
+  ],
+  "state": {
+   "task_cleared": true,
+   "active_quest_id": null,
+   "buckets": {},
+   "last_presence_detail": null
+  }
+ },
+ "single success": {
+  "log": [
+   [
+    "fetch"
+   ],
+   [
+    "presence.set_task",
+    "Quest",
+    "Quest 1"
+   ],
+   [
+    "background",
+    "quest-webhook-start-1"
+   ],
+   [
+    "run",
+    "1",
+    "WATCH_VIDEO",
+    60
+   ],
+   [
+    "emit",
+    "QUEST:RESULT:{\"ok\":true,\"code\":\"COMPLETED\",\"message\":\"Quest concluída; resgate manualmente.\"}",
+    "rq"
+   ],
+   [
+    "presence.complete_task",
+    "tok:Quest 1"
+   ]
+  ],
+  "state": {
+   "task_cleared": true,
+   "active_quest_id": null,
+   "buckets": {},
+   "last_presence_detail": null
+  }
+ },
+ "single not_confirmed": {
+  "log": [
+   [
+    "fetch"
+   ],
+   [
+    "presence.set_task",
+    "Quest",
+    "Quest 1"
+   ],
+   [
+    "background",
+    "quest-webhook-start-1"
+   ],
+   [
+    "run",
+    "1",
+    "WATCH_VIDEO",
+    60
+   ],
+   [
+    "emit",
+    "QUEST:RESULT:{\"ok\":false,\"code\":\"NOT_CONFIRMED\",\"message\":\"O Discord não confirmou a conclusão.\"}",
+    "rq"
+   ],
+   [
+    "presence.complete_task",
+    "tok:Quest 1"
+   ]
+  ],
+  "state": {
+   "task_cleared": true,
+   "active_quest_id": null,
+   "buckets": {},
+   "last_presence_detail": null
+  }
+ },
+ "single cancelled": {
+  "log": [
+   [
+    "fetch"
+   ],
+   [
+    "presence.set_task",
+    "Quest",
+    "Quest 1"
+   ],
+   [
+    "background",
+    "quest-webhook-start-1"
+   ],
+   [
+    "run",
+    "1",
+    "WATCH_VIDEO",
+    60
+   ],
+   [
+    "emit",
+    "QUEST:RESULT:{\"ok\":false,\"code\":\"CANCELLED\",\"message\":\"Quest cancelada.\"}",
+    "rq"
+   ],
+   [
+    "presence.complete_task",
+    "tok:Quest 1"
+   ]
+  ],
+  "state": {
+   "task_cleared": true,
+   "active_quest_id": null,
+   "buckets": {},
+   "last_presence_detail": null
+  }
+ },
+ "single failed": {
+  "log": [
+   [
+    "fetch"
+   ],
+   [
+    "presence.set_task",
+    "Quest",
+    "Quest 1"
+   ],
+   [
+    "background",
+    "quest-webhook-start-1"
+   ],
+   [
+    "run",
+    "1",
+    "WATCH_VIDEO",
+    60
+   ],
+   [
+    "emit",
+    "QUEST:RESULT:{\"ok\":false,\"code\":\"FAILED\",\"message\":\"Falha: RuntimeError\"}",
+    "rq"
+   ],
+   [
+    "presence.complete_task",
+    "tok:Quest 1"
+   ]
+  ],
+  "state": {
+   "task_cleared": true,
+   "active_quest_id": null,
+   "buckets": {},
+   "last_presence_detail": null
+  }
+ },
+ "single presence_token_none": {
+  "log": [
+   [
+    "fetch"
+   ],
+   [
+    "presence.set_task",
+    "Quest",
+    "Quest 1"
+   ],
+   [
+    "background",
+    "quest-webhook-start-1"
+   ],
+   [
+    "run",
+    "1",
+    "WATCH_VIDEO",
+    60
+   ],
+   [
+    "emit",
+    "QUEST:RESULT:{\"ok\":true,\"code\":\"COMPLETED\",\"message\":\"Quest concluída; resgate manualmente.\"}",
+    "rq"
+   ],
+   [
+    "presence.set_main"
+   ]
+  ],
+  "state": {
+   "task_cleared": true,
+   "active_quest_id": null,
+   "buckets": {},
+   "last_presence_detail": null
+  }
+ },
+ "achievement invalid_application_id": {
+  "log": [
+   [
+    "emit",
+    "QUEST:ERRO:Achievement sem application_id válido.",
+    "rq"
+   ]
+  ],
+  "result": false
+ },
+ "achievement success_revokes_new_grant": {
+  "log": [
+   [
+    "GET",
+    "/oauth2/tokens"
+   ],
+   [
+    "POST",
+    "/oauth2/authorize",
+    {
+     "authorize": true
+    },
+    {
+     "query": {
+      "client_id": "987654321098765432",
+      "response_type": "code",
+      "scope": "identify applications.entitlements",
+      "state": ""
+     }
+    }
+   ],
+   [
+    "POST",
+    "/applications/{application_id}/proxy-tickets",
+    {},
+    {
+     "application_id": "987654321098765432"
+    }
+   ],
+   [
+    "activity",
+    "987654321098765432",
+    "authorize",
+    {
+     "code": "oauth-code"
+    },
+    {
+     "Content-Type": "application/json",
+     "X-Discord-Quest-ID": "1",
+     "Referer": "https://987654321098765432.discordsays.com/?instance_id=example-cl-instance&platform=desktop&discord_proxy_ticket=proxy-ticket",
+     "User-Agent": "Discord test",
+     "X-Auth-Token": ""
+    }
+   ],
+   [
+    "activity",
+    "987654321098765432",
+    "quest/progress",
+    {
+     "progress": 1
+    },
+    {
+     "Content-Type": "application/json",
+     "X-Discord-Quest-ID": "1",
+     "Referer": "https://987654321098765432.discordsays.com/?instance_id=example-cl-instance&platform=desktop&discord_proxy_ticket=proxy-ticket",
+     "User-Agent": "Discord test",
+     "X-Auth-Token": "progress-token"
+    }
+   ],
+   [
+    "progress",
+    "ACHIEVEMENT_IN_ACTIVITY",
+    1,
+    1
+   ],
+   [
+    "verify",
+    "1"
+   ],
+   [
+    "GET",
+    "/oauth2/tokens"
+   ],
+   [
+    "DELETE",
+    "/oauth2/tokens/{token_id}",
+    {
+     "token_id": "new-grant"
+    }
+   ]
+  ],
+  "result": true
+ },
+ "achievement existing_tokens_unavailable": {
+  "log": [
+   [
+    "GET",
+    "/oauth2/tokens"
+   ],
+   [
+    "POST",
+    "/oauth2/authorize",
+    {
+     "authorize": true
+    },
+    {
+     "query": {
+      "client_id": "987654321098765432",
+      "response_type": "code",
+      "scope": "identify applications.entitlements",
+      "state": ""
+     }
+    }
+   ],
+   [
+    "POST",
+    "/applications/{application_id}/proxy-tickets",
+    {},
+    {
+     "application_id": "987654321098765432"
+    }
+   ],
+   [
+    "activity",
+    "987654321098765432",
+    "authorize",
+    {
+     "code": "oauth-code"
+    },
+    {
+     "Content-Type": "application/json",
+     "X-Discord-Quest-ID": "1",
+     "Referer": "https://987654321098765432.discordsays.com/?instance_id=example-cl-instance&platform=desktop&discord_proxy_ticket=proxy-ticket",
+     "User-Agent": "Discord test",
+     "X-Auth-Token": ""
+    }
+   ],
+   [
+    "activity",
+    "987654321098765432",
+    "quest/progress",
+    {
+     "progress": 1
+    },
+    {
+     "Content-Type": "application/json",
+     "X-Discord-Quest-ID": "1",
+     "Referer": "https://987654321098765432.discordsays.com/?instance_id=example-cl-instance&platform=desktop&discord_proxy_ticket=proxy-ticket",
+     "User-Agent": "Discord test",
+     "X-Auth-Token": "progress-token"
+    }
+   ],
+   [
+    "progress",
+    "ACHIEVEMENT_IN_ACTIVITY",
+    1,
+    1
+   ],
+   [
+    "verify",
+    "1"
+   ],
+   [
+    "GET",
+    "/oauth2/tokens"
+   ]
+  ],
+  "result": true
+ },
+ "achievement no_auth_code": {
+  "log": [
+   [
+    "GET",
+    "/oauth2/tokens"
+   ],
+   [
+    "POST",
+    "/oauth2/authorize",
+    {
+     "authorize": true
+    },
+    {
+     "query": {
+      "client_id": "987654321098765432",
+      "response_type": "code",
+      "scope": "identify applications.entitlements",
+      "state": ""
+     }
+    }
+   ],
+   [
+    "emit",
+    "QUEST:ERRO:Achievement não concluído: QuestDataError",
+    "rq"
+   ],
+   [
+    "GET",
+    "/oauth2/tokens"
+   ],
+   [
+    "DELETE",
+    "/oauth2/tokens/{token_id}",
+    {
+     "token_id": "new-grant"
+    }
+   ]
+  ],
+  "result": false
+ },
+ "achievement no_ticket": {
+  "log": [
+   [
+    "GET",
+    "/oauth2/tokens"
+   ],
+   [
+    "POST",
+    "/oauth2/authorize",
+    {
+     "authorize": true
+    },
+    {
+     "query": {
+      "client_id": "987654321098765432",
+      "response_type": "code",
+      "scope": "identify applications.entitlements",
+      "state": ""
+     }
+    }
+   ],
+   [
+    "POST",
+    "/applications/{application_id}/proxy-tickets",
+    {},
+    {
+     "application_id": "987654321098765432"
+    }
+   ],
+   [
+    "emit",
+    "QUEST:ERRO:Achievement não concluído: QuestDataError",
+    "rq"
+   ],
+   [
+    "GET",
+    "/oauth2/tokens"
+   ],
+   [
+    "DELETE",
+    "/oauth2/tokens/{token_id}",
+    {
+     "token_id": "new-grant"
+    }
+   ]
+  ],
+  "result": false
+ },
+ "achievement authorize_refused": {
+  "log": [
+   [
+    "GET",
+    "/oauth2/tokens"
+   ],
+   [
+    "POST",
+    "/oauth2/authorize",
+    {
+     "authorize": true
+    },
+    {
+     "query": {
+      "client_id": "987654321098765432",
+      "response_type": "code",
+      "scope": "identify applications.entitlements",
+      "state": ""
+     }
+    }
+   ],
+   [
+    "POST",
+    "/applications/{application_id}/proxy-tickets",
+    {},
+    {
+     "application_id": "987654321098765432"
+    }
+   ],
+   [
+    "activity",
+    "987654321098765432",
+    "authorize",
+    {
+     "code": "oauth-code"
+    },
+    {
+     "Content-Type": "application/json",
+     "X-Discord-Quest-ID": "1",
+     "Referer": "https://987654321098765432.discordsays.com/?instance_id=example-cl-instance&platform=desktop&discord_proxy_ticket=proxy-ticket",
+     "User-Agent": "Discord test",
+     "X-Auth-Token": ""
+    }
+   ],
+   [
+    "emit",
+    "QUEST:ERRO:Achievement não concluído: QuestDataError",
+    "rq"
+   ],
+   [
+    "GET",
+    "/oauth2/tokens"
+   ],
+   [
+    "DELETE",
+    "/oauth2/tokens/{token_id}",
+    {
+     "token_id": "new-grant"
+    }
+   ]
+  ],
+  "result": false
+ },
+ "achievement progress_refused": {
+  "log": [
+   [
+    "GET",
+    "/oauth2/tokens"
+   ],
+   [
+    "POST",
+    "/oauth2/authorize",
+    {
+     "authorize": true
+    },
+    {
+     "query": {
+      "client_id": "987654321098765432",
+      "response_type": "code",
+      "scope": "identify applications.entitlements",
+      "state": ""
+     }
+    }
+   ],
+   [
+    "POST",
+    "/applications/{application_id}/proxy-tickets",
+    {},
+    {
+     "application_id": "987654321098765432"
+    }
+   ],
+   [
+    "activity",
+    "987654321098765432",
+    "authorize",
+    {
+     "code": "oauth-code"
+    },
+    {
+     "Content-Type": "application/json",
+     "X-Discord-Quest-ID": "1",
+     "Referer": "https://987654321098765432.discordsays.com/?instance_id=example-cl-instance&platform=desktop&discord_proxy_ticket=proxy-ticket",
+     "User-Agent": "Discord test",
+     "X-Auth-Token": ""
+    }
+   ],
+   [
+    "activity",
+    "987654321098765432",
+    "quest/progress",
+    {
+     "progress": 1
+    },
+    {
+     "Content-Type": "application/json",
+     "X-Discord-Quest-ID": "1",
+     "Referer": "https://987654321098765432.discordsays.com/?instance_id=example-cl-instance&platform=desktop&discord_proxy_ticket=proxy-ticket",
+     "User-Agent": "Discord test",
+     "X-Auth-Token": "t"
+    }
+   ],
+   [
+    "emit",
+    "QUEST:ERRO:Achievement não concluído: QuestDataError",
+    "rq"
+   ],
+   [
+    "GET",
+    "/oauth2/tokens"
+   ],
+   [
+    "DELETE",
+    "/oauth2/tokens/{token_id}",
+    {
+     "token_id": "new-grant"
+    }
+   ]
+  ],
+  "result": false
+ },
+ "achievement revoke_error_ignored": {
+  "log": [
+   [
+    "GET",
+    "/oauth2/tokens"
+   ],
+   [
+    "POST",
+    "/oauth2/authorize",
+    {
+     "authorize": true
+    },
+    {
+     "query": {
+      "client_id": "987654321098765432",
+      "response_type": "code",
+      "scope": "identify applications.entitlements",
+      "state": ""
+     }
+    }
+   ],
+   [
+    "POST",
+    "/applications/{application_id}/proxy-tickets",
+    {},
+    {
+     "application_id": "987654321098765432"
+    }
+   ],
+   [
+    "activity",
+    "987654321098765432",
+    "authorize",
+    {
+     "code": "oauth-code"
+    },
+    {
+     "Content-Type": "application/json",
+     "X-Discord-Quest-ID": "1",
+     "Referer": "https://987654321098765432.discordsays.com/?instance_id=example-cl-instance&platform=desktop&discord_proxy_ticket=proxy-ticket",
+     "User-Agent": "Discord test",
+     "X-Auth-Token": ""
+    }
+   ],
+   [
+    "activity",
+    "987654321098765432",
+    "quest/progress",
+    {
+     "progress": 1
+    },
+    {
+     "Content-Type": "application/json",
+     "X-Discord-Quest-ID": "1",
+     "Referer": "https://987654321098765432.discordsays.com/?instance_id=example-cl-instance&platform=desktop&discord_proxy_ticket=proxy-ticket",
+     "User-Agent": "Discord test",
+     "X-Auth-Token": "progress-token"
+    }
+   ],
+   [
+    "progress",
+    "ACHIEVEMENT_IN_ACTIVITY",
+    1,
+    1
+   ],
+   [
+    "verify",
+    "1"
+   ],
+   [
+    "GET",
+    "/oauth2/tokens"
+   ],
+   [
+    "DELETE",
+    "/oauth2/tokens/{token_id}",
+    {
+     "token_id": "new-grant"
+    }
+   ]
+  ],
+  "result": true
+ }
+}

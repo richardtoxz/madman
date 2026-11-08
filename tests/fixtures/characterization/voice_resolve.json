@@ -1,0 +1,332 @@
+{
+ "cached_voice": {
+  "log": [
+   [
+    "get_channel",
+    1
+   ]
+  ],
+  "channel": 1,
+  "error": null
+ },
+ "fetched_after_500": {
+  "log": [
+   [
+    "get_channel",
+    1
+   ],
+   [
+    "fetch_channel",
+    1
+   ],
+   [
+    "sleep",
+    1.0
+   ],
+   [
+    "fetch_channel",
+    1
+   ]
+  ],
+  "channel": 1,
+  "error": null
+ },
+ "fetch_500_twice": {
+  "log": [
+   [
+    "get_channel",
+    1
+   ],
+   [
+    "fetch_channel",
+    1
+   ],
+   [
+    "sleep",
+    1.0
+   ],
+   [
+    "fetch_channel",
+    1
+   ]
+  ],
+  "channel": null,
+  "error": {
+   "ok": false,
+   "code": "CHANNEL_FETCH_FAILED",
+   "message": "Nao foi possivel confirmar o canal pela API."
+  }
+ },
+ "fetch_400": {
+  "log": [
+   [
+    "get_channel",
+    1
+   ],
+   [
+    "fetch_channel",
+    1
+   ]
+  ],
+  "channel": null,
+  "error": {
+   "ok": false,
+   "code": "CHANNEL_FETCH_FAILED",
+   "message": "Nao foi possivel confirmar o canal pela API."
+  }
+ },
+ "fetch_not_found_user_dm": {
+  "log": [
+   [
+    "get_channel",
+    555
+   ],
+   [
+    "fetch_channel",
+    555
+   ],
+   [
+    "get_user",
+    555
+   ],
+   [
+    "fetch_user",
+    555
+   ],
+   [
+    "create_dm",
+    555
+   ]
+  ],
+  "channel": 77,
+  "error": null
+ },
+ "fetch_not_found_no_dm": {
+  "log": [
+   [
+    "get_channel",
+    555
+   ],
+   [
+    "fetch_channel",
+    555
+   ],
+   [
+    "get_user",
+    555
+   ],
+   [
+    "fetch_user",
+    555
+   ]
+  ],
+  "channel": null,
+  "error": {
+   "ok": false,
+   "code": "CHANNEL_NOT_FOUND",
+   "message": "Canal, DM ou usuario nao encontrado."
+  }
+ },
+ "fetch_not_found_self": {
+  "log": [
+   [
+    "get_channel",
+    999
+   ],
+   [
+    "fetch_channel",
+    999
+   ]
+  ],
+  "channel": null,
+  "error": {
+   "ok": false,
+   "code": "CHANNEL_NOT_FOUND",
+   "message": "Canal, DM ou usuario nao encontrado."
+  }
+ },
+ "fetch_forbidden": {
+  "log": [
+   [
+    "get_channel",
+    1
+   ],
+   [
+    "fetch_channel",
+    1
+   ]
+  ],
+  "channel": null,
+  "error": {
+   "ok": false,
+   "code": "CHANNEL_FORBIDDEN",
+   "message": "Sem acesso ao canal informado."
+  }
+ },
+ "fetch_generic_error": {
+  "log": [
+   [
+    "get_channel",
+    1
+   ],
+   [
+    "fetch_channel",
+    1
+   ]
+  ],
+  "channel": null,
+  "error": {
+   "ok": false,
+   "code": "CHANNEL_FETCH_FAILED",
+   "message": "Nao foi possivel confirmar o canal pela API."
+  }
+ },
+ "private_call": {
+  "log": [
+   [
+    "get_channel",
+    1
+   ]
+  ],
+  "channel": 8,
+  "error": null
+ },
+ "not_voice": {
+  "log": [
+   [
+    "get_channel",
+    1
+   ]
+  ],
+  "channel": null,
+  "error": {
+   "ok": false,
+   "code": "NOT_VOICE_CHANNEL",
+   "message": "O ID informado nao e de um canal de voz, DM, grupo ou usuario."
+  }
+ },
+ "no_guild": {
+  "log": [
+   [
+    "get_channel",
+    1
+   ]
+  ],
+  "channel": null,
+  "error": {
+   "ok": false,
+   "code": "GUILD_NOT_FOUND",
+   "message": "O servidor do canal nao foi encontrado."
+  }
+ },
+ "guild_unavailable": {
+  "log": [
+   [
+    "get_channel",
+    1
+   ]
+  ],
+  "channel": null,
+  "error": {
+   "ok": false,
+   "code": "GUILD_UNAVAILABLE",
+   "message": "O servidor esta temporariamente indisponivel."
+  }
+ },
+ "no_me": {
+  "log": [
+   [
+    "get_channel",
+    1
+   ]
+  ],
+  "channel": null,
+  "error": {
+   "ok": false,
+   "code": "CHANNEL_FULL",
+   "message": "O canal de voz esta lotado."
+  }
+ },
+ "no_view_permission": {
+  "log": [
+   [
+    "get_channel",
+    1
+   ]
+  ],
+  "channel": null,
+  "error": {
+   "ok": false,
+   "code": "CONNECT_FORBIDDEN",
+   "message": "A conta nao tem permissao para entrar nesse canal."
+  }
+ },
+ "no_connect_permission": {
+  "log": [
+   [
+    "get_channel",
+    1
+   ]
+  ],
+  "channel": null,
+  "error": {
+   "ok": false,
+   "code": "CONNECT_FORBIDDEN",
+   "message": "A conta nao tem permissao para entrar nesse canal."
+  }
+ },
+ "permissions_error": {
+  "log": [
+   [
+    "get_channel",
+    1
+   ]
+  ],
+  "channel": 1,
+  "error": null
+ },
+ "full": {
+  "log": [
+   [
+    "get_channel",
+    1
+   ]
+  ],
+  "channel": null,
+  "error": {
+   "ok": false,
+   "code": "CHANNEL_FULL",
+   "message": "O canal de voz esta lotado."
+  }
+ },
+ "full_with_move_members": {
+  "log": [
+   [
+    "get_channel",
+    1
+   ]
+  ],
+  "channel": 1,
+  "error": null
+ },
+ "full_already_inside": {
+  "log": [
+   [
+    "get_channel",
+    1
+   ]
+  ],
+  "channel": 1,
+  "error": null
+ },
+ "voice_states_error": {
+  "log": [
+   [
+    "get_channel",
+    1
+   ]
+  ],
+  "channel": 1,
+  "error": null
+ }
+}

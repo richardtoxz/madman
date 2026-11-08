@@ -1,0 +1,2428 @@
+{
+ "unauth_whitelist": [
+  [
+   "inter[123].response.send_message",
+   [
+    "Voce precisa estar autenticado! Use **Autenticar** primeiro."
+   ],
+   {
+    "ephemeral": true
+   }
+  ]
+ ],
+ "unauth_pending": [
+  [
+   "inter[123].response.send_message",
+   [
+    "❌ Você precisa estar autenticado! Use **Autenticar** primeiro."
+   ],
+   {
+    "ephemeral": true
+   }
+  ]
+ ],
+ "unauth_friends": [
+  [
+   "inter[123].response.send_message",
+   [
+    "❌ Você precisa estar autenticado! Use **Autenticar** primeiro."
+   ],
+   {
+    "ephemeral": true
+   }
+  ]
+ ],
+ "unauth_unblock": [
+  [
+   "inter[123].response.send_message",
+   [
+    "❌ Você precisa estar autenticado! Use **Autenticar** primeiro."
+   ],
+   {
+    "ephemeral": true
+   }
+  ]
+ ],
+ "unauth_mute": [
+  [
+   "inter[123].response.send_message",
+   [
+    "Você precisa estar autenticado! Use **Autenticar** primeiro."
+   ],
+   {
+    "ephemeral": true
+   }
+  ]
+ ],
+ "unauth_leave": [
+  [
+   "inter[123].response.send_message",
+   [
+    "Você precisa estar autenticado! Use **Autenticar** primeiro."
+   ],
+   {
+    "ephemeral": true
+   }
+  ]
+ ],
+ "blocked_pending": [
+  [
+   "dm.open_blocked"
+  ]
+ ],
+ "blocked_friends": [
+  [
+   "dm.open_blocked"
+  ]
+ ],
+ "blocked_unblock": [
+  [
+   "dm.open_blocked"
+  ]
+ ],
+ "blocked_mute": [
+  [
+   "dm.open_blocked"
+  ]
+ ],
+ "blocked_leave": [
+  [
+   "dm.open_blocked"
+  ]
+ ],
+ "whitelist": [
+  [
+   "inter[123].response.defer",
+   [],
+   {
+    "ephemeral": true
+   }
+  ],
+  [
+   "manager.get_guilds_page",
+   [
+    123
+   ],
+   {
+    "page": 0,
+    "page_size": 20
+   }
+  ],
+  [
+   "inter[123].followup.send",
+   [],
+   {
+    "embed": {
+     "footer": {
+      "text": "Pagina 1/2 • 4 servidores • marcados nao serao alterados"
+     },
+     "fields": [
+      {
+       "inline": false,
+       "name": "Aviso",
+       "value": "⚠️ parcial"
+      }
+     ],
+     "flags": 0,
+     "color": 3447003,
+     "type": "rich",
+     "description": "▫️ **Alpha** (`1`) • silenciado\n🛡️ **Beta \\*md\\*** (`2`) • proprio",
+     "title": "🛡️ Whitelist de Servidores (1)"
+    },
+    "view": {
+     "timeout": 180,
+     "items": [
+      {
+       "type": "Select",
+       "row": 0,
+       "disabled": false,
+       "placeholder": "Marque os servidores que deseja proteger",
+       "min_values": 0,
+       "max_values": 2,
+       "emoji": null,
+       "options": [
+        [
+         "Alpha",
+         "ID 1",
+         "1",
+         false
+        ],
+        [
+         "Beta *md*",
+         "ID 2 • servidor proprio",
+         "2",
+         true
+        ]
+       ]
+      },
+      {
+       "type": "Button",
+       "row": 1,
+       "label": null,
+       "disabled": true,
+       "style": "secondary",
+       "emoji": "◀"
+      },
+      {
+       "type": "Button",
+       "row": 1,
+       "label": null,
+       "disabled": false,
+       "style": "secondary",
+       "emoji": "▶"
+      },
+      {
+       "type": "Button",
+       "row": 1,
+       "label": "Limpar whitelist",
+       "disabled": false,
+       "style": "danger",
+       "emoji": null
+      }
+     ]
+    },
+    "ephemeral": true
+   }
+  ],
+  [
+   "select",
+   [
+    "1"
+   ]
+  ],
+  [
+   "manager.update_guild_whitelist",
+   [
+    123,
+    [
+     1,
+     2
+    ],
+    [
+     1
+    ]
+   ],
+   {}
+  ],
+  [
+   "inter[123].response.edit_message",
+   [],
+   {
+    "embed": {
+     "footer": {
+      "text": "Pagina 1/2 • 4 servidores • marcados nao serao alterados"
+     },
+     "fields": [
+      {
+       "inline": false,
+       "name": "Aviso",
+       "value": "⚠️ parcial"
+      }
+     ],
+     "flags": 0,
+     "color": 3447003,
+     "type": "rich",
+     "description": "🛡️ **Alpha** (`1`) • silenciado\n▫️ **Beta \\*md\\*** (`2`) • proprio",
+     "title": "🛡️ Whitelist de Servidores (1)"
+    },
+    "view": {
+     "timeout": 180,
+     "items": [
+      {
+       "type": "Select",
+       "row": 0,
+       "disabled": false,
+       "placeholder": "Marque os servidores que deseja proteger",
+       "min_values": 0,
+       "max_values": 2,
+       "emoji": null,
+       "options": [
+        [
+         "Alpha",
+         "ID 1",
+         "1",
+         true
+        ],
+        [
+         "Beta *md*",
+         "ID 2 • servidor proprio",
+         "2",
+         false
+        ]
+       ]
+      },
+      {
+       "type": "Button",
+       "row": 1,
+       "label": null,
+       "disabled": true,
+       "style": "secondary",
+       "emoji": "◀"
+      },
+      {
+       "type": "Button",
+       "row": 1,
+       "label": null,
+       "disabled": false,
+       "style": "secondary",
+       "emoji": "▶"
+      },
+      {
+       "type": "Button",
+       "row": 1,
+       "label": "Limpar whitelist",
+       "disabled": false,
+       "style": "danger",
+       "emoji": null
+      }
+     ]
+    }
+   }
+  ],
+  [
+   "click",
+   "▶",
+   123
+  ],
+  [
+   "inter[123].response.defer",
+   [],
+   {}
+  ],
+  [
+   "manager.get_guilds_page",
+   [
+    123
+   ],
+   {
+    "page": 1,
+    "page_size": 20
+   }
+  ],
+  [
+   "inter[123].edit_original_response",
+   [],
+   {
+    "embed": {
+     "footer": {
+      "text": "Pagina 2/2 • 4 servidores • marcados nao serao alterados"
+     },
+     "flags": 0,
+     "color": 3447003,
+     "type": "rich",
+     "description": "▫️ **Alpha** (`3`) • silenciado\n▫️ **Beta \\*md\\*** (`4`) • proprio",
+     "title": "🛡️ Whitelist de Servidores (1)"
+    },
+    "view": {
+     "timeout": 180,
+     "items": [
+      {
+       "type": "Select",
+       "row": 0,
+       "disabled": false,
+       "placeholder": "Marque os servidores que deseja proteger",
+       "min_values": 0,
+       "max_values": 2,
+       "emoji": null,
+       "options": [
+        [
+         "Alpha",
+         "ID 3",
+         "3",
+         false
+        ],
+        [
+         "Beta *md*",
+         "ID 4 • servidor proprio",
+         "4",
+         false
+        ]
+       ]
+      },
+      {
+       "type": "Button",
+       "row": 1,
+       "label": null,
+       "disabled": false,
+       "style": "secondary",
+       "emoji": "◀"
+      },
+      {
+       "type": "Button",
+       "row": 1,
+       "label": null,
+       "disabled": true,
+       "style": "secondary",
+       "emoji": "▶"
+      },
+      {
+       "type": "Button",
+       "row": 1,
+       "label": "Limpar whitelist",
+       "disabled": false,
+       "style": "danger",
+       "emoji": null
+      }
+     ]
+    }
+   }
+  ],
+  [
+   "click",
+   "◀",
+   123
+  ],
+  [
+   "inter[123].response.defer",
+   [],
+   {}
+  ],
+  [
+   "manager.get_guilds_page",
+   [
+    123
+   ],
+   {
+    "page": 0,
+    "page_size": 20
+   }
+  ],
+  [
+   "inter[123].edit_original_response",
+   [],
+   {
+    "embed": {
+     "footer": {
+      "text": "Pagina 1/2 • 4 servidores • marcados nao serao alterados"
+     },
+     "fields": [
+      {
+       "inline": false,
+       "name": "Aviso",
+       "value": "⚠️ parcial"
+      }
+     ],
+     "flags": 0,
+     "color": 3447003,
+     "type": "rich",
+     "description": "🛡️ **Alpha** (`1`) • silenciado\n▫️ **Beta \\*md\\*** (`2`) • proprio",
+     "title": "🛡️ Whitelist de Servidores (1)"
+    },
+    "view": {
+     "timeout": 180,
+     "items": [
+      {
+       "type": "Select",
+       "row": 0,
+       "disabled": false,
+       "placeholder": "Marque os servidores que deseja proteger",
+       "min_values": 0,
+       "max_values": 2,
+       "emoji": null,
+       "options": [
+        [
+         "Alpha",
+         "ID 1",
+         "1",
+         true
+        ],
+        [
+         "Beta *md*",
+         "ID 2 • servidor proprio",
+         "2",
+         false
+        ]
+       ]
+      },
+      {
+       "type": "Button",
+       "row": 1,
+       "label": null,
+       "disabled": true,
+       "style": "secondary",
+       "emoji": "◀"
+      },
+      {
+       "type": "Button",
+       "row": 1,
+       "label": null,
+       "disabled": false,
+       "style": "secondary",
+       "emoji": "▶"
+      },
+      {
+       "type": "Button",
+       "row": 1,
+       "label": "Limpar whitelist",
+       "disabled": false,
+       "style": "danger",
+       "emoji": null
+      }
+     ]
+    }
+   }
+  ],
+  [
+   "click",
+   "Limpar whitelist",
+   123
+  ],
+  [
+   "manager.clear_guild_whitelist",
+   [
+    123
+   ],
+   {}
+  ],
+  [
+   "inter[123].response.edit_message",
+   [],
+   {
+    "content": "Whitelist limpa: **1** servidor(es) removido(s).",
+    "embed": {
+     "footer": {
+      "text": "Pagina 1/2 • 4 servidores • marcados nao serao alterados"
+     },
+     "fields": [
+      {
+       "inline": false,
+       "name": "Aviso",
+       "value": "⚠️ parcial"
+      }
+     ],
+     "flags": 0,
+     "color": 3447003,
+     "type": "rich",
+     "description": "▫️ **Alpha** (`1`) • silenciado\n▫️ **Beta \\*md\\*** (`2`) • proprio",
+     "title": "🛡️ Whitelist de Servidores (0)"
+    },
+    "view": {
+     "timeout": 180,
+     "items": [
+      {
+       "type": "Select",
+       "row": 0,
+       "disabled": false,
+       "placeholder": "Marque os servidores que deseja proteger",
+       "min_values": 0,
+       "max_values": 2,
+       "emoji": null,
+       "options": [
+        [
+         "Alpha",
+         "ID 1",
+         "1",
+         false
+        ],
+        [
+         "Beta *md*",
+         "ID 2 • servidor proprio",
+         "2",
+         false
+        ]
+       ]
+      },
+      {
+       "type": "Button",
+       "row": 1,
+       "label": null,
+       "disabled": true,
+       "style": "secondary",
+       "emoji": "◀"
+      },
+      {
+       "type": "Button",
+       "row": 1,
+       "label": null,
+       "disabled": false,
+       "style": "secondary",
+       "emoji": "▶"
+      },
+      {
+       "type": "Button",
+       "row": 1,
+       "label": "Limpar whitelist",
+       "disabled": true,
+       "style": "danger",
+       "emoji": null
+      }
+     ]
+    }
+   }
+  ]
+ ],
+ "pending_accept": [
+  [
+   "dm.open",
+   {
+    "embed": {
+     "flags": 0,
+     "type": "rich",
+     "description": "Consultando pedidos...",
+     "title": "📨 Pedidos Pendentes"
+    }
+   }
+  ],
+  [
+   "manager.get_pending_requests",
+   [
+    123
+   ],
+   {
+    "page": 0
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "footer": {
+      "text": "Pagina 1/2 • lista atualizada pela API"
+     },
+     "fields": [
+      {
+       "inline": false,
+       "name": "📥 Recebidos (3)",
+       "value": "• **Entrada** (`10`)"
+      },
+      {
+       "inline": false,
+       "name": "📤 Enviados (2)",
+       "value": "• **Saida** (`20`)"
+      }
+     ],
+     "flags": 0,
+     "color": 16426522,
+     "type": "rich",
+     "description": "⚠️ lento",
+     "title": "📨 Pedidos Pendentes"
+    },
+    "view": {
+     "timeout": 300,
+     "items": [
+      {
+       "type": "Button",
+       "row": null,
+       "label": "Aceitar Todos (3)",
+       "disabled": false,
+       "style": "success",
+       "emoji": "✅"
+      },
+      {
+       "type": "Button",
+       "row": null,
+       "label": "Remover Todos (5)",
+       "disabled": false,
+       "style": "danger",
+       "emoji": "❌"
+      },
+      {
+       "type": "Button",
+       "row": null,
+       "label": null,
+       "disabled": true,
+       "style": "secondary",
+       "emoji": "◀"
+      },
+      {
+       "type": "Button",
+       "row": null,
+       "label": null,
+       "disabled": false,
+       "style": "secondary",
+       "emoji": "▶"
+      }
+     ]
+    }
+   }
+  ],
+  [
+   "dm.expire_after",
+   300
+  ],
+  [
+   "click",
+   "▶",
+   123
+  ],
+  [
+   "inter[123].response.defer",
+   [],
+   {}
+  ],
+  [
+   "manager.get_pending_requests",
+   [
+    123
+   ],
+   {
+    "page": 1
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "footer": {
+      "text": "Pagina 2/2 • lista atualizada pela API"
+     },
+     "fields": [
+      {
+       "inline": false,
+       "name": "📥 Recebidos (3)",
+       "value": "• **Entrada** (`11`)"
+      },
+      {
+       "inline": false,
+       "name": "📤 Enviados (2)",
+       "value": "• **Saida** (`21`)"
+      }
+     ],
+     "flags": 0,
+     "color": 16426522,
+     "type": "rich",
+     "title": "📨 Pedidos Pendentes"
+    },
+    "view": {
+     "timeout": 300,
+     "items": [
+      {
+       "type": "Button",
+       "row": null,
+       "label": "Aceitar Todos (3)",
+       "disabled": false,
+       "style": "success",
+       "emoji": "✅"
+      },
+      {
+       "type": "Button",
+       "row": null,
+       "label": "Remover Todos (5)",
+       "disabled": false,
+       "style": "danger",
+       "emoji": "❌"
+      },
+      {
+       "type": "Button",
+       "row": null,
+       "label": null,
+       "disabled": false,
+       "style": "secondary",
+       "emoji": "◀"
+      },
+      {
+       "type": "Button",
+       "row": null,
+       "label": null,
+       "disabled": true,
+       "style": "secondary",
+       "emoji": "▶"
+      }
+     ]
+    }
+   }
+  ],
+  [
+   "click",
+   "Aceitar Todos (3)",
+   123
+  ],
+  [
+   "inter[123].response.defer",
+   [],
+   {}
+  ],
+  [
+   "dm.hold"
+  ],
+  [
+   "dm.edit",
+   {
+    "content": "🚀 Aceitacao de pedidos iniciada. O tempo varia conforme o Discord.",
+    "view": {
+     "timeout": null,
+     "items": [
+      {
+       "type": "Button",
+       "row": null,
+       "label": "Cancelar operacao",
+       "disabled": false,
+       "style": "danger",
+       "emoji": "⏹️"
+      }
+     ]
+    }
+   }
+  ],
+  [
+   "manager.accept_all_requests",
+   [
+    123
+   ],
+   {}
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15844367,
+     "type": "rich",
+     "description": "Preparando **3** itens...",
+     "title": "👥 Gerenciando Pedidos"
+    },
+    "throttle": false
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15844367,
+     "type": "rich",
+     "description": "Processando: **Alvo \\*um\\***\nProgresso: **1/3**\n\n▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱",
+     "title": "👥 Gerenciando Pedidos"
+    },
+    "throttle": true
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15105570,
+     "type": "rich",
+     "description": "⏸️ pausa\nProgresso: **1/3**",
+     "title": "👥 Gerenciando Pedidos"
+    },
+    "throttle": false
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15105570,
+     "type": "rich",
+     "description": "⏳ O Discord solicitou uma espera.",
+     "title": "👥 Gerenciando Pedidos"
+    },
+    "throttle": false
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15158332,
+     "type": "rich",
+     "description": "⚠️ Falha individual: falhou",
+     "title": "👥 Gerenciando Pedidos"
+    },
+    "throttle": false
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15844367,
+     "type": "rich",
+     "description": "Processando: **Fim**\nProgresso: **3/3**\n\n▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰",
+     "title": "👥 Gerenciando Pedidos"
+    },
+    "throttle": false
+   }
+  ],
+  [
+   "dm.finish",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15105570,
+     "type": "rich",
+     "description": "**Resultado:** parou",
+     "title": "⏹️ Aceitacao de pedidos cancelada"
+    }
+   }
+  ],
+  [
+   "click",
+   "Cancelar operacao",
+   999
+  ],
+  [
+   "inter[999].response.send_message",
+   [
+    "Esta operacao pertence a outro usuario."
+   ],
+   {
+    "ephemeral": true
+   }
+  ],
+  [
+   "click",
+   "Cancelar operacao",
+   123
+  ],
+  [
+   "inter[123].response.defer",
+   [],
+   {}
+  ],
+  [
+   "manager.control_clean",
+   [
+    123,
+    "CANCEL"
+   ],
+   {}
+  ],
+  [
+   "dm.edit",
+   {
+    "content": "⏹️ Cancelamento solicitado. Finalizando o item atual...",
+    "view": null
+   }
+  ]
+ ],
+ "pending_deny": [
+  [
+   "dm.open",
+   {
+    "embed": {
+     "flags": 0,
+     "type": "rich",
+     "description": "Consultando pedidos...",
+     "title": "📨 Pedidos Pendentes"
+    }
+   }
+  ],
+  [
+   "manager.get_pending_requests",
+   [
+    123
+   ],
+   {
+    "page": 0
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "footer": {
+      "text": "Pagina 1/2 • lista atualizada pela API"
+     },
+     "fields": [
+      {
+       "inline": false,
+       "name": "📥 Recebidos (3)",
+       "value": "• **Entrada** (`10`)"
+      },
+      {
+       "inline": false,
+       "name": "📤 Enviados (2)",
+       "value": "• **Saida** (`20`)"
+      }
+     ],
+     "flags": 0,
+     "color": 16426522,
+     "type": "rich",
+     "description": "⚠️ lento",
+     "title": "📨 Pedidos Pendentes"
+    },
+    "view": {
+     "timeout": 300,
+     "items": [
+      {
+       "type": "Button",
+       "row": null,
+       "label": "Aceitar Todos (3)",
+       "disabled": false,
+       "style": "success",
+       "emoji": "✅"
+      },
+      {
+       "type": "Button",
+       "row": null,
+       "label": "Remover Todos (5)",
+       "disabled": false,
+       "style": "danger",
+       "emoji": "❌"
+      },
+      {
+       "type": "Button",
+       "row": null,
+       "label": null,
+       "disabled": true,
+       "style": "secondary",
+       "emoji": "◀"
+      },
+      {
+       "type": "Button",
+       "row": null,
+       "label": null,
+       "disabled": false,
+       "style": "secondary",
+       "emoji": "▶"
+      }
+     ]
+    }
+   }
+  ],
+  [
+   "dm.expire_after",
+   300
+  ],
+  [
+   "click",
+   "▶",
+   123
+  ],
+  [
+   "inter[123].response.defer",
+   [],
+   {}
+  ],
+  [
+   "manager.get_pending_requests",
+   [
+    123
+   ],
+   {
+    "page": 1
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "footer": {
+      "text": "Pagina 2/2 • lista atualizada pela API"
+     },
+     "fields": [
+      {
+       "inline": false,
+       "name": "📥 Recebidos (3)",
+       "value": "• **Entrada** (`11`)"
+      },
+      {
+       "inline": false,
+       "name": "📤 Enviados (2)",
+       "value": "• **Saida** (`21`)"
+      }
+     ],
+     "flags": 0,
+     "color": 16426522,
+     "type": "rich",
+     "title": "📨 Pedidos Pendentes"
+    },
+    "view": {
+     "timeout": 300,
+     "items": [
+      {
+       "type": "Button",
+       "row": null,
+       "label": "Aceitar Todos (3)",
+       "disabled": false,
+       "style": "success",
+       "emoji": "✅"
+      },
+      {
+       "type": "Button",
+       "row": null,
+       "label": "Remover Todos (5)",
+       "disabled": false,
+       "style": "danger",
+       "emoji": "❌"
+      },
+      {
+       "type": "Button",
+       "row": null,
+       "label": null,
+       "disabled": false,
+       "style": "secondary",
+       "emoji": "◀"
+      },
+      {
+       "type": "Button",
+       "row": null,
+       "label": null,
+       "disabled": true,
+       "style": "secondary",
+       "emoji": "▶"
+      }
+     ]
+    }
+   }
+  ],
+  [
+   "click",
+   "Remover Todos (5)",
+   123
+  ],
+  [
+   "inter[123].response.defer",
+   [],
+   {}
+  ],
+  [
+   "dm.hold"
+  ],
+  [
+   "dm.edit",
+   {
+    "content": "🚀 Remocao de pedidos iniciada. O tempo varia conforme o Discord.",
+    "view": {
+     "timeout": null,
+     "items": [
+      {
+       "type": "Button",
+       "row": null,
+       "label": "Cancelar operacao",
+       "disabled": false,
+       "style": "danger",
+       "emoji": "⏹️"
+      }
+     ]
+    }
+   }
+  ],
+  [
+   "manager.deny_all_requests",
+   [
+    123
+   ],
+   {}
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15844367,
+     "type": "rich",
+     "description": "Preparando **3** itens...",
+     "title": "👥 Gerenciando Pedidos"
+    },
+    "throttle": false
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15844367,
+     "type": "rich",
+     "description": "Processando: **Alvo \\*um\\***\nProgresso: **1/3**\n\n▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱",
+     "title": "👥 Gerenciando Pedidos"
+    },
+    "throttle": true
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15105570,
+     "type": "rich",
+     "description": "⏸️ pausa\nProgresso: **1/3**",
+     "title": "👥 Gerenciando Pedidos"
+    },
+    "throttle": false
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15105570,
+     "type": "rich",
+     "description": "⏳ O Discord solicitou uma espera.",
+     "title": "👥 Gerenciando Pedidos"
+    },
+    "throttle": false
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15158332,
+     "type": "rich",
+     "description": "⚠️ Falha individual: falhou",
+     "title": "👥 Gerenciando Pedidos"
+    },
+    "throttle": false
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15844367,
+     "type": "rich",
+     "description": "Processando: **Fim**\nProgresso: **3/3**\n\n▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰",
+     "title": "👥 Gerenciando Pedidos"
+    },
+    "throttle": false
+   }
+  ],
+  [
+   "dm.finish",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15158332,
+     "type": "rich",
+     "description": "**Resultado:** seguranca",
+     "title": "🛑 Remocao de pedidos interrompida com seguranca"
+    }
+   }
+  ],
+  [
+   "click",
+   "Cancelar operacao",
+   999
+  ],
+  [
+   "inter[999].response.send_message",
+   [
+    "Esta operacao pertence a outro usuario."
+   ],
+   {
+    "ephemeral": true
+   }
+  ],
+  [
+   "click",
+   "Cancelar operacao",
+   123
+  ],
+  [
+   "inter[123].response.defer",
+   [],
+   {}
+  ],
+  [
+   "manager.control_clean",
+   [
+    123,
+    "CANCEL"
+   ],
+   {}
+  ],
+  [
+   "dm.edit",
+   {
+    "content": "⏹️ Cancelamento solicitado. Finalizando o item atual...",
+    "view": null
+   }
+  ]
+ ],
+ "friends": [
+  [
+   "dm.open",
+   {
+    "embed": {
+     "flags": 0,
+     "type": "rich",
+     "description": "Consultando amigos...",
+     "title": "🧹 Limpeza de amigos"
+    }
+   }
+  ],
+  [
+   "manager.get_rel_stats",
+   [
+    123
+   ],
+   {}
+  ],
+  [
+   "dm.edit",
+   {
+    "content": "⚠️ **CONFIRMAÇÃO DE LIMPEZA**\n\nVocê está prestes a remover ate **4 amigos**.\nA duracao depende dos rate limits do Discord.\n⚠️ cache antigo A lista sera validada novamente.\n\nDeseja prosseguir?",
+    "view": {
+     "timeout": 300,
+     "items": [
+      {
+       "type": "Button",
+       "row": null,
+       "label": "Confirmar Remocao em Massa",
+       "disabled": false,
+       "style": "danger",
+       "emoji": null
+      }
+     ]
+    }
+   }
+  ],
+  [
+   "dm.expire_after",
+   300
+  ],
+  [
+   "click",
+   "Confirmar Remocao em Massa",
+   123
+  ],
+  [
+   "inter[123].response.defer",
+   [],
+   {}
+  ],
+  [
+   "dm.hold"
+  ],
+  [
+   "dm.edit",
+   {
+    "content": "🚀 Limpeza de amigos iniciada.\nA lista sera atualizada novamente antes da primeira remocao.",
+    "view": {
+     "timeout": null,
+     "items": [
+      {
+       "type": "Button",
+       "row": null,
+       "label": "Cancelar operacao",
+       "disabled": false,
+       "style": "danger",
+       "emoji": "⏹️"
+      }
+     ]
+    }
+   }
+  ],
+  [
+   "manager.start_rel_cleanup",
+   [
+    123
+   ],
+   {}
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15844367,
+     "type": "rich",
+     "description": "Preparando **3** itens...",
+     "title": "🧹 Limpando Amizades"
+    },
+    "throttle": false
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15844367,
+     "type": "rich",
+     "description": "Removendo: **Alvo \\*um\\***\nProgresso: **1/3**\n\n▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱",
+     "title": "🧹 Limpando Amizades"
+    },
+    "throttle": true
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15105570,
+     "type": "rich",
+     "description": "⏸️ pausa\nProgresso: **1/3**",
+     "title": "🧹 Limpando Amizades"
+    },
+    "throttle": false
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15105570,
+     "type": "rich",
+     "description": "⏳ O Discord solicitou uma espera.",
+     "title": "🧹 Limpando Amizades"
+    },
+    "throttle": false
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15158332,
+     "type": "rich",
+     "description": "⚠️ Falha individual: falhou",
+     "title": "🧹 Limpando Amizades"
+    },
+    "throttle": false
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15844367,
+     "type": "rich",
+     "description": "Removendo: **Fim**\nProgresso: **3/3**\n\n▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰",
+     "title": "🧹 Limpando Amizades"
+    },
+    "throttle": false
+   }
+  ],
+  [
+   "dm.finish",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 3066993,
+     "type": "rich",
+     "description": "**Resultado:** 4 removidos",
+     "title": "✅ Limpeza de amigos concluida"
+    }
+   }
+  ],
+  [
+   "click",
+   "Cancelar operacao",
+   999
+  ],
+  [
+   "inter[999].response.send_message",
+   [
+    "Esta operacao pertence a outro usuario."
+   ],
+   {
+    "ephemeral": true
+   }
+  ],
+  [
+   "click",
+   "Cancelar operacao",
+   123
+  ],
+  [
+   "inter[123].response.defer",
+   [],
+   {}
+  ],
+  [
+   "manager.control_clean",
+   [
+    123,
+    "CANCEL"
+   ],
+   {}
+  ],
+  [
+   "dm.edit",
+   {
+    "content": "⏹️ Cancelamento solicitado. Finalizando o item atual...",
+    "view": null
+   }
+  ]
+ ],
+ "friends_none": [
+  [
+   "dm.open",
+   {
+    "embed": {
+     "flags": 0,
+     "type": "rich",
+     "description": "Consultando amigos...",
+     "title": "🧹 Limpeza de amigos"
+    }
+   }
+  ],
+  [
+   "manager.get_rel_stats",
+   [
+    123
+   ],
+   {}
+  ],
+  [
+   "dm.finish",
+   {
+    "content": "✅ Nenhum amigo para remover."
+   }
+  ]
+ ],
+ "friends_unconfirmed": [
+  [
+   "dm.open",
+   {
+    "embed": {
+     "flags": 0,
+     "type": "rich",
+     "description": "Consultando amigos...",
+     "title": "🧹 Limpeza de amigos"
+    }
+   }
+  ],
+  [
+   "manager.get_rel_stats",
+   [
+    123
+   ],
+   {}
+  ],
+  [
+   "dm.finish",
+   {
+    "content": "⚠️ Nao foi possivel confirmar a lista atual de amigos. Tente novamente."
+   }
+  ]
+ ],
+ "friends_no_stats": [
+  [
+   "dm.open",
+   {
+    "embed": {
+     "flags": 0,
+     "type": "rich",
+     "description": "Consultando amigos...",
+     "title": "🧹 Limpeza de amigos"
+    }
+   }
+  ],
+  [
+   "manager.get_rel_stats",
+   [
+    123
+   ],
+   {}
+  ],
+  [
+   "dm.finish",
+   {
+    "content": "❌ Nao foi possivel carregar as relacoes."
+   }
+  ]
+ ],
+ "unblock": [
+  [
+   "dm.open",
+   {
+    "embed": {
+     "flags": 0,
+     "type": "rich",
+     "description": "Consultando bloqueados...",
+     "title": "🚫 Bloqueados"
+    }
+   }
+  ],
+  [
+   "manager.get_blocked_list",
+   [
+    123
+   ],
+   {
+    "page": 0
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "footer": {
+      "text": "Pagina 1/3 • validacao repetida antes da alteracao"
+     },
+     "flags": 0,
+     "color": 15158332,
+     "type": "rich",
+     "description": "• **Bloqueado** (`30`)",
+     "title": "🚫 Bloqueados (2)"
+    },
+    "view": {
+     "timeout": 300,
+     "items": [
+      {
+       "type": "Button",
+       "row": null,
+       "label": "Desbloquear Todos (2)",
+       "disabled": false,
+       "style": "success",
+       "emoji": "🔓"
+      },
+      {
+       "type": "Button",
+       "row": null,
+       "label": null,
+       "disabled": true,
+       "style": "secondary",
+       "emoji": "◀"
+      },
+      {
+       "type": "Button",
+       "row": null,
+       "label": null,
+       "disabled": false,
+       "style": "secondary",
+       "emoji": "▶"
+      }
+     ]
+    }
+   }
+  ],
+  [
+   "dm.expire_after",
+   300
+  ],
+  [
+   "click",
+   "▶",
+   123
+  ],
+  [
+   "inter[123].response.defer",
+   [],
+   {}
+  ],
+  [
+   "manager.get_blocked_list",
+   [
+    123
+   ],
+   {
+    "page": 1
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "footer": {
+      "text": "Pagina 2/1 • validacao repetida antes da alteracao"
+     },
+     "fields": [
+      {
+       "inline": false,
+       "name": "Aviso",
+       "value": "⚠️ pagina 2"
+      }
+     ],
+     "flags": 0,
+     "color": 15158332,
+     "type": "rich",
+     "description": "• **Bloqueado** (`31`)",
+     "title": "🚫 Bloqueados (2)"
+    },
+    "view": {
+     "timeout": 300,
+     "items": [
+      {
+       "type": "Button",
+       "row": null,
+       "label": "Desbloquear Todos (2)",
+       "disabled": false,
+       "style": "success",
+       "emoji": "🔓"
+      }
+     ]
+    }
+   }
+  ],
+  [
+   "click",
+   "Desbloquear Todos (2)",
+   123
+  ],
+  [
+   "inter[123].response.defer",
+   [],
+   {}
+  ],
+  [
+   "dm.edit",
+   {
+    "content": "⚠️ **TEM CERTEZA?**\n\nVoce vai desbloquear ate **2 usuarios**.\nA duracao depende dos rate limits do Discord.",
+    "view": {
+     "timeout": 300,
+     "items": [
+      {
+       "type": "Button",
+       "row": null,
+       "label": "SIM, Desbloquear Todos",
+       "disabled": false,
+       "style": "danger",
+       "emoji": "⚠️"
+      }
+     ]
+    }
+   }
+  ],
+  [
+   "click",
+   "SIM, Desbloquear Todos",
+   123
+  ],
+  [
+   "inter[123].response.defer",
+   [],
+   {}
+  ],
+  [
+   "dm.hold"
+  ],
+  [
+   "dm.edit",
+   {
+    "content": "🚀 Desbloqueio de ate 2 usuarios iniciado.\nA lista sera atualizada antes da primeira alteracao.",
+    "view": {
+     "timeout": null,
+     "items": [
+      {
+       "type": "Button",
+       "row": null,
+       "label": "Cancelar operacao",
+       "disabled": false,
+       "style": "danger",
+       "emoji": "⏹️"
+      }
+     ]
+    }
+   }
+  ],
+  [
+   "manager.unblock_all",
+   [
+    123
+   ],
+   {}
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15844367,
+     "type": "rich",
+     "description": "Preparando **3** itens...",
+     "title": "🔓 Desbloqueando Usuarios"
+    },
+    "throttle": false
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15844367,
+     "type": "rich",
+     "description": "Desbloqueando: **Alvo \\*um\\***\nProgresso: **1/3**\n\n▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱",
+     "title": "🔓 Desbloqueando Usuarios"
+    },
+    "throttle": true
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15105570,
+     "type": "rich",
+     "description": "⏸️ pausa\nProgresso: **1/3**",
+     "title": "🔓 Desbloqueando Usuarios"
+    },
+    "throttle": false
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15105570,
+     "type": "rich",
+     "description": "⏳ O Discord solicitou uma espera.",
+     "title": "🔓 Desbloqueando Usuarios"
+    },
+    "throttle": false
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15158332,
+     "type": "rich",
+     "description": "⚠️ Falha individual: falhou",
+     "title": "🔓 Desbloqueando Usuarios"
+    },
+    "throttle": false
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15844367,
+     "type": "rich",
+     "description": "Desbloqueando: **Fim**\nProgresso: **3/3**\n\n▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰",
+     "title": "🔓 Desbloqueando Usuarios"
+    },
+    "throttle": false
+   }
+  ],
+  [
+   "dm.finish",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15158332,
+     "type": "rich",
+     "description": "**Resultado:** Sem resposta do worker",
+     "title": "❌ Desbloqueio em massa nao concluida"
+    }
+   }
+  ],
+  [
+   "click",
+   "Cancelar operacao",
+   999
+  ],
+  [
+   "inter[999].response.send_message",
+   [
+    "Esta operacao pertence a outro usuario."
+   ],
+   {
+    "ephemeral": true
+   }
+  ],
+  [
+   "click",
+   "Cancelar operacao",
+   123
+  ],
+  [
+   "inter[123].response.defer",
+   [],
+   {}
+  ],
+  [
+   "manager.control_clean",
+   [
+    123,
+    "CANCEL"
+   ],
+   {}
+  ],
+  [
+   "dm.edit",
+   {
+    "content": "⏹️ Cancelamento solicitado. Finalizando o item atual...",
+    "view": null
+   }
+  ]
+ ],
+ "unblock_none": [
+  [
+   "dm.open",
+   {
+    "embed": {
+     "flags": 0,
+     "type": "rich",
+     "description": "Consultando bloqueados...",
+     "title": "🚫 Bloqueados"
+    }
+   }
+  ],
+  [
+   "manager.get_blocked_list",
+   [
+    123
+   ],
+   {
+    "page": 0
+   }
+  ],
+  [
+   "dm.finish",
+   {
+    "content": "✅ Nenhum usuario bloqueado."
+   }
+  ]
+ ],
+ "unblock_unconfirmed": [
+  [
+   "dm.open",
+   {
+    "embed": {
+     "flags": 0,
+     "type": "rich",
+     "description": "Consultando bloqueados...",
+     "title": "🚫 Bloqueados"
+    }
+   }
+  ],
+  [
+   "manager.get_blocked_list",
+   [
+    123
+   ],
+   {
+    "page": 0
+   }
+  ],
+  [
+   "dm.finish",
+   {
+    "content": "⚠️ Nao foi possivel confirmar a lista de bloqueados. Tente novamente."
+   }
+  ]
+ ],
+ "mute": [
+  [
+   "dm.open",
+   {
+    "embed": {
+     "flags": 0,
+     "type": "rich",
+     "description": "Consultando servidores...",
+     "title": "🏠 Servidores"
+    }
+   }
+  ],
+  [
+   "manager.get_guild_stats",
+   [
+    123
+   ],
+   {}
+  ],
+  [
+   "dm.edit",
+   {
+    "content": "⚠️ **CONFIRMAÇÃO DE OPERAÇÃO**\n\nVoce esta prestes a **silenciar em ate 2 servidores**.\n\n**Resumo da consulta:**\n• Servidores atuais: **3**\n• Protegidos pela whitelist: **1**\n• Elegiveis: **2**\n\n⚠️ **Aviso da consulta:** aviso <@1>\n\nO resultado final indicara falhas, cancelamento e verificacao. Deseja prosseguir?",
+    "view": {
+     "timeout": 300,
+     "items": [
+      {
+       "type": "Button",
+       "row": null,
+       "label": "Confirmar: silenciar (2)",
+       "disabled": false,
+       "style": "danger",
+       "emoji": null
+      }
+     ]
+    }
+   }
+  ],
+  [
+   "dm.expire_after",
+   300
+  ],
+  [
+   "click",
+   "Confirmar: silenciar (2)",
+   123
+  ],
+  [
+   "inter[123].response.defer",
+   [],
+   {}
+  ],
+  [
+   "dm.hold"
+  ],
+  [
+   "dm.edit",
+   {
+    "content": "🚀 Silenciamento iniciado para ate **2 servidores**.\nA lista e a whitelist serao validadas novamente antes da primeira alteracao.",
+    "view": {
+     "timeout": null,
+     "items": [
+      {
+       "type": "Button",
+       "row": null,
+       "label": "Cancelar operacao",
+       "disabled": false,
+       "style": "danger",
+       "emoji": "⏹️"
+      }
+     ]
+    }
+   }
+  ],
+  [
+   "manager.start_guild_cleanup",
+   [
+    123,
+    "MUTE"
+   ],
+   {}
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15844367,
+     "type": "rich",
+     "description": "Preparando **3** itens...",
+     "title": "🏠 Silenciamento"
+    },
+    "throttle": false
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15844367,
+     "type": "rich",
+     "description": "Silenciando: **Alvo \\*um\\***\nProgresso: **1/3**\n\n▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱",
+     "title": "🏠 Silenciamento"
+    },
+    "throttle": true
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15105570,
+     "type": "rich",
+     "description": "⏸️ pausa\nProgresso: **1/3**",
+     "title": "🏠 Silenciamento"
+    },
+    "throttle": false
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15105570,
+     "type": "rich",
+     "description": "⏳ O Discord solicitou uma espera.",
+     "title": "🏠 Silenciamento"
+    },
+    "throttle": false
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15158332,
+     "type": "rich",
+     "description": "⚠️ Falha individual: falhou",
+     "title": "🏠 Silenciamento"
+    },
+    "throttle": false
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15844367,
+     "type": "rich",
+     "description": "Silenciando: **Fim**\nProgresso: **3/3**\n\n▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰",
+     "title": "🏠 Silenciamento"
+    },
+    "throttle": false
+   }
+  ],
+  [
+   "dm.finish",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15844367,
+     "type": "rich",
+     "description": "**Resultado:** 1 falha",
+     "title": "⚠️ Silenciamento concluida parcialmente"
+    }
+   }
+  ],
+  [
+   "click",
+   "Cancelar operacao",
+   999
+  ],
+  [
+   "inter[999].response.send_message",
+   [
+    "Esta operacao pertence a outro usuario."
+   ],
+   {
+    "ephemeral": true
+   }
+  ],
+  [
+   "click",
+   "Cancelar operacao",
+   123
+  ],
+  [
+   "inter[123].response.defer",
+   [],
+   {}
+  ],
+  [
+   "manager.control_clean",
+   [
+    123,
+    "CANCEL"
+   ],
+   {}
+  ],
+  [
+   "dm.edit",
+   {
+    "content": "⏹️ Cancelamento solicitado. Finalizando o item atual...",
+    "view": null
+   }
+  ]
+ ],
+ "leave": [
+  [
+   "dm.open",
+   {
+    "embed": {
+     "flags": 0,
+     "type": "rich",
+     "description": "Consultando servidores...",
+     "title": "🏠 Servidores"
+    }
+   }
+  ],
+  [
+   "manager.get_guild_stats",
+   [
+    123
+   ],
+   {}
+  ],
+  [
+   "dm.edit",
+   {
+    "content": "⚠️ **CONFIRMAÇÃO DE OPERAÇÃO**\n\nVoce esta prestes a **sair em ate 1 servidores**.\n\n**Resumo da consulta:**\n• Servidores atuais: **3**\n• Protegidos pela whitelist: **1**\n• Servidores proprios protegidos: **1**\n• Elegiveis: **1**\n\n⚠️ **Aviso da consulta:** aviso <@1>\n\nO resultado final indicara falhas, cancelamento e verificacao. Deseja prosseguir?",
+    "view": {
+     "timeout": 300,
+     "items": [
+      {
+       "type": "Button",
+       "row": null,
+       "label": "Confirmar: sair (1)",
+       "disabled": false,
+       "style": "danger",
+       "emoji": null
+      }
+     ]
+    }
+   }
+  ],
+  [
+   "dm.expire_after",
+   300
+  ],
+  [
+   "click",
+   "Confirmar: sair (1)",
+   123
+  ],
+  [
+   "inter[123].response.defer",
+   [],
+   {}
+  ],
+  [
+   "dm.hold"
+  ],
+  [
+   "dm.edit",
+   {
+    "content": "🚀 Saida de servidores iniciado para ate **1 servidores**.\nA lista e a whitelist serao validadas novamente antes da primeira alteracao.",
+    "view": {
+     "timeout": null,
+     "items": [
+      {
+       "type": "Button",
+       "row": null,
+       "label": "Cancelar operacao",
+       "disabled": false,
+       "style": "danger",
+       "emoji": "⏹️"
+      }
+     ]
+    }
+   }
+  ],
+  [
+   "manager.start_guild_cleanup",
+   [
+    123,
+    "LEAVE"
+   ],
+   {}
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15844367,
+     "type": "rich",
+     "description": "Preparando **3** itens...",
+     "title": "🏠 Saida de servidores"
+    },
+    "throttle": false
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15844367,
+     "type": "rich",
+     "description": "Saindo: **Alvo \\*um\\***\nProgresso: **1/3**\n\n▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱",
+     "title": "🏠 Saida de servidores"
+    },
+    "throttle": true
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15105570,
+     "type": "rich",
+     "description": "⏸️ pausa\nProgresso: **1/3**",
+     "title": "🏠 Saida de servidores"
+    },
+    "throttle": false
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15105570,
+     "type": "rich",
+     "description": "⏳ O Discord solicitou uma espera.",
+     "title": "🏠 Saida de servidores"
+    },
+    "throttle": false
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15158332,
+     "type": "rich",
+     "description": "⚠️ Falha individual: falhou",
+     "title": "🏠 Saida de servidores"
+    },
+    "throttle": false
+   }
+  ],
+  [
+   "dm.edit",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15844367,
+     "type": "rich",
+     "description": "Saindo: **Fim**\nProgresso: **3/3**\n\n▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰",
+     "title": "🏠 Saida de servidores"
+    },
+    "throttle": false
+   }
+  ],
+  [
+   "dm.finish",
+   {
+    "embed": {
+     "flags": 0,
+     "color": 15844367,
+     "type": "rich",
+     "description": "**Resultado:** 1 falha",
+     "title": "⚠️ Saida de servidores concluida parcialmente"
+    }
+   }
+  ],
+  [
+   "click",
+   "Cancelar operacao",
+   999
+  ],
+  [
+   "inter[999].response.send_message",
+   [
+    "Esta operacao pertence a outro usuario."
+   ],
+   {
+    "ephemeral": true
+   }
+  ],
+  [
+   "click",
+   "Cancelar operacao",
+   123
+  ],
+  [
+   "inter[123].response.defer",
+   [],
+   {}
+  ],
+  [
+   "manager.control_clean",
+   [
+    123,
+    "CANCEL"
+   ],
+   {}
+  ],
+  [
+   "dm.edit",
+   {
+    "content": "⏹️ Cancelamento solicitado. Finalizando o item atual...",
+    "view": null
+   }
+  ]
+ ],
+ "leave_no_guilds": [
+  [
+   "dm.open",
+   {
+    "embed": {
+     "flags": 0,
+     "type": "rich",
+     "description": "Consultando servidores...",
+     "title": "🏠 Servidores"
+    }
+   }
+  ],
+  [
+   "manager.get_guild_stats",
+   [
+    123
+   ],
+   {}
+  ],
+  [
+   "dm.finish",
+   {
+    "content": "✅ A conta nao participa de nenhum servidor."
+   }
+  ]
+ ],
+ "mute_unconfirmed": [
+  [
+   "dm.open",
+   {
+    "embed": {
+     "flags": 0,
+     "type": "rich",
+     "description": "Consultando servidores...",
+     "title": "🏠 Servidores"
+    }
+   }
+  ],
+  [
+   "manager.get_guild_stats",
+   [
+    123
+   ],
+   {}
+  ],
+  [
+   "dm.finish",
+   {
+    "content": "⚠️ Nao foi possivel confirmar a lista de servidores. Tente novamente."
+   }
+  ]
+ ],
+ "mute_all_protected": [
+  [
+   "dm.open",
+   {
+    "embed": {
+     "flags": 0,
+     "type": "rich",
+     "description": "Consultando servidores...",
+     "title": "🏠 Servidores"
+    }
+   }
+  ],
+  [
+   "manager.get_guild_stats",
+   [
+    123
+   ],
+   {}
+  ],
+  [
+   "dm.finish",
+   {
+    "content": "✅ Nenhum servidor esta elegivel: todos estao protegidos pela whitelist."
+   }
+  ]
+ ],
+ "leave_all_protected": [
+  [
+   "dm.open",
+   {
+    "embed": {
+     "flags": 0,
+     "type": "rich",
+     "description": "Consultando servidores...",
+     "title": "🏠 Servidores"
+    }
+   }
+  ],
+  [
+   "manager.get_guild_stats",
+   [
+    123
+   ],
+   {}
+  ],
+  [
+   "dm.finish",
+   {
+    "content": "✅ Nenhum servidor esta elegivel: todos estao protegidos pela whitelist ou pertencem a conta."
+   }
+  ]
+ ]
+}

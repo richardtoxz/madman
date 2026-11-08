@@ -91,6 +91,19 @@ class TrackerEngineTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(result["ok"])
         self.assertEqual(result["code"], "NOT_CONNECTED")
 
+    async def test_multiple_ids_are_restored_and_failed_edit_keeps_desired_state(self):
+        manager = SelfbotManager()
+        process = _TrackerProcess()
+        manager.active_processes[101] = process
+        await manager.tracker_start(101, [42, 77], self.WEBHOOK)
+        restarted = _TrackerProcess()
+        await manager._restore_tracker_state(101, restarted)
+        payload = json.loads(restarted.commands[0][0].split(":", 1)[1])
+        self.assertEqual(payload["target_ids"], [42, 77])
+        invalid = await manager.tracker_start(101, [True], self.WEBHOOK)
+        self.assertFalse(invalid["ok"])
+        self.assertEqual(manager._tracker_settings[101]["target_ids"], [42, 77])
+
 
 if __name__ == "__main__":
     unittest.main()

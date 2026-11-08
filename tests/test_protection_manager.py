@@ -8,7 +8,7 @@ from unittest.mock import patch
 import worker  # noqa: F401 - ativa o discord.py-self isolado
 import discord
 
-from worker.protection_manager import ProtectionManager
+from worker.protection.manager import ProtectionManager
 
 
 class _Author:
@@ -35,11 +35,7 @@ class _Author:
             type=(
                 discord.RelationshipType.friend
                 if friend
-                else (
-                    discord.RelationshipType.blocked
-                    if blocked
-                    else discord.RelationshipType.none
-                )
+                else (discord.RelationshipType.blocked if blocked else discord.RelationshipType.none)
             )
         )
 
@@ -122,25 +118,17 @@ class ProtectionManagerTests(unittest.IsolatedAsyncioTestCase):
         self.manager.enable()
 
     def test_suspicious_tld_alone_is_not_a_scam(self):
-        self.assertIsNone(
-            self.manager.classify_threat("Artigo: https://example.xyz/noticias")
-        )
+        self.assertIsNone(self.manager.classify_threat("Artigo: https://example.xyz/noticias"))
 
     def test_lure_and_external_risky_domain_is_a_scam(self):
         self.assertEqual(
-            self.manager.classify_threat(
-                "Claim free nitro agora: https://example.xyz/presente"
-            ),
+            self.manager.classify_threat("Claim free nitro agora: https://example.xyz/presente"),
             "SCAM",
         )
 
     def test_safe_domain_and_event_url_avoid_false_positives(self):
-        self.assertIsNone(
-            self.manager.classify_threat("free nitro https://github.com/example")
-        )
-        self.assertIsNone(
-            self.manager.classify_threat("https://discord.com/events/123/456")
-        )
+        self.assertIsNone(self.manager.classify_threat("free nitro https://github.com/example"))
+        self.assertIsNone(self.manager.classify_threat("https://discord.com/events/123/456"))
 
     async def test_single_invite_does_not_close_dm_but_repeated_invites_do(self):
         author = _Author(1)
@@ -163,9 +151,7 @@ class ProtectionManagerTests(unittest.IsolatedAsyncioTestCase):
         button_author = _Author(2)
         button_channel = _Channel()
         nested = {"children": [{"url": "https://d1scord-gift.example/claim"}]}
-        await self.manager.on_message(
-            _Message(10, button_author, channel=button_channel, components=[nested])
-        )
+        await self.manager.on_message(_Message(10, button_author, channel=button_channel, components=[nested]))
 
         embed_author = _Author(3)
         embed_channel = _Channel()
@@ -175,9 +161,7 @@ class ProtectionManagerTests(unittest.IsolatedAsyncioTestCase):
                 "fields": [{"name": "Link", "value": "https://gift.example.xyz/x"}],
             }
         )
-        await self.manager.on_message(
-            _Message(11, embed_author, channel=embed_channel, embeds=[embed])
-        )
+        await self.manager.on_message(_Message(11, embed_author, channel=embed_channel, embeds=[embed]))
 
         self.assertEqual(button_author.block_calls, 1)
         self.assertEqual(button_channel.close_calls, 1)
@@ -193,9 +177,7 @@ class ProtectionManagerTests(unittest.IsolatedAsyncioTestCase):
             description=None,
             title=None,
         )
-        await self.manager.on_message(
-            _Message(20, author, channel=channel, attachments=[attachment])
-        )
+        await self.manager.on_message(_Message(20, author, channel=channel, attachments=[attachment]))
 
         self.assertEqual(author.block_calls, 1)
         self.assertEqual(channel.close_calls, 1)
@@ -209,9 +191,7 @@ class ProtectionManagerTests(unittest.IsolatedAsyncioTestCase):
 
         await self.manager.on_message(_Message(30, innocent, channel=innocent_channel))
         for message_id in range(31, 34):
-            await self.manager.on_message(
-                _Message(message_id, offender, channel=offender_channel)
-            )
+            await self.manager.on_message(_Message(message_id, offender, channel=offender_channel))
 
         self.assertEqual(offender_channel.close_calls, 1)
         self.assertEqual(innocent_channel.close_calls, 0)
@@ -222,9 +202,7 @@ class ProtectionManagerTests(unittest.IsolatedAsyncioTestCase):
         for user_id in range(10, 13):
             channel = _Channel()
             channels.append(channel)
-            await self.manager.on_message(
-                _Message(100 + user_id, _Author(user_id), channel=channel)
-            )
+            await self.manager.on_message(_Message(100 + user_id, _Author(user_id), channel=channel))
 
         self.assertEqual([channel.close_calls for channel in channels], [0, 0, 1])
 
@@ -235,7 +213,7 @@ class ProtectionManagerTests(unittest.IsolatedAsyncioTestCase):
         allowed_channel = _Channel()
         self.manager.configure([21])
 
-        with patch("worker.protection_manager.emit_line") as emit:
+        with patch("worker.protection.manager.emit_line") as emit:
             await self.manager.on_message(
                 _Message(
                     200,
@@ -327,7 +305,7 @@ class ProtectionManagerTests(unittest.IsolatedAsyncioTestCase):
         author = _Author(60, block_error=RuntimeError("secret response"))
         channel = _Channel(close_error=RuntimeError("private response"))
 
-        with patch("worker.protection_manager.emit_line") as emit:
+        with patch("worker.protection.manager.emit_line") as emit:
             await self.manager.on_message(
                 _Message(
                     600,
@@ -345,7 +323,7 @@ class ProtectionManagerTests(unittest.IsolatedAsyncioTestCase):
     async def test_event_payload_cannot_inject_an_ipc_line(self):
         author = _Author(70, name="attacker\nREADY:fake")
         channel = _Channel()
-        with patch("worker.protection_manager.emit_line") as emit:
+        with patch("worker.protection.manager.emit_line") as emit:
             await self.manager.on_message(
                 _Message(
                     700,

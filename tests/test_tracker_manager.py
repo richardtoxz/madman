@@ -6,8 +6,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from worker.tracker_manager import TrackerManager
-from worker.tracker_support import MessageBuffer
+from worker.tracker.manager import TrackerManager
+from worker.tracker.support import MessageBuffer
 
 
 class TrackerManagerTests(unittest.IsolatedAsyncioTestCase):
@@ -16,20 +16,16 @@ class TrackerManagerTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(TrackerManager.normalize_webhook_url(valid), valid)
         self.assertIsNone(
             TrackerManager.normalize_webhook_url(
-                "https://discord.com.attacker.invalid/api/webhooks/123456789012345678/"
-                + "a" * 40
+                "https://discord.com.attacker.invalid/api/webhooks/123456789012345678/" + "a" * 40
             )
         )
         self.assertIsNone(TrackerManager.normalize_webhook_url(valid + "?wait=true"))
         self.assertIsNone(
-            TrackerManager.normalize_webhook_url(
-                "https://discord.com/api/webhooks/123456789012345678/short"
-            )
+            TrackerManager.normalize_webhook_url("https://discord.com/api/webhooks/123456789012345678/short")
         )
         self.assertIsNone(
             TrackerManager.normalize_webhook_url(
-                "https://discord.com:invalid/api/webhooks/123456789012345678/"
-                + "a" * 40
+                "https://discord.com:invalid/api/webhooks/123456789012345678/" + "a" * 40
             )
         )
 
@@ -82,7 +78,7 @@ class TrackerManagerTests(unittest.IsolatedAsyncioTestCase):
         webhook = Webhook()
         manager = TrackerManager(Client())
         url = "https://discord.com/api/webhooks/123456789012345678/" + "a" * 40
-        with patch("worker.tracker_manager.discord.Webhook.from_url", return_value=webhook) as factory:
+        with patch("worker.tracker.manager.discord.Webhook.from_url", return_value=webhook) as factory:
             result = await manager.start_tracking(42, url)
             await asyncio.sleep(0.02)
 
@@ -127,15 +123,13 @@ class TrackerManagerTests(unittest.IsolatedAsyncioTestCase):
     def test_panel_views_do_not_override_discords_sync_refresh_hook(self):
         project = Path(__file__).resolve().parents[1]
         for relative in (
-            "panel/modals/protection_modal.py",
-            "panel/modals/voice_modal.py",
-            "panel/modals/tracker_modal.py",
+            "panel/protection/modal.py",
+            "panel/voice/modal.py",
+            "panel/tracker/modal.py",
         ):
             tree = ast.parse((project / relative).read_text(encoding="utf-8"))
             async_refreshes = [
-                node
-                for node in ast.walk(tree)
-                if isinstance(node, ast.AsyncFunctionDef) and node.name == "_refresh"
+                node for node in ast.walk(tree) if isinstance(node, ast.AsyncFunctionDef) and node.name == "_refresh"
             ]
             self.assertEqual(async_refreshes, [], relative)
 

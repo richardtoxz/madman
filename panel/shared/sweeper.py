@@ -1,10 +1,13 @@
 import discord
 import logging
+import re
 from datetime import datetime, timezone, timedelta
 
 logger = logging.getLogger(__name__)
 
 GHOST_SIGNATURE = "\u200b\u200b\u200b"
+ACTIVE_TEMPORARY_MESSAGE_IDS: set[int] = set()
+_EXPIRY_PATTERN = re.compile(r"Essa mensagem será deletada em <t:(\d+):R>")
 
 
 async def sweep_orphaned_messages(
@@ -19,6 +22,8 @@ async def sweep_orphaned_messages(
         now = datetime.now(timezone.utc)
 
         async for message in dm_channel.history(limit=limit):
+            if message.id in ACTIVE_TEMPORARY_MESSAGE_IDS:
+                continue
             if now - message.created_at < timedelta(seconds=min_age_seconds):
                 continue
 
@@ -27,6 +32,9 @@ async def sweep_orphaned_messages(
                     footer_text = str(embed.footer.text) if embed.footer else ""
 
                     if signature in footer_text:
+                        expiry = _EXPIRY_PATTERN.search(embed.description or "")
+                        if expiry and int(expiry.group(1)) > now.timestamp():
+                            continue
                         try:
                             await message.delete()
                         except Exception:

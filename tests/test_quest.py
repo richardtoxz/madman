@@ -62,21 +62,15 @@ class _Client:
 
 class QuestModelTests(unittest.TestCase):
     def test_application_id_falls_back_to_task_applications(self):
-        quest = Quest(
-            _quest_payload("PLAY_ON_DESKTOP", application_in_config=False)
-        )
+        quest = Quest(_quest_payload("PLAY_ON_DESKTOP", application_in_config=False))
         task_name, task = quest.get_task_info(auto_only=True)
 
         self.assertEqual(task_name, "PLAY_ON_DESKTOP")
-        self.assertEqual(
-            quest.application_id_for(task_name, task), "987654321098765432"
-        )
+        self.assertEqual(quest.application_id_for(task_name, task), "987654321098765432")
 
     def test_latest_progress_task_is_preferred_and_video_progress_is_shared(self):
         raw = _quest_payload("PLAY_ON_DESKTOP")
-        raw["config"]["task_config_v2"]["tasks"]["WATCH_VIDEO"] = {
-            "target": 100
-        }
+        raw["config"]["task_config_v2"]["tasks"]["WATCH_VIDEO"] = {"target": 100}
         raw["user_status"]["progress"] = {
             "PLAY_ON_DESKTOP": {
                 "value": 10,
@@ -96,20 +90,14 @@ class QuestModelTests(unittest.TestCase):
         quest = Quest(_quest_payload("WATCH_VIDEO", progress=12))
         before = quest.user_status.copy()
 
-        updated = quest.update_status(
-            {"message": "rate limited", "retry_after": 120, "code": 123}
-        )
+        updated = quest.update_status({"message": "rate limited", "retry_after": 120, "code": 123})
 
         self.assertFalse(updated)
         self.assertEqual(quest.user_status, before)
 
     def test_status_updates_are_merged_without_losing_enrollment(self):
         quest = Quest(_quest_payload("WATCH_VIDEO", progress=12))
-        self.assertTrue(
-            quest.update_status(
-                {"progress": {"WATCH_VIDEO": {"value": 20}}}
-            )
-        )
+        self.assertTrue(quest.update_status({"progress": {"WATCH_VIDEO": {"value": 20}}}))
         self.assertTrue(quest.is_enrolled)
         self.assertEqual(quest.get_progress("WATCH_VIDEO"), 20)
 
@@ -170,9 +158,7 @@ class QuestManagerTests(unittest.IsolatedAsyncioTestCase):
         quests = await self.manager.fetch_quests()
 
         self.assertEqual(len(quests), 1)
-        self.assertEqual(
-            self.manager.enrollment_blocked_until, "2026-08-21T20:00:00Z"
-        )
+        self.assertEqual(self.manager.enrollment_blocked_until, "2026-08-21T20:00:00Z")
 
     async def test_auto_queue_never_enrolls_or_claims_automatically(self):
         available = Quest(_quest_payload("WATCH_VIDEO", enrolled=False))
@@ -242,9 +228,7 @@ class QuestManagerTests(unittest.IsolatedAsyncioTestCase):
 
         self.manager.api = Api()
         task_name, task = quest.get_task_info(auto_only=True)
-        result = await self.manager.doing_play_on_platform_quest(
-            quest, task_name, task, 60, None
-        )
+        result = await self.manager.doing_play_on_platform_quest(quest, task_name, task, 60, None)
 
         self.assertTrue(result)
         self.assertEqual(len(calls), 2)
@@ -273,9 +257,7 @@ class QuestManagerTests(unittest.IsolatedAsyncioTestCase):
         self.manager.config.HEARTBEAT_MAX_INTERVAL_SECONDS = 0
         self.manager.config.HEARTBEAT_BUFFER_SECONDS = 0
         task_name, task = quest.get_task_info(auto_only=True)
-        result = await self.manager.doing_play_on_platform_quest(
-            quest, task_name, task, 60, None
-        )
+        result = await self.manager.doing_play_on_platform_quest(quest, task_name, task, 60, None)
 
         self.assertFalse(result)
         self.assertEqual(len(calls), 3)
@@ -345,23 +327,13 @@ class QuestManagerTests(unittest.IsolatedAsyncioTestCase):
         self.manager._activity_post = activity_post
         self.manager._verify_completion = verify
         _, task = quest.get_task_info(auto_only=True)
-        result = await self.manager.doing_achievement_in_activity_quest(
-            quest, task, 1, None
-        )
+        result = await self.manager.doing_achievement_in_activity_quest(quest, task, 1, None)
 
         self.assertTrue(result)
-        oauth = next(
-            call for call in api_calls if call[0] == "POST" and call[1] == "/oauth2/authorize"
-        )
+        oauth = next(call for call in api_calls if call[0] == "POST" and call[1] == "/oauth2/authorize")
+        self.assertEqual(oauth[3]["query"]["scope"], "identify applications.entitlements")
         self.assertEqual(
-            oauth[3]["query"]["scope"], "identify applications.entitlements"
-        )
-        self.assertEqual(
-            next(
-                call[1]
-                for call in api_calls
-                if call[0] == "POST" and "proxy-tickets" in call[1]
-            ),
+            next(call[1] for call in api_calls if call[0] == "POST" and "proxy-tickets" in call[1]),
             "/applications/{application_id}/proxy-tickets",
         )
         self.assertEqual(activity_calls[0][3]["X-Discord-Quest-ID"], quest.id)
@@ -369,13 +341,28 @@ class QuestManagerTests(unittest.IsolatedAsyncioTestCase):
         deleted = next(call for call in api_calls if call[0] == "DELETE")
         self.assertEqual(deleted[3]["token_id"], "temporary-quest-grant")
 
+    async def test_unreadable_existing_grants_mean_no_cleanup_instead_of_failure(self):
+        class _BadId:
+            def __str__(self):
+                raise ValueError("id ilegivel")
+
+        class Api:
+            async def get(_, path):
+                return [{"id": _BadId()}]
+
+            async def close(_):
+                return None
+
+        self.manager.api = Api()
+
+        self.assertIsNone(await self.manager._existing_oauth_token_ids())
+
     def test_webhook_validation_rejects_lookalike_and_query(self):
         valid = "https://discord.com/api/webhooks/123456789012345678/" + "a" * 40
         self.assertEqual(self.manager._normalize_webhook_url(valid), valid)
         self.assertIsNone(
             self.manager._normalize_webhook_url(
-                "https://discord.com.attacker.invalid/api/webhooks/123456789012345678/"
-                + "a" * 40
+                "https://discord.com.attacker.invalid/api/webhooks/123456789012345678/" + "a" * 40
             )
         )
         self.assertIsNone(self.manager._normalize_webhook_url(valid + "?wait=true"))

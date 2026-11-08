@@ -77,3 +77,78 @@ class ManagerLifecycleTests(unittest.IsolatedAsyncioTestCase):
                 await task
 
         self.assertTrue(FakeSelfbotProcess.instances[0].closed)
+
+    async def test_background_task_failure_is_logged(self):
+        manager = SelfbotManager()
+
+        async def boom():
+            raise RuntimeError("falha-de-teste")
+
+        with self.assertLogs("engine.backend", level="WARNING") as captured:
+            task = asyncio.create_task(boom(), name="cleanup-test")
+            manager._background_tasks.add(task)
+            task.add_done_callback(manager._background_task_done)
+            with self.assertRaises(RuntimeError):
+                await task
+            await asyncio.sleep(0)
+
+        self.assertTrue(any("falha-de-teste" in line or "RuntimeError" in line for line in captured.output))
+        self.assertNotIn(task, manager._background_tasks)
+
+
+class ManagerTokenCleaningTests(unittest.IsolatedAsyncioTestCase):
+    async def test_authenticate_cleans_pasted_token_before_starting_worker(self):
+        manager = SelfbotManager()
+        self.addAsyncCleanup(manager.shutdown)
+        token = "x" * 40
+        seen = []
+
+        async def spawn(value):
+            seen.append(value)
+            return False, "falha-de-teste"
+
+        manager._spawn_ready_process = spawn
+        await manager.authenticate(123, f'"\u200b{token}\n"')
+        self.assertEqual(seen, [token])
+
+
+class ConnectFailureLimitTests(unittest.IsolatedAsyncioTestCase):
+    """Cada tentativa abre um processo e um login no Discord pelo IP do servidor: falhas em s\u00e9rie param."""
+
+    TOKEN = "t" * 40
+
+    def setUp(self):
+        self.now = 1000.0
+        self.manager = SelfbotManager()
+        self.manager._clock = lambda: self.now
+        self.spawn = AsyncMock(return_value=(False, "Token inv\u00e1lido ou revogado."))
+        self.manager._spawn_ready_process = self.spawn
+
+    async def _fail(self, user_id: int, times: int) -> None:
+        for _ in range(times):
+            ok, _message = await self.manager.authenticate(user_id, self.TOKEN)
+            self.assertFalse(ok)
+
+    async def test_sixth_failed_attempt_in_ten_minutes_is_refused_without_a_worker(self):
+        await self._fail(1, 5)
+
+        ok, message = await self.manager.authenticate(1, self.TOKEN)
+
+        self.assertFalse(ok)
+        self.assertIn("Muitas tentativas", message)
+        self.assertEqual(self.spawn.await_count, 5)
+
+    async def test_other_accounts_keep_trying(self):
+        await self._fail(1, 5)
+
+        await self.manager.authenticate(2, self.TOKEN)
+
+        self.assertEqual(self.spawn.await_count, 6)
+
+    async def test_old_failures_expire_after_ten_minutes(self):
+        await self._fail(1, 5)
+        self.now += 601
+
+        await self.manager.authenticate(1, self.TOKEN)
+
+        self.assertEqual(self.spawn.await_count, 6)

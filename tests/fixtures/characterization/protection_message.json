@@ -1,0 +1,312 @@
+{
+ "disabled": {
+  "log": [],
+  "stats": {
+   "threats_detected": 0,
+   "actions_taken": 0,
+   "scams_blocked": 0,
+   "spam_closed": 0,
+   "dm_floods": 0,
+   "fr_floods": 0,
+   "fr_rejected": 0,
+   "trusted_ignored": 0,
+   "errors": 0
+  },
+  "last_error": null
+ },
+ "not_private": {
+  "log": [],
+  "stats": {
+   "threats_detected": 0,
+   "actions_taken": 0,
+   "scams_blocked": 0,
+   "spam_closed": 0,
+   "dm_floods": 0,
+   "fr_floods": 0,
+   "fr_rejected": 0,
+   "trusted_ignored": 0,
+   "errors": 0
+  },
+  "last_error": null
+ },
+ "own_message": {
+  "log": [],
+  "stats": {
+   "threats_detected": 0,
+   "actions_taken": 0,
+   "scams_blocked": 0,
+   "spam_closed": 0,
+   "dm_floods": 0,
+   "fr_floods": 0,
+   "fr_rejected": 0,
+   "trusted_ignored": 0,
+   "errors": 0
+  },
+  "last_error": null
+ },
+ "no_author": {
+  "log": [],
+  "stats": {
+   "threats_detected": 0,
+   "actions_taken": 0,
+   "scams_blocked": 0,
+   "spam_closed": 0,
+   "dm_floods": 0,
+   "fr_floods": 0,
+   "fr_rejected": 0,
+   "trusted_ignored": 0,
+   "errors": 0
+  },
+  "last_error": null
+ },
+ "clean_message": {
+  "log": [],
+  "stats": {
+   "threats_detected": 0,
+   "actions_taken": 0,
+   "scams_blocked": 0,
+   "spam_closed": 0,
+   "dm_floods": 0,
+   "fr_floods": 0,
+   "fr_rejected": 0,
+   "trusted_ignored": 0,
+   "errors": 0
+  },
+  "last_error": null
+ },
+ "scam": {
+  "log": [
+   [
+    "action",
+    1,
+    "SCAM",
+    "linguagem de golpe em dominio de alto risco"
+   ]
+  ],
+  "stats": {
+   "threats_detected": 1,
+   "actions_taken": 0,
+   "scams_blocked": 0,
+   "spam_closed": 0,
+   "dm_floods": 0,
+   "fr_floods": 0,
+   "fr_rejected": 0,
+   "trusted_ignored": 0,
+   "errors": 0
+  },
+  "last_error": null
+ },
+ "duplicate_message": {
+  "log": [
+   [
+    "action",
+    1,
+    "SCAM",
+    "linguagem de golpe em dominio de alto risco"
+   ]
+  ],
+  "stats": {
+   "threats_detected": 1,
+   "actions_taken": 0,
+   "scams_blocked": 0,
+   "spam_closed": 0,
+   "dm_floods": 0,
+   "fr_floods": 0,
+   "fr_rejected": 0,
+   "trusted_ignored": 0,
+   "errors": 0
+  },
+  "last_error": null
+ },
+ "action_reserved_once": {
+  "log": [
+   [
+    "action",
+    1,
+    "SCAM",
+    "linguagem de golpe em dominio de alto risco"
+   ]
+  ],
+  "stats": {
+   "threats_detected": 2,
+   "actions_taken": 0,
+   "scams_blocked": 0,
+   "spam_closed": 0,
+   "dm_floods": 0,
+   "fr_floods": 0,
+   "fr_rejected": 0,
+   "trusted_ignored": 0,
+   "errors": 0
+  },
+  "last_error": null
+ },
+ "trusted_threat_alert_once": {
+  "log": [
+   [
+    "event",
+    "TRUSTED_DETECTED",
+    20,
+    "SCAM"
+   ]
+  ],
+  "stats": {
+   "threats_detected": 2,
+   "actions_taken": 0,
+   "scams_blocked": 0,
+   "spam_closed": 0,
+   "dm_floods": 0,
+   "fr_floods": 0,
+   "fr_rejected": 0,
+   "trusted_ignored": 2,
+   "errors": 0
+  },
+  "last_error": null
+ },
+ "invite_first": {
+  "log": [],
+  "stats": {
+   "threats_detected": 0,
+   "actions_taken": 0,
+   "scams_blocked": 0,
+   "spam_closed": 0,
+   "dm_floods": 0,
+   "fr_floods": 0,
+   "fr_rejected": 0,
+   "trusted_ignored": 0,
+   "errors": 0
+  },
+  "last_error": null
+ },
+ "invite_repeated": {
+  "log": [
+   [
+    "action",
+    3,
+    "INVITE_SPAM",
+    "convites repetidos em DM"
+   ]
+  ],
+  "stats": {
+   "threats_detected": 2,
+   "actions_taken": 0,
+   "scams_blocked": 0,
+   "spam_closed": 0,
+   "dm_floods": 0,
+   "fr_floods": 0,
+   "fr_rejected": 0,
+   "trusted_ignored": 0,
+   "errors": 0
+  },
+  "last_error": null
+ },
+ "invite_trusted": {
+  "log": [],
+  "stats": {
+   "threats_detected": 0,
+   "actions_taken": 0,
+   "scams_blocked": 0,
+   "spam_closed": 0,
+   "dm_floods": 0,
+   "fr_floods": 0,
+   "fr_rejected": 0,
+   "trusted_ignored": 0,
+   "errors": 0
+  },
+  "last_error": null
+ },
+ "flood_burst": {
+  "log": [
+   [
+    "action",
+    107,
+    "DM_BURST",
+    "rajada de mensagens diretas"
+   ]
+  ],
+  "stats": {
+   "threats_detected": 2,
+   "actions_taken": 0,
+   "scams_blocked": 0,
+   "spam_closed": 0,
+   "dm_floods": 1,
+   "fr_floods": 0,
+   "fr_rejected": 0,
+   "trusted_ignored": 0,
+   "errors": 0
+  },
+  "last_error": null
+ },
+ "flood_raid": {
+  "log": [
+   [
+    "action",
+    209,
+    "DM_RAID",
+    "rajada de remetentes diferentes"
+   ],
+   [
+    "action",
+    210,
+    "DM_RAID",
+    "rajada de remetentes diferentes"
+   ]
+  ],
+  "stats": {
+   "threats_detected": 2,
+   "actions_taken": 0,
+   "scams_blocked": 0,
+   "spam_closed": 0,
+   "dm_floods": 2,
+   "fr_floods": 0,
+   "fr_rejected": 0,
+   "trusted_ignored": 0,
+   "errors": 0
+  },
+  "last_error": null
+ },
+ "flood_not_counted": {
+  "log": [],
+  "stats": {
+   "threats_detected": 0,
+   "actions_taken": 0,
+   "scams_blocked": 0,
+   "spam_closed": 0,
+   "dm_floods": 0,
+   "fr_floods": 0,
+   "fr_rejected": 0,
+   "trusted_ignored": 0,
+   "errors": 0
+  },
+  "last_error": null
+ },
+ "flood_trusted": {
+  "log": [],
+  "stats": {
+   "threats_detected": 0,
+   "actions_taken": 0,
+   "scams_blocked": 0,
+   "spam_closed": 0,
+   "dm_floods": 0,
+   "fr_floods": 0,
+   "fr_rejected": 0,
+   "trusted_ignored": 0,
+   "errors": 0
+  },
+  "last_error": null
+ },
+ "extract_error": {
+  "log": [],
+  "stats": {
+   "threats_detected": 0,
+   "actions_taken": 0,
+   "scams_blocked": 0,
+   "spam_closed": 0,
+   "dm_floods": 0,
+   "fr_floods": 0,
+   "fr_rejected": 0,
+   "trusted_ignored": 0,
+   "errors": 1
+  },
+  "last_error": "message:RuntimeError"
+ }
+}

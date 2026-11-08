@@ -1,0 +1,38 @@
+# Blueprint do Render (https://render.com/docs/blueprint-spec).
+# Para usar: Render > New > Blueprint e escolha este repositório. Se o serviço já existe e foi criado
+# pelo painel, basta copiar as variáveis abaixo para Environment do serviço.
+services:
+  - type: web
+    name: madman
+    runtime: docker
+    plan: free # 512 MB: mantenha MAX_ACTIVE_WORKERS baixo (cada conta é um processo Python)
+    branch: main
+    numInstances: 1 # sessões, tokens e configurações vivem em memória: uma instância só
+    healthCheckPath: /api/health
+    autoDeployTrigger: checksPass # só faz deploy depois que o CI do GitHub passar
+    envVars:
+      # Segredos: o Render pede o valor ao criar o Blueprint.
+      - key: TOKEN_BOT_CONTROLE
+        sync: false
+      - key: DISCORD_CLIENT_ID
+        sync: false
+      - key: DISCORD_CLIENT_SECRET
+        sync: false
+      # https://<seu-serviço>.onrender.com/api/auth/discord/callback, igual ao cadastrado no Developer Portal.
+      - key: DISCORD_REDIRECT_URI
+        sync: false
+      # IDs do Discord que podem usar o painel (separados por vírgula). Vazio libera qualquer conta.
+      - key: ALLOWED_USER_IDS
+        sync: false
+      - key: WEB_SESSION_SECRET
+        generateValue: true
+      # O TLS termina no proxy do Render: sem isto o cookie de sessão sairia sem Secure.
+      - key: WEB_FORCE_SECURE_COOKIE
+        value: "1"
+      # Proxy interno do Render (IP privado que muda). Confira no log de segurança: o ip= deve ser o do visitante.
+      - key: TRUSTED_PROXY_IPS
+        value: "127.0.0.1,::1,10.0.0.0/8"
+      - key: MAX_ACTIVE_WORKERS
+        value: "2"
+      - key: LOG_LEVEL
+        value: INFO

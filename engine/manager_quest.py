@@ -80,12 +80,15 @@ class QuestMixin:
         )
         if isinstance(result, dict):
             if result.get("ok"):
+                uid = int(user_id)
                 if webhook_url:
-                    self._quest_settings[int(user_id)] = {
+                    self._quest_settings[uid] = {
                         "webhook_url": webhook_url
                     }
                 else:
-                    self._quest_settings.pop(int(user_id), None)
+                    self._quest_settings.pop(uid, None)
+                if hasattr(self, "_settings_state"):
+                    self._settings_state[uid] = {"webhook_url": webhook_url or None}
             return result
         return self._quest_error("NO_RESPONSE", "O worker não confirmou a configuração.")
 

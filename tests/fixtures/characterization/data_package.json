@@ -1,0 +1,962 @@
+{
+ "clean dm_complete_closed": {
+  "result": {
+   "status": "complete",
+   "target_count": 1,
+   "deleted": 1,
+   "already_absent": 0,
+   "non_deletable": {},
+   "author_mismatches": 0,
+   "remaining": 0,
+   "failures": 0,
+   "rate_limits": 0,
+   "final_delay": 0.0,
+   "closed": true,
+   "detail": "Todos os IDs foram confirmados como ausentes; DM fechada."
+  },
+  "stdout": [
+   "Verificacao 1/3 dos IDs do pacote.",
+   "Exclusao nesta rodada: 1/1 (intervalo 0.00s)",
+   "Verificacao 2/3 dos IDs do pacote."
+  ],
+  "closed": true,
+  "fetch_calls": [],
+  "partial_calls": [],
+  "http_delete_calls": []
+ },
+ "clean dm_not_found_partial_fallback": {
+  "result": {
+   "status": "complete",
+   "target_count": 1,
+   "deleted": 1,
+   "already_absent": 0,
+   "non_deletable": {},
+   "author_mismatches": 0,
+   "remaining": 0,
+   "failures": 0,
+   "rate_limits": 0,
+   "final_delay": 0.0,
+   "closed": true,
+   "detail": "Todos os IDs foram confirmados como ausentes; DM fechada."
+  },
+  "stdout": [
+   "Verificacao 1/3 dos IDs do pacote.",
+   "Exclusao nesta rodada: 1/1 (intervalo 0.00s)",
+   "Verificacao 2/3 dos IDs do pacote."
+  ],
+  "closed": null,
+  "fetch_calls": [
+   220000000000000001
+  ],
+  "partial_calls": [
+   [
+    220000000000000001,
+    "private"
+   ]
+  ],
+  "http_delete_calls": [
+   [
+    220000000000000001,
+    false
+   ]
+  ]
+ },
+ "clean guild_not_found": {
+  "result": {
+   "status": "inaccessible",
+   "target_count": 1,
+   "deleted": 0,
+   "already_absent": 0,
+   "non_deletable": {},
+   "author_mismatches": 0,
+   "remaining": 1,
+   "failures": 0,
+   "rate_limits": 0,
+   "final_delay": 0.0,
+   "closed": false,
+   "detail": "Canal nao encontrado ou conta sem acesso."
+  },
+  "stdout": [],
+  "closed": null,
+  "fetch_calls": [
+   220000000000000001
+  ],
+  "partial_calls": [],
+  "http_delete_calls": []
+ },
+ "clean open_forbidden": {
+  "result": {
+   "status": "inaccessible",
+   "target_count": 1,
+   "deleted": 0,
+   "already_absent": 0,
+   "non_deletable": {},
+   "author_mismatches": 0,
+   "remaining": 1,
+   "failures": 0,
+   "rate_limits": 0,
+   "final_delay": 0.0,
+   "closed": false,
+   "detail": "Falha ao abrir o canal: _Forbidden"
+  },
+  "stdout": [],
+  "closed": null,
+  "fetch_calls": [
+   220000000000000001
+  ],
+  "partial_calls": [],
+  "http_delete_calls": []
+ },
+ "clean open_unexpected": {
+  "result": {
+   "status": "inaccessible",
+   "target_count": 1,
+   "deleted": 0,
+   "already_absent": 0,
+   "non_deletable": {},
+   "author_mismatches": 0,
+   "remaining": 1,
+   "failures": 0,
+   "rate_limits": 0,
+   "final_delay": 0.0,
+   "closed": false,
+   "detail": "Falha inesperada ao abrir o canal: ValueError"
+  },
+  "stdout": [],
+  "closed": null,
+  "fetch_calls": [
+   220000000000000001
+  ],
+  "partial_calls": [],
+  "http_delete_calls": []
+ },
+ "clean open_captcha": {
+  "result": {
+   "raised": "AbortCleanup",
+   "detail": "Captcha solicitado ao abrir o canal."
+  },
+  "stdout": [],
+  "closed": null,
+  "fetch_calls": [
+   220000000000000001
+  ],
+  "partial_calls": [],
+  "http_delete_calls": []
+ },
+ "clean unknown_kind_dm": {
+  "result": {
+   "status": "complete",
+   "target_count": 1,
+   "deleted": 1,
+   "already_absent": 0,
+   "non_deletable": {},
+   "author_mismatches": 0,
+   "remaining": 0,
+   "failures": 0,
+   "rate_limits": 0,
+   "final_delay": 0.0,
+   "closed": true,
+   "detail": "Todos os IDs foram confirmados como ausentes; DM fechada."
+  },
+  "stdout": [
+   "Verificacao 1/3 dos IDs do pacote.",
+   "Exclusao nesta rodada: 1/1 (intervalo 0.00s)",
+   "Verificacao 2/3 dos IDs do pacote."
+  ],
+  "closed": true,
+  "fetch_calls": [],
+  "partial_calls": [],
+  "http_delete_calls": []
+ },
+ "clean unknown_kind_group": {
+  "result": {
+   "status": "complete",
+   "target_count": 1,
+   "deleted": 1,
+   "already_absent": 0,
+   "non_deletable": {},
+   "author_mismatches": 0,
+   "remaining": 0,
+   "failures": 0,
+   "rate_limits": 0,
+   "final_delay": 0.0,
+   "closed": false,
+   "detail": "Todos os IDs foram confirmados como ausentes; grupo mantido aberto."
+  },
+  "stdout": [
+   "Verificacao 1/3 dos IDs do pacote.",
+   "Exclusao nesta rodada: 1/1 (intervalo 0.00s)",
+   "Verificacao 2/3 dos IDs do pacote."
+  ],
+  "closed": null,
+  "fetch_calls": [],
+  "partial_calls": [],
+  "http_delete_calls": []
+ },
+ "clean kind_mismatch": {
+  "result": {
+   "status": "skipped_unsupported",
+   "target_count": 1,
+   "deleted": 0,
+   "already_absent": 0,
+   "non_deletable": {},
+   "author_mismatches": 0,
+   "remaining": 1,
+   "failures": 0,
+   "rate_limits": 0,
+   "final_delay": 0.0,
+   "closed": false,
+   "detail": "Tipo do pacote/API incompativel ou sem historico: guild/_DMChannel"
+  },
+  "stdout": [],
+  "closed": false,
+  "fetch_calls": [],
+  "partial_calls": [],
+  "http_delete_calls": []
+ },
+ "clean author_mismatch_partial": {
+  "result": {
+   "status": "partial",
+   "target_count": 1,
+   "deleted": 0,
+   "already_absent": 0,
+   "non_deletable": {},
+   "author_mismatches": 1,
+   "remaining": 1,
+   "failures": 0,
+   "rate_limits": 0,
+   "final_delay": 0.0,
+   "closed": false,
+   "detail": "Ainda existem IDs apagaveis ou de autoria divergente no canal."
+  },
+  "stdout": [
+   "Verificacao 1/3 dos IDs do pacote."
+  ],
+  "closed": false,
+  "fetch_calls": [],
+  "partial_calls": [],
+  "http_delete_calls": []
+ },
+ "clean non_deletable_with_skips": {
+  "result": {
+   "status": "complete_with_skips",
+   "target_count": 2,
+   "deleted": 1,
+   "already_absent": 0,
+   "non_deletable": {
+    "call": 1
+   },
+   "author_mismatches": 0,
+   "remaining": 0,
+   "failures": 0,
+   "rate_limits": 0,
+   "final_delay": 0.0,
+   "closed": true,
+   "detail": "Todos os IDs apagaveis foram confirmados como ausentes; eventos nao apagaveis ignorados (call=1); DM fechada."
+  },
+  "stdout": [
+   "Verificacao 1/3 dos IDs do pacote.",
+   "Exclusao nesta rodada: 1/1 (intervalo 0.00s)",
+   "Verificacao 2/3 dos IDs do pacote."
+  ],
+  "closed": true,
+  "fetch_calls": [],
+  "partial_calls": [],
+  "http_delete_calls": []
+ },
+ "clean retry_failed_message": {
+  "result": {
+   "status": "complete",
+   "target_count": 1,
+   "deleted": 1,
+   "already_absent": 0,
+   "non_deletable": {},
+   "author_mismatches": 0,
+   "remaining": 0,
+   "failures": 1,
+   "rate_limits": 0,
+   "final_delay": 0.0,
+   "closed": true,
+   "detail": "Todos os IDs foram confirmados como ausentes; DM fechada."
+  },
+  "stdout": [
+   "Verificacao 1/3 dos IDs do pacote.",
+   "Exclusao nesta rodada: 1/1 (intervalo 0.00s)",
+   "Verificacao 2/3 dos IDs do pacote.",
+   "Exclusao nesta rodada: 1/1 (intervalo 0.00s)",
+   "Verificacao 3/3 dos IDs do pacote."
+  ],
+  "closed": true,
+  "fetch_calls": [],
+  "partial_calls": [],
+  "http_delete_calls": []
+ },
+ "clean already_absent": {
+  "result": {
+   "status": "complete",
+   "target_count": 1,
+   "deleted": 0,
+   "already_absent": 1,
+   "non_deletable": {},
+   "author_mismatches": 0,
+   "remaining": 0,
+   "failures": 0,
+   "rate_limits": 0,
+   "final_delay": 0.0,
+   "closed": true,
+   "detail": "Todos os IDs foram confirmados como ausentes; DM fechada."
+  },
+  "stdout": [
+   "Verificacao 1/3 dos IDs do pacote."
+  ],
+  "closed": true,
+  "fetch_calls": [],
+  "partial_calls": [],
+  "http_delete_calls": []
+ },
+ "clean close_forbidden": {
+  "result": {
+   "status": "messages_complete_close_failed",
+   "target_count": 1,
+   "deleted": 1,
+   "already_absent": 0,
+   "non_deletable": {},
+   "author_mismatches": 0,
+   "remaining": 0,
+   "failures": 0,
+   "rate_limits": 0,
+   "final_delay": 0.0,
+   "closed": false,
+   "detail": "Mensagens removidas, mas a DM nao fechou: _Forbidden"
+  },
+  "stdout": [
+   "Verificacao 1/3 dos IDs do pacote.",
+   "Exclusao nesta rodada: 1/1 (intervalo 0.00s)",
+   "Verificacao 2/3 dos IDs do pacote."
+  ],
+  "closed": false,
+  "fetch_calls": [],
+  "partial_calls": [],
+  "http_delete_calls": []
+ },
+ "clean close_unexpected": {
+  "result": {
+   "status": "messages_complete_close_failed",
+   "target_count": 1,
+   "deleted": 1,
+   "already_absent": 0,
+   "non_deletable": {},
+   "author_mismatches": 0,
+   "remaining": 0,
+   "failures": 0,
+   "rate_limits": 0,
+   "final_delay": 0.0,
+   "closed": false,
+   "detail": "Mensagens removidas, mas houve uma falha inesperada ao fechar: ValueError"
+  },
+  "stdout": [
+   "Verificacao 1/3 dos IDs do pacote.",
+   "Exclusao nesta rodada: 1/1 (intervalo 0.00s)",
+   "Verificacao 2/3 dos IDs do pacote."
+  ],
+  "closed": false,
+  "fetch_calls": [],
+  "partial_calls": [],
+  "http_delete_calls": []
+ },
+ "clean close_not_found": {
+  "result": {
+   "status": "complete",
+   "target_count": 1,
+   "deleted": 1,
+   "already_absent": 0,
+   "non_deletable": {},
+   "author_mismatches": 0,
+   "remaining": 0,
+   "failures": 0,
+   "rate_limits": 0,
+   "final_delay": 0.0,
+   "closed": true,
+   "detail": "Todos os IDs foram confirmados como ausentes; DM fechada."
+  },
+  "stdout": [
+   "Verificacao 1/3 dos IDs do pacote.",
+   "Exclusao nesta rodada: 1/1 (intervalo 0.00s)",
+   "Verificacao 2/3 dos IDs do pacote."
+  ],
+  "closed": false,
+  "fetch_calls": [],
+  "partial_calls": [],
+  "http_delete_calls": []
+ },
+ "clean close_captcha": {
+  "result": {
+   "raised": "AbortCleanup",
+   "detail": "Captcha solicitado ao fechar a DM."
+  },
+  "stdout": [
+   "Verificacao 1/3 dos IDs do pacote.",
+   "Exclusao nesta rodada: 1/1 (intervalo 0.00s)",
+   "Verificacao 2/3 dos IDs do pacote."
+  ],
+  "closed": false,
+  "fetch_calls": [],
+  "partial_calls": [],
+  "http_delete_calls": []
+ },
+ "clean group_kept_open": {
+  "result": {
+   "status": "complete",
+   "target_count": 1,
+   "deleted": 1,
+   "already_absent": 0,
+   "non_deletable": {},
+   "author_mismatches": 0,
+   "remaining": 0,
+   "failures": 0,
+   "rate_limits": 0,
+   "final_delay": 0.0,
+   "closed": false,
+   "detail": "Todos os IDs foram confirmados como ausentes; grupo mantido aberto."
+  },
+  "stdout": [
+   "Verificacao 1/3 dos IDs do pacote.",
+   "Exclusao nesta rodada: 1/1 (intervalo 0.00s)",
+   "Verificacao 2/3 dos IDs do pacote."
+  ],
+  "closed": null,
+  "fetch_calls": [],
+  "partial_calls": [],
+  "http_delete_calls": []
+ },
+ "clean guild_kept_open": {
+  "result": {
+   "status": "complete",
+   "target_count": 1,
+   "deleted": 1,
+   "already_absent": 0,
+   "non_deletable": {},
+   "author_mismatches": 0,
+   "remaining": 0,
+   "failures": 0,
+   "rate_limits": 0,
+   "final_delay": 0.0,
+   "closed": false,
+   "detail": "Todos os IDs foram confirmados como ausentes; canal do servidor mantido aberto."
+  },
+  "stdout": [
+   "Verificacao 1/3 dos IDs do pacote.",
+   "Exclusao nesta rodada: 1/1 (intervalo 0.00s)",
+   "Verificacao 2/3 dos IDs do pacote."
+  ],
+  "closed": null,
+  "fetch_calls": [],
+  "partial_calls": [],
+  "http_delete_calls": []
+ },
+ "clean scan_error": {
+  "result": {
+   "raised": "ScanError",
+   "detail": "Falha ao percorrer o historico: RuntimeError"
+  },
+  "stdout": [
+   "Verificacao 1/3 dos IDs do pacote."
+  ],
+  "closed": false,
+  "fetch_calls": [],
+  "partial_calls": [],
+  "http_delete_calls": []
+ },
+ "run owner_mismatch": {
+  "exit_code": 2,
+  "statuses": {},
+  "stdout": [
+   "ERRO: a conta conectada nao corresponde ao account/user.json do pacote."
+  ]
+ },
+ "run bind_user_error": {
+  "exit_code": 2,
+  "statuses": {},
+  "stdout": [
+   "ERRO: O checkpoint pertence a outra conta Discord. Use outro --state."
+  ]
+ },
+ "run abort_records_checkpoint": {
+  "exit_code": 2,
+  "statuses": {
+   "220000000000000001": "aborted"
+  },
+  "stdout": [
+   "Conectado como namespace(id=320000000000000001) (320000000000000001).",
+   "Conversas pendentes: 1",
+   "",
+   "[1/1] conversa (220000000000000001) - 1 IDs",
+   "Verificacao 1/3 dos IDs do pacote.",
+   "Exclusao nesta rodada: 1/1 (intervalo 0.00s)",
+   "Verificacao 2/3 dos IDs do pacote.",
+   "ABORTADO: Captcha solicitado ao fechar a DM."
+  ]
+ },
+ "run abort_checkpoint_write_error": {
+  "exit_code": 2,
+  "statuses": {},
+  "stdout": [
+   "Conectado como namespace(id=320000000000000001) (320000000000000001).",
+   "Conversas pendentes: 1",
+   "",
+   "[1/1] conversa (220000000000000001) - 1 IDs",
+   "Verificacao 1/3 dos IDs do pacote.",
+   "Exclusao nesta rodada: 1/1 (intervalo 0.00s)",
+   "Verificacao 2/3 dos IDs do pacote.",
+   "ERRO AO SALVAR CHECKPOINT: disco cheio",
+   "ABORTADO: Captcha solicitado ao fechar a DM."
+  ]
+ },
+ "run scan_failed_dm_stops": {
+  "exit_code": 1,
+  "statuses": {
+   "220000000000000001": "scan_failed"
+  },
+  "stdout": [
+   "Conectado como namespace(id=320000000000000001) (320000000000000001).",
+   "Conversas pendentes: 2",
+   "",
+   "[1/2] conversa (220000000000000001) - 1 IDs",
+   "Verificacao 1/3 dos IDs do pacote.",
+   "SCAN_FAILED: apagadas=0, ja_ausentes=0, restantes=1, nao_apagaveis=0, autoria_divergente=0, fechada=False",
+   "Falha ao percorrer o historico: RuntimeError",
+   "Execucao parada neste canal. Corrija o problema e rode novamente."
+  ]
+ },
+ "run unexpected_error": {
+  "exit_code": 1,
+  "statuses": {
+   "220000000000000001": "error"
+  },
+  "stdout": [
+   "Conectado como namespace(id=320000000000000001) (320000000000000001).",
+   "Conversas pendentes: 1",
+   "",
+   "[1/1] conversa (220000000000000001) - 1 IDs",
+   "ERROR: apagadas=0, ja_ausentes=0, restantes=1, nao_apagaveis=0, autoria_divergente=0, fechada=False",
+   "Falha inesperada: ValueError",
+   "Execucao parada neste canal. Corrija o problema e rode novamente."
+  ]
+ },
+ "run checkpoint_write_error": {
+  "exit_code": 2,
+  "statuses": {},
+  "stdout": [
+   "Conectado como namespace(id=320000000000000001) (320000000000000001).",
+   "Conversas pendentes: 1",
+   "",
+   "[1/1] conversa (220000000000000001) - 1 IDs",
+   "Verificacao 1/3 dos IDs do pacote.",
+   "Exclusao nesta rodada: 1/1 (intervalo 0.00s)",
+   "Verificacao 2/3 dos IDs do pacote.",
+   "ERRO AO SALVAR CHECKPOINT: disco cheio",
+   "Execucao parada antes da proxima conversa."
+  ]
+ },
+ "run guild_failure_continues": {
+  "exit_code": 1,
+  "statuses": {
+   "220000000000000001": "inaccessible",
+   "220000000000000002": "complete"
+  },
+  "stdout": [
+   "Conectado como namespace(id=320000000000000001) (320000000000000001).",
+   "Conversas pendentes: 2",
+   "",
+   "[1/2] conversa (220000000000000001) - 1 IDs",
+   "INACCESSIBLE: apagadas=0, ja_ausentes=0, restantes=1, nao_apagaveis=0, autoria_divergente=0, fechada=False",
+   "Canal nao encontrado ou conta sem acesso.",
+   "Canal mantido pendente; a execucao continuara nas outras conversas.",
+   "",
+   "[2/2] conversa (220000000000000002) - 1 IDs",
+   "Verificacao 1/3 dos IDs do pacote.",
+   "Exclusao nesta rodada: 1/1 (intervalo 0.00s)",
+   "Verificacao 2/3 dos IDs do pacote.",
+   "COMPLETE: apagadas=1, ja_ausentes=0, restantes=0, nao_apagaveis=0, autoria_divergente=0, fechada=False",
+   "Todos os IDs foram confirmados como ausentes; canal do servidor mantido aberto.",
+   "",
+   "Execucao finalizada com 1 canal(is) de grupo ou servidor ainda pendente(s)."
+  ]
+ },
+ "run group_failure_continues": {
+  "exit_code": 1,
+  "statuses": {
+   "220000000000000001": "inaccessible",
+   "220000000000000002": "complete"
+  },
+  "stdout": [
+   "Conectado como namespace(id=320000000000000001) (320000000000000001).",
+   "Conversas pendentes: 2",
+   "",
+   "[1/2] conversa (220000000000000001) - 1 IDs",
+   "INACCESSIBLE: apagadas=0, ja_ausentes=0, restantes=1, nao_apagaveis=0, autoria_divergente=0, fechada=False",
+   "Canal nao encontrado ou conta sem acesso.",
+   "Canal mantido pendente; a execucao continuara nas outras conversas.",
+   "",
+   "[2/2] conversa (220000000000000002) - 1 IDs",
+   "Verificacao 1/3 dos IDs do pacote.",
+   "Exclusao nesta rodada: 1/1 (intervalo 0.00s)",
+   "Verificacao 2/3 dos IDs do pacote.",
+   "COMPLETE: apagadas=1, ja_ausentes=0, restantes=0, nao_apagaveis=0, autoria_divergente=0, fechada=False",
+   "Todos os IDs foram confirmados como ausentes; canal do servidor mantido aberto.",
+   "",
+   "Execucao finalizada com 1 canal(is) de grupo ou servidor ainda pendente(s)."
+  ]
+ },
+ "run all_complete_open_dms_first": {
+  "exit_code": 0,
+  "statuses": {
+   "220000000000000002": "complete",
+   "220000000000000001": "complete"
+  },
+  "stdout": [
+   "Conectado como namespace(id=320000000000000001) (320000000000000001).",
+   "Conversas pendentes: 2",
+   "",
+   "[1/2] conversa (220000000000000002) - 1 IDs",
+   "Verificacao 1/3 dos IDs do pacote.",
+   "Exclusao nesta rodada: 1/1 (intervalo 0.00s)",
+   "Verificacao 2/3 dos IDs do pacote.",
+   "COMPLETE: apagadas=1, ja_ausentes=0, restantes=0, nao_apagaveis=0, autoria_divergente=0, fechada=True",
+   "Todos os IDs foram confirmados como ausentes; DM fechada.",
+   "",
+   "[2/2] conversa (220000000000000001) - 1 IDs",
+   "Verificacao 1/3 dos IDs do pacote.",
+   "Exclusao nesta rodada: 1/1 (intervalo 0.00s)",
+   "Verificacao 2/3 dos IDs do pacote.",
+   "COMPLETE: apagadas=1, ja_ausentes=0, restantes=0, nao_apagaveis=0, autoria_divergente=0, fechada=False",
+   "Todos os IDs foram confirmados como ausentes; canal do servidor mantido aberto."
+  ]
+ },
+ "main dry_run": {
+  "exit_code": 0,
+  "log": [],
+  "stdout": [
+   "Conversas encontradas: 1",
+   "IDs unicos de mensagens: 2",
+   "Conta identificada no pacote: 320000000000000001",
+   "- 220000000000000001: 2 IDs [dm] (Direct Message with Teste)",
+   "",
+   "Simulacao concluida. Nenhuma conta foi acessada e nada foi apagado.",
+   "Use --execute somente depois de conferir os totais."
+  ],
+  "stderr": []
+ },
+ "main invalid_package": {
+  "exit_code": 2,
+  "log": [],
+  "stdout": [],
+  "stderr": [
+   "ERRO: Nenhum messages.json foi encontrado no pacote."
+  ]
+ },
+ "main wrong_confirmation": {
+  "exit_code": 1,
+  "log": [
+   [
+    "input",
+    "Digite 'APAGAR 2' para continuar: "
+   ]
+  ],
+  "stdout": [
+   "Conversas encontradas: 1",
+   "IDs unicos de mensagens: 2",
+   "Conta identificada no pacote: 320000000000000001",
+   "- 220000000000000001: 2 IDs [dm] (Direct Message with Teste)",
+   "",
+   "ATENCAO: esta operacao e permanente.",
+   "DMs individuais serao fechadas apos a limpeza; grupos e servidores permanecerao abertos.",
+   "Ritmo: 0.04s por exclusao.",
+   "Confirmacao incorreta. Nada foi apagado."
+  ],
+  "stderr": []
+ },
+ "main confirmation_eof": {
+  "exit_code": 1,
+  "log": [
+   [
+    "input",
+    "Digite 'APAGAR 2' para continuar: "
+   ]
+  ],
+  "stdout": [
+   "Conversas encontradas: 1",
+   "IDs unicos de mensagens: 2",
+   "Conta identificada no pacote: 320000000000000001",
+   "- 220000000000000001: 2 IDs [dm] (Direct Message with Teste)",
+   "",
+   "ATENCAO: esta operacao e permanente.",
+   "DMs individuais serao fechadas apos a limpeza; grupos e servidores permanecerao abertos.",
+   "Ritmo: 0.04s por exclusao.",
+   "Confirmacao incorreta. Nada foi apagado."
+  ],
+  "stderr": []
+ },
+ "main slow_delay_warning": {
+  "exit_code": 1,
+  "log": [
+   [
+    "input",
+    "Digite 'APAGAR 2' para continuar: "
+   ]
+  ],
+  "stdout": [
+   "Conversas encontradas: 1",
+   "IDs unicos de mensagens: 2",
+   "Conta identificada no pacote: 320000000000000001",
+   "- 220000000000000001: 2 IDs [dm] (Direct Message with Teste)",
+   "",
+   "ATENCAO: esta operacao e permanente.",
+   "DMs individuais serao fechadas apos a limpeza; grupos e servidores permanecerao abertos.",
+   "Ritmo: 0.01s por exclusao.",
+   "AVISO: 0.01s e menor que o perfil seguro de 0.04s e pode gerar mais rate limits.",
+   "Confirmacao incorreta. Nada foi apagado."
+  ],
+  "stderr": []
+ },
+ "main checkpoint_error": {
+  "exit_code": 2,
+  "log": [
+   [
+    "input",
+    "Digite 'APAGAR 2' para continuar: "
+   ]
+  ],
+  "stdout": [
+   "Conversas encontradas: 1",
+   "IDs unicos de mensagens: 2",
+   "Conta identificada no pacote: 320000000000000001",
+   "- 220000000000000001: 2 IDs [dm] (Direct Message with Teste)",
+   "",
+   "ATENCAO: esta operacao e permanente.",
+   "DMs individuais serao fechadas apos a limpeza; grupos e servidores permanecerao abertos.",
+   "Ritmo: 0.04s por exclusao."
+  ],
+  "stderr": [
+   "ERRO: JSON invalido em <tmp>/state.json: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+  ]
+ },
+ "main token_from_env": {
+  "exit_code": 0,
+  "log": [
+   [
+    "input",
+    "Digite 'APAGAR 2' para continuar: "
+   ],
+   [
+    "client.init"
+   ],
+   [
+    "client.run",
+    "tok"
+   ],
+   [
+    "cleaner.run",
+    1,
+    320000000000000001,
+    0.04
+   ],
+   [
+    "client.close"
+   ]
+  ],
+  "stdout": [
+   "Conversas encontradas: 1",
+   "IDs unicos de mensagens: 2",
+   "Conta identificada no pacote: 320000000000000001",
+   "- 220000000000000001: 2 IDs [dm] (Direct Message with Teste)",
+   "",
+   "ATENCAO: esta operacao e permanente.",
+   "DMs individuais serao fechadas apos a limpeza; grupos e servidores permanecerao abertos.",
+   "Ritmo: 0.04s por exclusao."
+  ],
+  "stderr": []
+ },
+ "main token_from_prompt": {
+  "exit_code": 0,
+  "log": [
+   [
+    "input",
+    "Digite 'APAGAR 2' para continuar: "
+   ],
+   [
+    "getpass",
+    "Token da conta Discord (nao sera salvo): "
+   ],
+   [
+    "client.init"
+   ],
+   [
+    "client.run",
+    "digitado"
+   ],
+   [
+    "cleaner.run",
+    1,
+    320000000000000001,
+    0.04
+   ],
+   [
+    "client.close"
+   ]
+  ],
+  "stdout": [
+   "Conversas encontradas: 1",
+   "IDs unicos de mensagens: 2",
+   "Conta identificada no pacote: 320000000000000001",
+   "- 220000000000000001: 2 IDs [dm] (Direct Message with Teste)",
+   "",
+   "ATENCAO: esta operacao e permanente.",
+   "DMs individuais serao fechadas apos a limpeza; grupos e servidores permanecerao abertos.",
+   "Ritmo: 0.04s por exclusao."
+  ],
+  "stderr": []
+ },
+ "main token_empty": {
+  "exit_code": 2,
+  "log": [
+   [
+    "input",
+    "Digite 'APAGAR 2' para continuar: "
+   ],
+   [
+    "getpass",
+    "Token da conta Discord (nao sera salvo): "
+   ]
+  ],
+  "stdout": [
+   "Conversas encontradas: 1",
+   "IDs unicos de mensagens: 2",
+   "Conta identificada no pacote: 320000000000000001",
+   "- 220000000000000001: 2 IDs [dm] (Direct Message with Teste)",
+   "",
+   "ATENCAO: esta operacao e permanente.",
+   "DMs individuais serao fechadas apos a limpeza; grupos e servidores permanecerao abertos.",
+   "Ritmo: 0.04s por exclusao."
+  ],
+  "stderr": [
+   "Token vazio. Nada foi apagado."
+  ]
+ },
+ "main login_failure": {
+  "exit_code": 2,
+  "log": [
+   [
+    "input",
+    "Digite 'APAGAR 2' para continuar: "
+   ],
+   [
+    "client.init"
+   ],
+   [
+    "client.run",
+    "tok"
+   ]
+  ],
+  "stdout": [
+   "Conversas encontradas: 1",
+   "IDs unicos de mensagens: 2",
+   "Conta identificada no pacote: 320000000000000001",
+   "- 220000000000000001: 2 IDs [dm] (Direct Message with Teste)",
+   "",
+   "ATENCAO: esta operacao e permanente.",
+   "DMs individuais serao fechadas apos a limpeza; grupos e servidores permanecerao abertos.",
+   "Ritmo: 0.04s por exclusao."
+  ],
+  "stderr": [
+   "Falha no login: token rejeitado pelo Discord."
+  ]
+ },
+ "main captcha_on_login": {
+  "exit_code": 2,
+  "log": [
+   [
+    "input",
+    "Digite 'APAGAR 2' para continuar: "
+   ],
+   [
+    "client.init"
+   ],
+   [
+    "client.run",
+    "tok"
+   ]
+  ],
+  "stdout": [
+   "Conversas encontradas: 1",
+   "IDs unicos de mensagens: 2",
+   "Conta identificada no pacote: 320000000000000001",
+   "- 220000000000000001: 2 IDs [dm] (Direct Message with Teste)",
+   "",
+   "ATENCAO: esta operacao e permanente.",
+   "DMs individuais serao fechadas apos a limpeza; grupos e servidores permanecerao abertos.",
+   "Ritmo: 0.04s por exclusao."
+  ],
+  "stderr": [
+   "Captcha solicitado durante o login; nada foi iniciado."
+  ]
+ },
+ "main http_on_login": {
+  "exit_code": 2,
+  "log": [
+   [
+    "input",
+    "Digite 'APAGAR 2' para continuar: "
+   ],
+   [
+    "client.init"
+   ],
+   [
+    "client.run",
+    "tok"
+   ]
+  ],
+  "stdout": [
+   "Conversas encontradas: 1",
+   "IDs unicos de mensagens: 2",
+   "Conta identificada no pacote: 320000000000000001",
+   "- 220000000000000001: 2 IDs [dm] (Direct Message with Teste)",
+   "",
+   "ATENCAO: esta operacao e permanente.",
+   "DMs individuais serao fechadas apos a limpeza; grupos e servidores permanecerao abertos.",
+   "Ritmo: 0.04s por exclusao."
+  ],
+  "stderr": [
+   "Falha HTTP durante a conexao: _HTTPException"
+  ]
+ },
+ "main keyboard_interrupt": {
+  "exit_code": 130,
+  "log": [
+   [
+    "input",
+    "Digite 'APAGAR 2' para continuar: "
+   ],
+   [
+    "client.init"
+   ],
+   [
+    "client.run",
+    "tok"
+   ]
+  ],
+  "stdout": [
+   "Conversas encontradas: 1",
+   "IDs unicos de mensagens: 2",
+   "Conta identificada no pacote: 320000000000000001",
+   "- 220000000000000001: 2 IDs [dm] (Direct Message with Teste)",
+   "",
+   "ATENCAO: esta operacao e permanente.",
+   "DMs individuais serao fechadas apos a limpeza; grupos e servidores permanecerao abertos.",
+   "Ritmo: 0.04s por exclusao.",
+   "",
+   "Interrompido. O checkpoint permite retomar depois."
+  ],
+  "stderr": []
+ }
+}

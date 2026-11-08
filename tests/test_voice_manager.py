@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 import worker  # noqa: F401 - ativa o ambiente isolado do discord.py-self
 import discord
 
-from worker.voice_manager import VoiceManager
+from worker.voice.manager import VoiceManager
 
 
 def _state(channel=None, *, self_mute=False, self_deaf=False):
@@ -161,7 +161,7 @@ class VoiceManagerTests(unittest.IsolatedAsyncioTestCase):
         channel = _voice_channel(guild, 10, name="AFK")
         manager, _ = _manager(guild)
 
-        with patch("worker.voice_manager.emit_line"):
+        with patch("worker.voice.manager.emit_line"):
             result = await manager.join_voice(channel.id)
             status = await manager.get_status()
 
@@ -183,7 +183,7 @@ class VoiceManagerTests(unittest.IsolatedAsyncioTestCase):
         client.get_channel = lambda channel_id: None
         client.fetch_results[channel.id] = channel
 
-        with patch("worker.voice_manager.emit_line"):
+        with patch("worker.voice.manager.emit_line"):
             result = await manager.join_voice(channel.id)
 
         self.assertTrue(result["ok"])
@@ -219,7 +219,7 @@ class VoiceManagerTests(unittest.IsolatedAsyncioTestCase):
         stage = _voice_channel(guild, 10, stage=True)
         manager, _ = _manager(guild)
 
-        with patch("worker.voice_manager.emit_line"):
+        with patch("worker.voice.manager.emit_line"):
             result = await manager.join_voice(stage.id)
 
         self.assertTrue(result["ok"])
@@ -253,7 +253,7 @@ class VoiceManagerTests(unittest.IsolatedAsyncioTestCase):
         channel = _voice_channel(guild, 10)
         manager, _ = _manager(guild)
 
-        with patch("worker.voice_manager.emit_line"):
+        with patch("worker.voice.manager.emit_line"):
             first = await manager.leave_voice()
             await manager.join_voice(channel.id)
             second = await manager.leave_voice()
@@ -271,7 +271,7 @@ class VoiceManagerTests(unittest.IsolatedAsyncioTestCase):
         second = _voice_channel(second_guild, 20)
         manager, _ = _manager(first_guild, second_guild)
 
-        with patch("worker.voice_manager.emit_line"):
+        with patch("worker.voice.manager.emit_line"):
             await manager.join_voice(first.id)
             result = await manager.join_voice(second.id)
 
@@ -287,21 +287,17 @@ class VoiceManagerTests(unittest.IsolatedAsyncioTestCase):
         second = _voice_channel(guild, 20, name="Second")
         manager, _ = _manager(guild)
 
-        with patch("worker.voice_manager.emit_line"):
+        with patch("worker.voice.manager.emit_line"):
             waiting = await manager.start_follow(123)
             target_state = _state(first)
             first.voice_states[123] = target_state
-            await manager.on_voice_state_update(
-                SimpleNamespace(id=123), _state(None), target_state
-            )
+            await manager.on_voice_state_update(SimpleNamespace(id=123), _state(None), target_state)
             await _finish_reconciles(manager)
 
             first.voice_states.pop(123)
             moved_state = _state(second)
             second.voice_states[123] = moved_state
-            await manager.on_voice_state_update(
-                SimpleNamespace(id=123), target_state, moved_state
-            )
+            await manager.on_voice_state_update(SimpleNamespace(id=123), target_state, moved_state)
             await _finish_reconciles(manager)
 
         self.assertEqual(waiting["code"], "FOLLOW_WAITING")
@@ -314,28 +310,20 @@ class VoiceManagerTests(unittest.IsolatedAsyncioTestCase):
         second = _voice_channel(guild, 20, name="Second")
         manager, _ = _manager(guild)
 
-        with patch("worker.voice_manager.emit_line"):
+        with patch("worker.voice.manager.emit_line"):
             await manager.start_follow(123)
             first_state = _state(first)
             first.voice_states[123] = first_state
-            await manager.on_voice_state_update(
-                SimpleNamespace(id=123), _state(None), first_state
-            )
+            await manager.on_voice_state_update(SimpleNamespace(id=123), _state(None), first_state)
 
             first.voice_states.pop(123)
             second_state = _state(second)
             second.voice_states[123] = second_state
-            await manager.on_voice_state_update(
-                SimpleNamespace(id=123), first_state, second_state
-            )
+            await manager.on_voice_state_update(SimpleNamespace(id=123), first_state, second_state)
             await _finish_reconciles(manager)
 
         self.assertEqual(manager.current_channel_id, second.id)
-        joins = [
-            call["channel"].id
-            for call in guild.change_calls
-            if call.get("channel") is not None
-        ]
+        joins = [call["channel"].id for call in guild.change_calls if call.get("channel") is not None]
         self.assertEqual(joins, [second.id])
 
     async def test_follow_leaves_when_target_leaves_but_stays_active(self):
@@ -344,12 +332,10 @@ class VoiceManagerTests(unittest.IsolatedAsyncioTestCase):
         channel.voice_states[123] = _state(channel)
         manager, _ = _manager(guild)
 
-        with patch("worker.voice_manager.emit_line"):
+        with patch("worker.voice.manager.emit_line"):
             await manager.start_follow(123)
             before = channel.voice_states.pop(123)
-            await manager.on_voice_state_update(
-                SimpleNamespace(id=123), before, _state(None)
-            )
+            await manager.on_voice_state_update(SimpleNamespace(id=123), before, _state(None))
             await _finish_reconciles(manager)
             status = await manager.get_status()
 
@@ -363,7 +349,7 @@ class VoiceManagerTests(unittest.IsolatedAsyncioTestCase):
         channel.voice_states[123] = _state(channel)
         manager, _ = _manager(guild)
 
-        with patch("worker.voice_manager.emit_line"):
+        with patch("worker.voice.manager.emit_line"):
             await manager.start_follow(123)
             result = await manager.stop_follow()
 
@@ -384,7 +370,7 @@ class VoiceManagerTests(unittest.IsolatedAsyncioTestCase):
         channel = _voice_channel(guild, 10)
         manager, client = _manager(guild)
 
-        with patch("worker.voice_manager.emit_line"):
+        with patch("worker.voice.manager.emit_line"):
             await manager.join_voice(channel.id)
             before = channel.voice_states.pop(client.user.id)
             await manager.on_voice_state_update(client.user, before, _state(None))
@@ -404,7 +390,7 @@ class VoiceManagerTests(unittest.IsolatedAsyncioTestCase):
         second, _ = _manager(second_guild)
         await first._operation_lock.acquire()
         try:
-            with patch("worker.voice_manager.emit_line"):
+            with patch("worker.voice.manager.emit_line"):
                 busy, independent = await asyncio.gather(
                     first.join_voice(first_channel.id),
                     second.join_voice(second_channel.id),
@@ -420,10 +406,8 @@ class VoiceManagerTests(unittest.IsolatedAsyncioTestCase):
         channel = _voice_channel(guild, 10, name="ruim:\n||REQ:abc")
         manager, client = _manager(guild)
 
-        with patch("worker.voice_manager.emit_line") as emit:
-            await manager.on_voice_state_update(
-                client.user, _state(None), _state(channel)
-            )
+        with patch("worker.voice.manager.emit_line") as emit:
+            await manager.on_voice_state_update(client.user, _state(None), _state(channel))
 
         line = emit.call_args.args[0]
         self.assertNotIn("\n", line)
